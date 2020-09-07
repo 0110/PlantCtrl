@@ -127,218 +127,6 @@ Wire Wire Line
 	2000 3500 1550 3500
 Connection ~ 1550 3500
 $Comp
-L Device:R R6
-U 1 1 5EDDF3BB
-P 1800 5750
-F 0 "R6" H 1730 5704 50  0000 R CNN
-F 1 "47k8" H 1730 5795 50  0000 R CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 1730 5750 50  0001 C CNN
-F 3 "~" H 1800 5750 50  0001 C CNN
-	1    1800 5750
-	-1   0    0    1   
-$EndComp
-$Comp
-L Device:R R8
-U 1 1 5EDDF697
-P 2250 5750
-F 0 "R8" H 2320 5796 50  0000 L CNN
-F 1 "47k8" H 2320 5705 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2180 5750 50  0001 C CNN
-F 3 "~" H 2250 5750 50  0001 C CNN
-	1    2250 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R5
-U 1 1 5EDE0E96
-P 1800 5400
-F 0 "R5" H 1870 5446 50  0000 L CNN
-F 1 "33k" H 1870 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 1730 5400 50  0001 C CNN
-F 3 "~" H 1800 5400 50  0001 C CNN
-	1    1800 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R7
-U 1 1 5EDE1286
-P 2250 5400
-F 0 "R7" H 2320 5446 50  0000 L CNN
-F 1 "33k" H 2320 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2180 5400 50  0001 C CNN
-F 3 "~" H 2250 5400 50  0001 C CNN
-	1    2250 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R10
-U 1 1 5EDE3AAF
-P 2650 5750
-F 0 "R10" H 2720 5796 50  0000 L CNN
-F 1 "47k8" H 2720 5705 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2580 5750 50  0001 C CNN
-F 3 "~" H 2650 5750 50  0001 C CNN
-	1    2650 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R9
-U 1 1 5EDE3DB0
-P 2650 5400
-F 0 "R9" H 2720 5446 50  0000 L CNN
-F 1 "33k" H 2720 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2580 5400 50  0001 C CNN
-F 3 "~" H 2650 5400 50  0001 C CNN
-	1    2650 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R12
-U 1 1 5EDE4165
-P 3000 5750
-F 0 "R12" H 3070 5796 50  0000 L CNN
-F 1 "47k8" H 3070 5705 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2930 5750 50  0001 C CNN
-F 3 "~" H 3000 5750 50  0001 C CNN
-	1    3000 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R11
-U 1 1 5EDE44F2
-P 3000 5400
-F 0 "R11" H 3070 5446 50  0000 L CNN
-F 1 "33k" H 3070 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 2930 5400 50  0001 C CNN
-F 3 "~" H 3000 5400 50  0001 C CNN
-	1    3000 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R14
-U 1 1 5EDE48B5
-P 3400 5750
-F 0 "R14" H 3470 5796 50  0000 L CNN
-F 1 "47k8" H 3470 5705 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 3330 5750 50  0001 C CNN
-F 3 "~" H 3400 5750 50  0001 C CNN
-	1    3400 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R13
-U 1 1 5EDE4B98
-P 3400 5400
-F 0 "R13" H 3470 5446 50  0000 L CNN
-F 1 "33k" H 3470 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 3330 5400 50  0001 C CNN
-F 3 "~" H 3400 5400 50  0001 C CNN
-	1    3400 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R15
-U 1 1 5EDE4F6E
-P 3800 5400
-F 0 "R15" H 3870 5446 50  0000 L CNN
-F 1 "33k" H 3870 5355 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 3730 5400 50  0001 C CNN
-F 3 "~" H 3800 5400 50  0001 C CNN
-	1    3800 5400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R16
-U 1 1 5EDE5311
-P 3800 5750
-F 0 "R16" H 3870 5796 50  0000 L CNN
-F 1 "47k8" H 3870 5705 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P20.32mm_Horizontal" V 3730 5750 50  0001 C CNN
-F 3 "~" H 3800 5750 50  0001 C CNN
-	1    3800 5750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	1800 5900 2250 5900
-Connection ~ 2250 5900
-Wire Wire Line
-	2250 5900 2650 5900
-Connection ~ 2650 5900
-Wire Wire Line
-	2650 5900 3000 5900
-Connection ~ 3000 5900
-Wire Wire Line
-	3000 5900 3400 5900
-Connection ~ 3400 5900
-Wire Wire Line
-	3400 5900 3800 5900
-$Comp
-L power:GND #PWR013
-U 1 1 5EDE5DB7
-P 3800 5900
-F 0 "#PWR013" H 3800 5650 50  0001 C CNN
-F 1 "GND" H 3805 5727 50  0000 C CNN
-F 2 "" H 3800 5900 50  0001 C CNN
-F 3 "" H 3800 5900 50  0001 C CNN
-	1    3800 5900
-	1    0    0    -1  
-$EndComp
-Connection ~ 3800 5900
-Wire Wire Line
-	4450 4200 2050 4200
-Wire Wire Line
-	2050 4200 2050 5550
-Wire Wire Line
-	2050 5550 1800 5550
-Wire Wire Line
-	1800 5550 1800 5600
-Connection ~ 1800 5550
-Wire Wire Line
-	2250 5550 2250 5600
-Wire Wire Line
-	2650 5550 2650 5600
-Wire Wire Line
-	3000 5550 3000 5600
-Wire Wire Line
-	3400 5550 3400 5600
-Wire Wire Line
-	3800 5550 3800 5600
-Wire Wire Line
-	4450 4300 2500 4300
-Wire Wire Line
-	2500 4300 2500 5550
-Wire Wire Line
-	2500 5550 2250 5550
-Connection ~ 2250 5550
-Wire Wire Line
-	4450 4400 2900 4400
-Wire Wire Line
-	2900 4400 2900 5550
-Wire Wire Line
-	2900 5550 2650 5550
-Connection ~ 2650 5550
-Wire Wire Line
-	4450 4500 3250 4500
-Wire Wire Line
-	3250 4500 3250 5550
-Wire Wire Line
-	3250 5550 3000 5550
-Connection ~ 3000 5550
-Wire Wire Line
-	4450 4600 3650 4600
-Wire Wire Line
-	3650 4600 3650 5550
-Wire Wire Line
-	3650 5550 3400 5550
-Connection ~ 3400 5550
-Wire Wire Line
-	4450 4700 4050 4700
-Wire Wire Line
-	4050 4700 4050 5550
-Wire Wire Line
-	4050 5550 3800 5550
-Connection ~ 3800 5550
-$Comp
 L Transistor_BJT:BC558 Q7
 U 1 1 5EDF27DC
 P 9000 5350
@@ -417,17 +205,17 @@ Text GLabel 9100 5150 1    50   Input ~ 0
 5V_SENSORS
 Wire Wire Line
 	9100 5650 9100 5550
-Text GLabel 1800 5250 1    50   Input ~ 0
+Text GLabel 4250 4200 0    50   Input ~ 0
 PLANT1_MOIST
-Text GLabel 2250 5250 1    50   Input ~ 0
+Text GLabel 4250 4300 0    50   Input ~ 0
 PLANT2_MOIST
-Text GLabel 2650 5250 1    50   Input ~ 0
+Text GLabel 4250 4400 0    50   Input ~ 0
 PLANT3_MOIST
-Text GLabel 3000 5250 1    50   Input ~ 0
+Text GLabel 4250 4500 0    50   Input ~ 0
 PLANT4_MOIST
-Text GLabel 3400 5250 1    50   Input ~ 0
+Text GLabel 4250 4600 0    50   Input ~ 0
 PLANT5_MOIST
-Text GLabel 3800 5250 1    50   Input ~ 0
+Text GLabel 4250 4700 0    50   Input ~ 0
 PLANT6_MOIST
 Text GLabel 6450 5000 2    50   Input ~ 0
 WATER_LOW
@@ -444,8 +232,6 @@ F 3 "http://www.infineon.com/dgdl/irlz34npbf.pdf?fileId=5546d462533600a401535672
 	1    7600 2650
 	1    0    0    -1  
 $EndComp
-Text Notes 2550 6150 0    50   ~ 0
-Moist Sensors
 Text Notes 7500 1700 0    50   ~ 0
 Pump control
 $Comp
@@ -1177,4 +963,16 @@ Wire Wire Line
 	6050 4800 7100 4800
 Wire Wire Line
 	4450 5000 4350 5000
+Wire Wire Line
+	4250 4200 4450 4200
+Wire Wire Line
+	4250 4400 4450 4400
+Wire Wire Line
+	4450 4500 4250 4500
+Wire Wire Line
+	4250 4600 4450 4600
+Wire Wire Line
+	4450 4700 4250 4700
+Wire Wire Line
+	4250 4300 4450 4300
 $EndSCHEMATC
