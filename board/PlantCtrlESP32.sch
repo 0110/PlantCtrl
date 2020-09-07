@@ -1,5 +1,4 @@
 EESchema Schematic File Version 4
-LIBS:PlantCtrlESP32-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -15,61 +14,39 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Connector:Conn_01x19_Female J5
-U 1 1 5EDC099B
-P 7000 4500
-F 0 "J5" H 7028 4526 50  0000 L CNN
-F 1 "Conn_01x19_Female" H 7050 4650 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x19_P2.54mm_Vertical" H 7000 4500 50  0001 C CNN
-F 3 "~" H 7000 4500 50  0001 C CNN
-	1    7000 4500
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:Conn_01x19_Female J4
-U 1 1 5EDC1650
-P 4950 4500
-F 0 "J4" H 4978 4526 50  0000 L CNN
-F 1 "Conn_01x19_Female" H 4978 4435 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x19_P2.54mm_Vertical" H 4950 4500 50  0001 C CNN
-F 3 "~" H 4950 4500 50  0001 C CNN
-	1    4950 4500
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:+3V3 #PWR016
 U 1 1 5EDC2A6D
-P 4750 3600
-F 0 "#PWR016" H 4750 3450 50  0001 C CNN
-F 1 "+3V3" V 4765 3728 50  0000 L CNN
-F 2 "" H 4750 3600 50  0001 C CNN
-F 3 "" H 4750 3600 50  0001 C CNN
-	1    4750 3600
+P 4450 3600
+F 0 "#PWR016" H 4450 3450 50  0001 C CNN
+F 1 "+3V3" V 4465 3728 50  0000 L CNN
+F 2 "" H 4450 3600 50  0001 C CNN
+F 3 "" H 4450 3600 50  0001 C CNN
+	1    4450 3600
 	0    -1   -1   0   
 $EndComp
 $Comp
 L power:GND #PWR017
 U 1 1 5EDC304E
-P 4750 4900
-F 0 "#PWR017" H 4750 4650 50  0001 C CNN
-F 1 "GND" V 4755 4772 50  0000 R CNN
-F 2 "" H 4750 4900 50  0001 C CNN
-F 3 "" H 4750 4900 50  0001 C CNN
-	1    4750 4900
+P 4450 4900
+F 0 "#PWR017" H 4450 4650 50  0001 C CNN
+F 1 "GND" V 4455 4772 50  0000 R CNN
+F 2 "" H 4450 4900 50  0001 C CNN
+F 3 "" H 4450 4900 50  0001 C CNN
+	1    4450 4900
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+5V #PWR018
 U 1 1 5EDC466D
-P 4750 5400
-F 0 "#PWR018" H 4750 5250 50  0001 C CNN
-F 1 "+5V" V 4765 5528 50  0000 L CNN
-F 2 "" H 4750 5400 50  0001 C CNN
-F 3 "" H 4750 5400 50  0001 C CNN
-	1    4750 5400
+P 4450 5400
+F 0 "#PWR018" H 4450 5250 50  0001 C CNN
+F 1 "+5V" V 4465 5528 50  0000 L CNN
+F 2 "" H 4450 5400 50  0001 C CNN
+F 3 "" H 4450 5400 50  0001 C CNN
+	1    4450 5400
 	0    -1   -1   0   
 $EndComp
-Text GLabel 4750 5000 0    50   Input ~ 0
+Text GLabel 4350 5000 0    50   Input ~ 0
 GPIO13
 $Comp
 L Device:R R1
@@ -108,7 +85,7 @@ $EndComp
 Text Notes 800  3550 0    50   ~ 0
 Solar Panel
 Wire Wire Line
-	1000 4100 4750 4100
+	1000 4100 4450 4100
 $Comp
 L Device:R R4
 U 1 1 5EDD7349
@@ -143,7 +120,7 @@ F 3 "" H 1550 3800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4750 4000 2000 4000
+	4450 4000 2000 4000
 Wire Wire Line
 	2000 4000 2000 3500
 Wire Wire Line
@@ -308,7 +285,7 @@ F 3 "" H 3800 5900 50  0001 C CNN
 $EndComp
 Connection ~ 3800 5900
 Wire Wire Line
-	4750 4200 2050 4200
+	4450 4200 2050 4200
 Wire Wire Line
 	2050 4200 2050 5550
 Wire Wire Line
@@ -327,35 +304,35 @@ Wire Wire Line
 Wire Wire Line
 	3800 5550 3800 5600
 Wire Wire Line
-	4750 4300 2500 4300
+	4450 4300 2500 4300
 Wire Wire Line
 	2500 4300 2500 5550
 Wire Wire Line
 	2500 5550 2250 5550
 Connection ~ 2250 5550
 Wire Wire Line
-	4750 4400 2900 4400
+	4450 4400 2900 4400
 Wire Wire Line
 	2900 4400 2900 5550
 Wire Wire Line
 	2900 5550 2650 5550
 Connection ~ 2650 5550
 Wire Wire Line
-	4750 4500 3250 4500
+	4450 4500 3250 4500
 Wire Wire Line
 	3250 4500 3250 5550
 Wire Wire Line
 	3250 5550 3000 5550
 Connection ~ 3000 5550
 Wire Wire Line
-	4750 4600 3650 4600
+	4450 4600 3650 4600
 Wire Wire Line
 	3650 4600 3650 5550
 Wire Wire Line
 	3650 5550 3400 5550
 Connection ~ 3400 5550
 Wire Wire Line
-	4750 4700 4050 4700
+	4450 4700 4050 4700
 Wire Wire Line
 	4050 4700 4050 5550
 Wire Wire Line
@@ -414,8 +391,6 @@ F 3 "" H 9100 5650 50  0001 C CNN
 	1    9100 5650
 	-1   0    0    1   
 $EndComp
-Wire Wire Line
-	5950 4800 5950 5550
 $Comp
 L power:+9V #PWR01
 U 1 1 5EE168F4
@@ -438,8 +413,6 @@ F 3 "" H 1500 900 50  0001 C CNN
 	1    1500 900 
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	5950 4800 6800 4800
 Text GLabel 9100 5150 1    50   Input ~ 0
 5V_SENSORS
 Wire Wire Line
@@ -456,18 +429,10 @@ Text GLabel 3400 5250 1    50   Input ~ 0
 PLANT5_MOIST
 Text GLabel 3800 5250 1    50   Input ~ 0
 PLANT6_MOIST
-Text GLabel 6100 6950 3    50   Input ~ 0
+Text GLabel 6450 5000 2    50   Input ~ 0
 WATER_LOW
-Text GLabel 6650 6950 3    50   Input ~ 0
+Text GLabel 6450 5100 2    50   Input ~ 0
 WATER_EMPTY
-Wire Wire Line
-	6800 5000 6100 5000
-Wire Wire Line
-	6100 5000 6100 6950
-Wire Wire Line
-	6800 5100 6650 5100
-Wire Wire Line
-	6650 5100 6650 6950
 $Comp
 L Transistor_FET:IRLZ34N Q3
 U 1 1 5EE25042
@@ -483,17 +448,6 @@ Text Notes 2550 6150 0    50   ~ 0
 Moist Sensors
 Text Notes 7500 1700 0    50   ~ 0
 Pump control
-$Comp
-L power:GND #PWR022
-U 1 1 5EE48202
-P 6800 3600
-F 0 "#PWR022" H 6800 3350 50  0001 C CNN
-F 1 "GND" V 6805 3472 50  0000 R CNN
-F 2 "" H 6800 3600 50  0001 C CNN
-F 3 "" H 6800 3600 50  0001 C CNN
-	1    6800 3600
-	0    1    1    0   
-$EndComp
 $Comp
 L Transistor_FET:IRLZ34N Q2
 U 1 1 5EE49580
@@ -567,10 +521,6 @@ Wire Wire Line
 Wire Wire Line
 	6500 3450 6500 3700
 Wire Wire Line
-	6500 3700 6800 3700
-Wire Wire Line
-	6800 3800 6450 3800
-Wire Wire Line
 	6450 3800 6450 3400
 Wire Wire Line
 	6450 3400 7200 3400
@@ -579,28 +529,22 @@ Wire Wire Line
 Wire Wire Line
 	7200 3450 8450 3450
 Wire Wire Line
-	6800 4100 6400 4100
-Wire Wire Line
 	6400 4100 6400 3050
 Wire Wire Line
 	6400 3050 7900 3050
 $Comp
 L power:GND #PWR023
 U 1 1 5EE874ED
-P 6800 4200
-F 0 "#PWR023" H 6800 3950 50  0001 C CNN
-F 1 "GND" V 6805 4072 50  0000 R CNN
-F 2 "" H 6800 4200 50  0001 C CNN
-F 3 "" H 6800 4200 50  0001 C CNN
-	1    6800 4200
-	0    1    1    0   
+P 6050 4200
+F 0 "#PWR023" H 6050 3950 50  0001 C CNN
+F 1 "GND" V 6055 4072 50  0000 R CNN
+F 2 "" H 6050 4200 50  0001 C CNN
+F 3 "" H 6050 4200 50  0001 C CNN
+	1    6050 4200
+	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	6350 4300 6350 2650
-Wire Wire Line
 	6350 2650 7400 2650
-Wire Wire Line
-	6300 4400 6800 4400
 $Comp
 L power:GND #PWR021
 U 1 1 5EE99319
@@ -672,8 +616,6 @@ Wire Wire Line
 Wire Wire Line
 	6450 1900 6250 1900
 Wire Wire Line
-	6250 1900 6250 4500
-Wire Wire Line
 	6300 2300 6300 4400
 Wire Wire Line
 	6300 2300 6900 2300
@@ -689,22 +631,17 @@ Text GLabel 7200 2100 1    50   Input ~ 0
 PLANT5_PUMP
 Text GLabel 6750 1700 1    50   Input ~ 0
 PLANT6_PUMP
-Wire Wire Line
-	6250 4500 6800 4500
-NoConn ~ 6800 3900
-NoConn ~ 6800 4000
-NoConn ~ 4750 5300
-NoConn ~ 4750 3700
-NoConn ~ 4750 3800
-NoConn ~ 4750 3900
-NoConn ~ 6800 5400
-NoConn ~ 6800 5300
-NoConn ~ 6800 5200
-NoConn ~ 6800 4600
-NoConn ~ 6800 4700
-NoConn ~ 4750 5200
-NoConn ~ 4750 5100
-NoConn ~ 6800 4900
+NoConn ~ 4450 5300
+NoConn ~ 4450 3700
+NoConn ~ 4450 3800
+NoConn ~ 4450 3900
+NoConn ~ 6050 5400
+NoConn ~ 6050 5300
+NoConn ~ 6050 5200
+NoConn ~ 6050 4700
+NoConn ~ 4450 5200
+NoConn ~ 4450 5100
+NoConn ~ 6050 4900
 $Comp
 L Device:R R18
 U 1 1 5EF42F29
@@ -739,7 +676,7 @@ F 3 "" H 4150 7300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4750 4800 4400 4800
+	4450 4800 4400 4800
 Wire Wire Line
 	4400 4800 4400 6950
 Wire Wire Line
@@ -942,8 +879,6 @@ F 3 "" H 10250 1750 50  0001 C CNN
 	1    10250 1750
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6350 4300 6800 4300
 Text GLabel 10800 1450 2    50   Input ~ 0
 GPIO13
 $Comp
@@ -1186,13 +1121,60 @@ Wire Wire Line
 	9800 5550 9850 5550
 Connection ~ 9850 5550
 Wire Wire Line
-	7100 5550 7100 4550
+	7100 5550 7100 4800
 Wire Wire Line
 	7100 4550 9450 4550
 Wire Wire Line
-	5950 5550 7100 5550
-Connection ~ 7100 5550
-Wire Wire Line
 	7400 5550 7700 5550
 Connection ~ 7700 5550
+$Comp
+L power:GND #PWR022
+U 1 1 5EE48202
+P 6050 3600
+F 0 "#PWR022" H 6050 3350 50  0001 C CNN
+F 1 "GND" V 6055 3472 50  0000 R CNN
+F 2 "" H 6050 3600 50  0001 C CNN
+F 3 "" H 6050 3600 50  0001 C CNN
+	1    6050 3600
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	6350 4300 6350 2650
+$Comp
+L ESP32-DEVKITC-32D:ESP32-DEVKITC-32D U2
+U 1 1 5F5A25C2
+P 5250 4500
+F 0 "U2" H 5250 5667 50  0000 C CNN
+F 1 "ESP32-DEVKITC-32D" H 5250 5576 50  0000 C CNN
+F 2 "MODULE_ESP32-DEVKITC-32D" H 5250 4500 50  0001 L BNN
+F 3 "4" H 5250 4500 50  0001 L BNN
+F 4 "Espressif Systems" H 5250 4500 50  0001 L BNN "Field4"
+	1    5250 4500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6250 4500 6050 4500
+Wire Wire Line
+	6250 1900 6250 4500
+Wire Wire Line
+	6300 4400 6050 4400
+Wire Wire Line
+	6050 4300 6350 4300
+Wire Wire Line
+	6400 4100 6050 4100
+Wire Wire Line
+	6450 3800 6050 3800
+Wire Wire Line
+	6500 3700 6050 3700
+Wire Wire Line
+	6050 5000 6450 5000
+Wire Wire Line
+	6450 5100 6050 5100
+Connection ~ 7100 4800
+Wire Wire Line
+	7100 4800 7100 4550
+Wire Wire Line
+	6050 4800 7100 4800
+Wire Wire Line
+	4450 5000 4350 5000
 $EndSCHEMATC
