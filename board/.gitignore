@@ -1,0 +1,35 @@
+# Software code stuff
+*.swp
+*.o
+*.hex
+*.lst
+*.eep
+*.sym
+*.map
+*.lss
+*.elf
+.dep/
+# KiCAD board stuff
+# export files for BOM
+*.csv
+*.tsv
+*.xml
+# backup files
+*.bak
+# Temporary files
+*.000
+*.bak
+*.bck
+*.kicad_pcb-bak
+*~
+_autosave-*
+*.tmp
+*-cache.lib
+*-rescue.lib
+*-save.pro
+*-save.kicad_pcb
+
+# Netlist files (exported from Eeschema)
+*.net
+
+# Autorouter files (exported from Pcbnew)
