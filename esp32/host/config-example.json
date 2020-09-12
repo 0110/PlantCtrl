@@ -19,9 +19,16 @@
   },
   "settings": {
     "deepsleep": 60000,
+    "pumpdeepsleep": 1000,
     "plants" : 3,
     "moist1" : 2000,
     "moist2" : 2000,
-    "moist3" : 2000
+    "moist3" : 2000,
+    "plant1MaxPumpTime": 1000,
+    "plant2MaxPumpTime": 1000,
+    "plant3MaxPumpTime": 1000,
+    "plant1MinPumpIdle": 10000,
+    "plant2MinPumpIdle": 10000,
+    "plant3MinPumpIdle": 10000
   }
 }
