@@ -1,4 +1,4 @@
 (fp_lib_table
-  (lib (name kicad-stuff)(type KiCad)(uri ${KIPRJMOD}/kicad-stuff)(options "")(descr ""))
   (lib (name misc_footprints)(type KiCad)(uri ${KIPRJMOD}/kicad-stuff/misc_footprints-master/misc_footprints.pretty)(options "")(descr ""))
+  (lib (name ESP32)(type KiCad)(uri ${KIPRJMOD}/kicad-stuff/ESP32)(options "")(descr ""))
 )
