@@ -761,23 +761,23 @@ Wire Wire Line
 $Comp
 L Connector_Generic:Conn_01x04 J2
 U 1 1 5F7E5709
-P 1600 4850
-F 0 "J2" H 1680 4842 50  0000 L CNN
-F 1 "Conn_01x04" H 1680 4751 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Horizontal" H 1600 4850 50  0001 C CNN
-F 3 "~" H 1600 4850 50  0001 C CNN
-	1    1600 4850
+P 1950 4850
+F 0 "J2" H 2030 4842 50  0000 L CNN
+F 1 "Conn_01x04" H 2030 4751 50  0000 L CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Horizontal" H 1950 4850 50  0001 C CNN
+F 3 "~" H 1950 4850 50  0001 C CNN
+	1    1950 4850
 	1    0    0    -1  
 $EndComp
 Text GLabel 1050 5050 0    50   Input ~ 0
 LIPO+
-Text GLabel 1400 4950 0    50   Input ~ 0
+Text GLabel 1750 4950 0    50   Input ~ 0
 GND
-Text GLabel 1400 4850 0    50   Input ~ 0
+Text GLabel 1750 4850 0    50   Input ~ 0
 GND
 Text GLabel 2450 5900 1    50   Input ~ 0
 SOLAR_IN
-Text GLabel 1400 4750 0    50   Input ~ 0
+Text GLabel 1750 5050 0    50   Input ~ 0
 SOLAR_IN
 Text GLabel 1500 1000 0    50   Input ~ 0
 PLANT0_PUMP
@@ -1401,17 +1401,6 @@ LIPO+
 Wire Wire Line
 	7700 3350 7700 3300
 $Comp
-L Device:LED D8
-U 1 1 5F834AFA
-P 11050 4350
-F 0 "D8" V 11089 4232 50  0000 R CNN
-F 1 "LED" V 10998 4232 50  0000 R CNN
-F 2 "LED_SMD:LED_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 11050 4350 50  0001 C CNN
-F 3 "~" H 11050 4350 50  0001 C CNN
-	1    11050 4350
-	0    -1   -1   0   
-$EndComp
-$Comp
 L Device:R R30
 U 1 1 5F834B00
 P 11050 4000
@@ -1447,10 +1436,10 @@ F 3 "" H 11050 4550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:LED D9
+L Device:LED Sensor1
 U 1 1 5F8539DC
 P 11050 6100
-F 0 "D9" V 11089 5982 50  0000 R CNN
+F 0 "Sensor1" V 11089 5982 50  0000 R CNN
 F 1 "LED" V 10998 5982 50  0000 R CNN
 F 2 "LED_SMD:LED_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 11050 6100 50  0001 C CNN
 F 3 "~" H 11050 6100 50  0001 C CNN
@@ -1608,7 +1597,7 @@ U 1 1 5F8D742C
 P 1500 5350
 F 0 "J4" H 1528 5326 50  0000 L CNN
 F 1 "Conn_01x02_Female" H 1200 5150 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical" H 1500 5350 50  0001 C CNN
+F 2 "Battery:BatteryHolder_Keystone_1042_1x18650" H 1500 5350 50  0001 C CNN
 F 3 "~" H 1500 5350 50  0001 C CNN
 	1    1500 5350
 	1    0    0    -1  
@@ -1626,7 +1615,6 @@ F 3 "~" H 1200 5200 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1200 5350 1300 5350
-Connection ~ 1200 5050
 Wire Wire Line
 	1200 5050 1050 5050
 Text Notes 1400 5250 0    50   ~ 0
@@ -1698,8 +1686,6 @@ F 3 "~" H 6050 6700 50  0001 C CNN
 	1    6050 6700
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	1200 5050 1400 5050
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5FA3662A
@@ -1714,4 +1700,20 @@ $EndComp
 Connection ~ 1150 5700
 Text GLabel 5900 6800 2    50   Input ~ 0
 SENSORS_ENABLE
+$Comp
+L Device:LED Pump1
+U 1 1 5F834AFA
+P 11050 4350
+F 0 "Pump1" V 11089 4232 50  0000 R CNN
+F 1 "LED" V 10998 4232 50  0000 R CNN
+F 2 "LED_SMD:LED_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 11050 4350 50  0001 C CNN
+F 3 "~" H 11050 4350 50  0001 C CNN
+	1    11050 4350
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	1200 5050 1200 4750
+Wire Wire Line
+	1200 4750 1750 4750
+Connection ~ 1200 5050
 $EndSCHEMATC
