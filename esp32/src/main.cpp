@@ -12,6 +12,8 @@
 #include "ControllerConfiguration.h"
 #include "DS18B20.h"
 #include <Homie.h>
+#include "esp_sleep.h"
+
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -34,16 +36,12 @@ int solarSensor = -1;
 int solarSensorValues = 0;
 
 int mWaterAtEmptyLevel = 0;
-#ifndef HC_SR04
-int mWaterLow   = 0;
-#else
-int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
-#endif
-int mOverflow = 0;
 
+int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 int mButtonClicks = 0;
 
+RTC_DATA_ATTR int gBootCount = 0;
 
 #if (MAX_PLANTS >= 1)
 HomieNode plant1("plant1", "Plant 1", "Plant");
@@ -63,6 +61,9 @@ HomieNode plant5("plant5", "Plant 5", "Plant");
 #if (MAX_PLANTS >= 6)
 HomieNode plant6("plant6", "Plant 6", "Plant");
 #endif
+#if (MAX_PLANTS >= 7)
+HomieNode plant6("plant7", "Plant 7", "Plant");
+#endif
 
 HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
@@ -71,52 +72,56 @@ HomieNode sensorTemp("temperature", "Temperature", "temperature");
 
 HomieSetting<long> deepSleepTime("deepsleep", "time in milliseconds to sleep (0 deactivats it)");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in milliseconds to sleep (0 usese same setting: deepsleep at night, too)");
-HomieSetting<long> wateringTime("watering", "time seconds the pump is running (60 is the default)");
-HomieSetting<long> plantCnt("plants", "amout of plants to control (1 ... 6)");
+HomieSetting<long> wateringDeepSleep("pumpdeepsleep", "time seconds to sleep, while a pump is running");
+HomieSetting<long> plantCnt("plants", "amout of plants to control (1 ... 7)");
 
 #ifdef  HC_SR04
 HomieSetting<long> waterLevel("watermaxlevel", "Water maximum level in centimeter (50 cm default)");
 #endif
-
-
-#if (MAX_PLANTS >= 1)
+HomieSetting<long> plant0SensorTrigger("moist0", "Moist0 sensor value, when pump activates");
 HomieSetting<long> plant1SensorTrigger("moist1", "Moist1 sensor value, when pump activates");
-#endif
-#if (MAX_PLANTS >= 2)
 HomieSetting<long> plant2SensorTrigger("moist2", "Moist2 sensor value, when pump activates");
-#endif
-#if (MAX_PLANTS >= 3)
 HomieSetting<long> plant3SensorTrigger("moist3", "Moist3 sensor value, when pump activates");
-#endif
-#if (MAX_PLANTS >= 4)
 HomieSetting<long> plant4SensorTrigger("moist4", "Moist4 sensor value, when pump activates");
-#endif
-#if (MAX_PLANTS >= 5)
 HomieSetting<long> plant5SensorTrigger("moist5", "Moist5 sensor value, when pump activates");
-#endif
-#if (MAX_PLANTS >= 6)
 HomieSetting<long> plant6SensorTrigger("moist6", "Moist6 sensor value, when pump activates");
-#endif
+HomieSetting<long> wateringTime0("plant0MaxPumpTime", "time seconds Pump0 is running (60 is the default)");
+HomieSetting<long> wateringTime1("plant1MaxPumpTime", "time seconds Pump1 is running (60 is the default)");
+HomieSetting<long> wateringTime2("plant2MaxPumpTime", "time seconds Pump2 is running (60 is the default)");
+HomieSetting<long> wateringTime3("plant3MaxPumpTime", "time seconds Pump3 is running (60 is the default)");
+HomieSetting<long> wateringTime4("plant4MaxPumpTime", "time seconds Pump4 is running (60 is the default)");
+HomieSetting<long> wateringTime5("plant5MaxPumpTime", "time seconds Pump5 is running (60 is the default)");
+HomieSetting<long> wateringTime5("plant6MaxPumpTime", "time seconds Pump6 is running (60 is the default)");
+HomieSetting<long> wateringIdleTime0("plant0MinPumpIdle", "time in seconds Pump0 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime1("plant1MinPumpIdle", "time in seconds Pump1 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime2("plant2MinPumpIdle", "time in seconds Pump2 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime3("plant3MinPumpIdle", "time in seconds Pump3 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime4("plant4MinPumpIdle", "time in seconds Pump4 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime5("plant5MinPumpIdle", "time in seconds Pump5 will wait (60 is the default)");
+HomieSetting<long> wateringIdleTime6("plant6MinPumpIdle", "time in seconds Pump6 will wait (60 is the default)");
 
 Ds18B20 dallas(SENSOR_DS18B20);
 
 Plant mPlants[MAX_PLANTS] = { 
 #if (MAX_PLANTS >= 1)
-        Plant(SENSOR_PLANT1, OUTPUT_PUMP1), 
+        Plant(SENSOR_PLANT0, OUTPUT_PUMP0), 
 #endif
 #if (MAX_PLANTS >= 2)
-        Plant(SENSOR_PLANT2, OUTPUT_PUMP2), 
+        Plant(SENSOR_PLANT1, OUTPUT_PUMP1), 
 #endif
 #if (MAX_PLANTS >= 3)
-        Plant(SENSOR_PLANT3, OUTPUT_PUMP3), 
+        Plant(SENSOR_PLANT2, OUTPUT_PUMP2), 
 #endif
 #if (MAX_PLANTS >= 4)
-        Plant(SENSOR_PLANT4, OUTPUT_PUMP4), 
+        Plant(SENSOR_PLANT3, OUTPUT_PUMP3), 
 #endif
 #if (MAX_PLANTS >= 5)
-        Plant(SENSOR_PLANT5, OUTPUT_PUMP5), 
+        Plant(SENSOR_PLANT4, OUTPUT_PUMP4), 
 #endif
 #if (MAX_PLANTS >= 6)
+        Plant(SENSOR_PLANT5, OUTPUT_PUMP5), 
+#endif
+#if (MAX_PLANTS >= 7)
         Plant(SENSOR_PLANT6, OUTPUT_PUMP6) 
 #endif
       };
@@ -161,6 +166,9 @@ void loopHandler() {
     plant5.setProperty("switch").send(String("OFF"));
     plant6.setProperty("switch").send(String("OFF"));
 #endif   
+#if (MAX_PLANTS >= 7)
+    plant7.setProperty("switch").send(String("OFF"));
+#endif   
 
     for(int i=0; i < plantCnt.get(); i++) {
       mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
@@ -195,26 +203,11 @@ void loopHandler() {
 #endif
       }
 
-#ifndef HC_SR04
-      if (SOLAR_VOLT(solarSensor) > SOLAR4SENSORS) {
-        if (mWaterLow && mWaterAtEmptyLevel) {
-          sensorWater.setProperty("remaining").send("50");
-        } else if (!mWaterLow && mWaterAtEmptyLevel) {
-          sensorWater.setProperty("remaining").send("10");
-        } else if (!mWaterLow && !mWaterAtEmptyLevel) {
-          sensorWater.setProperty("remaining").send("0");
-        } else if (!mWaterLow && !mWaterAtEmptyLevel) {
-          sensorWater.setProperty("remaining").send("-1");
-        }
-      } else {
-        Serial << "Sun not strong enough for sensors (" << String(SOLAR_VOLT(solarSensor)) << "V )" << endl;
-      }
-#else
       mWaterAtEmptyLevel = (mWaterGone <= waterLevel.get());
       int waterLevelPercent = (100 * mWaterGone) / waterLevel.get();
       sensorWater.setProperty("remaining").send(String(waterLevelPercent));
       Serial << "Water : " << mWaterGone << " cm (" << waterLevelPercent << "%)" << endl;
-#endif
+
       mPumpIsRunning=false;
       /* Check if a plant needs water */
       if (mPlants[i].isPumpRequired(boundary4MoistSensor) && 
@@ -385,11 +378,6 @@ void readSensors() {
   /* activate all sensors */
   pinMode(OUTPUT_SENSOR, OUTPUT);
   digitalWrite(OUTPUT_SENSOR, HIGH);
-  /* Use Pump 4 to activate and deactivate the Sensors */
-#if (MAX_PLANTS < 4)
-  pinMode(OUTPUT_PUMP4, OUTPUT);
-  digitalWrite(OUTPUT_PUMP4, HIGH);
-#endif
 
   delay(100);
   /* wait before reading something */
@@ -399,11 +387,7 @@ void readSensors() {
     }
   }
 
-#ifndef HC_SR04
-  mWaterAtEmptyLevel = digitalRead(INPUT_WATER_EMPTY);
-  mWaterLow = digitalRead(INPUT_WATER_LOW);
-  mOverflow = digitalRead(INPUT_WATER_OVERFLOW);
-#else
+#ifdef HC_SR04
   /* Use the Ultrasonic sensor to measure waterLevel */
   
   /* deactivate all sensors and measure the pulse */
@@ -419,9 +403,6 @@ void readSensors() {
 #endif
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
-#if (MAX_PLANTS < 4)
-  digitalWrite(OUTPUT_PUMP4, LOW);
-#endif
 }
 
 /**
@@ -504,6 +485,10 @@ void setup() {
   plant6.advertise("moist").setName("Percent")
                             .setDatatype("number")
                             .setUnit("%");
+  plant7.advertise("moist").setName("Percent")
+                            .setDatatype("number")
+                            .setUnit("%");
+
 #endif
   sensorTemp.advertise("control")
               .setName("Temperature")
@@ -568,6 +553,12 @@ void setup() {
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
     mDeepSleep = true;
   }
+
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
+
 
   /* Read the temperature sensors once, as first time 85 degree is returned */
   Serial << "DS18B20 | sensors: " << String(dallas.readDevices()) << endl;
