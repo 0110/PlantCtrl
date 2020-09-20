@@ -627,13 +627,8 @@ void loop() {
             /* now ADC2 can be used */
             readSensors();
           }
-#ifndef HC_SR04
-          Serial << "Water Low:     " << String(mWaterLow) << endl;
-          Serial << "Water Empty:    " << String(mWaterAtEmptyLevel) << endl;
-          Serial << "Water Overflow: " << String(mOverflow) << endl;
-#else
+
           Serial << "Water gone:     " << String(mWaterGone) << " cm" << endl;
-#endif
           for(int i=0; i < MAX_PLANTS; i++) {
             mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
 
