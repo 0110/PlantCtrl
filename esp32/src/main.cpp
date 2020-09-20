@@ -44,25 +44,25 @@ int mButtonClicks = 0;
 RTC_DATA_ATTR int gBootCount = 0;
 
 #if (MAX_PLANTS >= 1)
-HomieNode plant1("plant1", "Plant 1", "Plant");
+HomieNode plant0("plant0", "Plant 0", "Plant");
 #endif
 #if (MAX_PLANTS >= 2)
-HomieNode plant2("plant2", "Plant 2", "Plant");
+HomieNode plant1("plant1", "Plant 1", "Plant");
 #endif
 #if (MAX_PLANTS >= 3)
-HomieNode plant3("plant3", "Plant 3", "Plant");
+HomieNode plant2("plant2", "Plant 2", "Plant");
 #endif
 #if (MAX_PLANTS >= 4)
-HomieNode plant4("plant4", "Plant 4", "Plant");
+HomieNode plant3("plant3", "Plant 3", "Plant");
 #endif
 #if (MAX_PLANTS >= 5)
-HomieNode plant5("plant5", "Plant 5", "Plant");
+HomieNode plant4("plant4", "Plant 4", "Plant");
 #endif
 #if (MAX_PLANTS >= 6)
-HomieNode plant6("plant6", "Plant 6", "Plant");
+HomieNode plant5("plant5", "Plant 5", "Plant");
 #endif
 #if (MAX_PLANTS >= 7)
-HomieNode plant6("plant7", "Plant 7", "Plant");
+HomieNode plant6("plant6", "Plant 6", "Plant");
 #endif
 
 HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
@@ -91,7 +91,7 @@ HomieSetting<long> wateringTime2("plant2MaxPumpTime", "time seconds Pump2 is run
 HomieSetting<long> wateringTime3("plant3MaxPumpTime", "time seconds Pump3 is running (60 is the default)");
 HomieSetting<long> wateringTime4("plant4MaxPumpTime", "time seconds Pump4 is running (60 is the default)");
 HomieSetting<long> wateringTime5("plant5MaxPumpTime", "time seconds Pump5 is running (60 is the default)");
-HomieSetting<long> wateringTime5("plant6MaxPumpTime", "time seconds Pump6 is running (60 is the default)");
+HomieSetting<long> wateringTime6("plant6MaxPumpTime", "time seconds Pump6 is running (60 is the default)");
 HomieSetting<long> wateringIdleTime0("plant0MinPumpIdle", "time in seconds Pump0 will wait (60 is the default)");
 HomieSetting<long> wateringIdleTime1("plant1MinPumpIdle", "time in seconds Pump1 will wait (60 is the default)");
 HomieSetting<long> wateringIdleTime2("plant2MinPumpIdle", "time in seconds Pump2 will wait (60 is the default)");
@@ -153,21 +153,18 @@ void loopHandler() {
     if (deepSleepTime.get()) {
       Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
     }
-    if (wateringTime.get()) {
-      Serial << "HOMIE | Setup watering for " << abs(wateringTime.get()) << " s" << endl;
-    }
     /* Publish default values */
+    plant0.setProperty("switch").send(String("OFF"));            
     plant1.setProperty("switch").send(String("OFF"));            
-    plant2.setProperty("switch").send(String("OFF"));            
-    plant3.setProperty("switch").send(String("OFF"));         
+    plant2.setProperty("switch").send(String("OFF"));         
     
 #if (MAX_PLANTS >= 4)
-    plant4.setProperty("switch").send(String("OFF"));            
+    plant3.setProperty("switch").send(String("OFF"));            
+    plant4.setProperty("switch").send(String("OFF"));
     plant5.setProperty("switch").send(String("OFF"));
-    plant6.setProperty("switch").send(String("OFF"));
 #endif   
 #if (MAX_PLANTS >= 7)
-    plant7.setProperty("switch").send(String("OFF"));
+    plant6.setProperty("switch").send(String("OFF"));
 #endif   
 
     for(int i=0; i < plantCnt.get(); i++) {
@@ -208,6 +205,7 @@ void loopHandler() {
       sensorWater.setProperty("remaining").send(String(waterLevelPercent));
       Serial << "Water : " << mWaterGone << " cm (" << waterLevelPercent << "%)" << endl;
 
+      
       mPumpIsRunning=false;
       /* Check if a plant needs water */
       if (mPlants[i].isPumpRequired(boundary4MoistSensor) && 
@@ -282,12 +280,12 @@ void loopHandler() {
 
   /* Always check, that after 5 minutes the device is sleeping */
   /* Pump is running, go to sleep after defined time */
-  if ((millis() >= (((MIN_TIME_RUNNING + abs(wateringTime.get())) * MS_TO_S) + 5)) && 
-            (deepSleepTime.get() > 0)) {
+  if (millis() >= ((MIN_TIME_RUNNING + 5) && 
+            (deepSleepTime.get() > 0))) {
     Serial << "No sleeping activated (maximum)" << endl;
     Serial << "Pump was running:" << mPumpIsRunning << "Water level is empty: " << mWaterAtEmptyLevel << endl;
     mDeepSleep = true;
-  } else if ((millis() >= (((MIN_TIME_RUNNING + abs(wateringTime.get())) * MS_TO_S) + 0)) &&
+  } else if ((millis() >= ((MIN_TIME_RUNNING * MS_TO_S) + 0)) &&
       (deepSleepTime.get() > 0)) {
     Serial << "Maximum time reached: " << endl;
     Serial <<  (mPumpIsRunning ? "Pump was running " : "No Pump ") << (mWaterAtEmptyLevel ? "Water level is empty" : "Water available") << endl;
@@ -391,12 +389,12 @@ void readSensors() {
   /* Use the Ultrasonic sensor to measure waterLevel */
   
   /* deactivate all sensors and measure the pulse */
-  digitalWrite(INPUT_WATER_EMPTY, LOW);
+  digitalWrite(SENSOR_SR04_TRIG, LOW);
   delayMicroseconds(2);
-  digitalWrite(INPUT_WATER_EMPTY, HIGH);
+  digitalWrite(SENSOR_SR04_TRIG, HIGH);
   delayMicroseconds(10);
-  digitalWrite(INPUT_WATER_EMPTY, LOW);
-  float duration = pulseIn(INPUT_WATER_LOW, HIGH);
+  digitalWrite(SENSOR_SR04_TRIG, LOW);
+  float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
   float distance = (duration*.0343)/2;
   mWaterGone = (int) distance;
   Serial << "HC_SR04 | Distance : " << String(distance) << " cm" << endl;
@@ -416,10 +414,6 @@ void setup() {
 
   /* read button */
   pinMode(BUTTON, INPUT);
-  /* Prepare Water sensors */
-  pinMode(INPUT_WATER_EMPTY, INPUT);
-  pinMode(INPUT_WATER_LOW, INPUT);
-  pinMode(INPUT_WATER_OVERFLOW, INPUT);
 
   Serial.begin(115200);
   Serial.setTimeout(1000); // Set timeout of 1 second
@@ -439,7 +433,13 @@ void setup() {
   // Load the settings
   deepSleepTime.setDefaultValue(0);
   deepSleepNightTime.setDefaultValue(0);
-  wateringTime.setDefaultValue(60);
+  wateringTime0.setDefaultValue(60);
+  wateringTime1.setDefaultValue(60);
+  wateringTime2.setDefaultValue(60);
+  wateringTime3.setDefaultValue(60);
+  wateringTime4.setDefaultValue(60);
+  wateringTime5.setDefaultValue(60);
+  wateringTime6.setDefaultValue(60);
   plantCnt.setDefaultValue(0).setValidator([] (long candidate) {
     return ((candidate >= 0) && (candidate <= 6) );
   });
@@ -485,7 +485,7 @@ void setup() {
   plant6.advertise("moist").setName("Percent")
                             .setDatatype("number")
                             .setUnit("%");
-  plant7.advertise("moist").setName("Percent")
+  plant0.advertise("moist").setName("Percent")
                             .setDatatype("number")
                             .setUnit("%");
 
