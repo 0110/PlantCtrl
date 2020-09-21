@@ -54,4 +54,6 @@
 #define SENSOR_SR04_ECHO    17   /**< GPIO 17 - Echo */
 #define SENSOR_SR04_TRIG    23   /**< GPIO 23 - Trigger */
 
+#define MAX_CONFIG_SETTING_ITEMS 30 /**< Parameter, that can be configured in Homie */
+
 #endif

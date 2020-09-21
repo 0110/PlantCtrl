@@ -40,6 +40,7 @@ int mWaterAtEmptyLevel = 0;
 int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 int mButtonClicks = 0;
+bool mConfigured = false;
 
 RTC_DATA_ATTR int gBootCount = 0;
 
@@ -427,97 +428,105 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
 
+  if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
+    Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
+  }
+
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.setLoopFunction(loopHandler);
 
-  // Load the settings
-  deepSleepTime.setDefaultValue(0);
-  deepSleepNightTime.setDefaultValue(0);
-  wateringTime0.setDefaultValue(60);
-  wateringTime1.setDefaultValue(60);
-  wateringTime2.setDefaultValue(60);
-  wateringTime3.setDefaultValue(60);
-  wateringTime4.setDefaultValue(60);
-  wateringTime5.setDefaultValue(60);
-  wateringTime6.setDefaultValue(60);
-  plantCnt.setDefaultValue(0).setValidator([] (long candidate) {
-    return ((candidate >= 0) && (candidate <= 6) );
-  });
-  plant1SensorTrigger.setDefaultValue(0);
-  plant2SensorTrigger.setDefaultValue(0);
-  plant3SensorTrigger.setDefaultValue(0);
-#if (MAX_PLANTS >= 4)
-  plant4SensorTrigger.setDefaultValue(0);
-  plant5SensorTrigger.setDefaultValue(0);
-  plant6SensorTrigger.setDefaultValue(0);
-#endif
+  mConfigured = Homie.isConfigured();
+  if (mConfigured) {
+    // Load the settings
+    deepSleepTime.setDefaultValue(0);
+    deepSleepNightTime.setDefaultValue(0);
+    wateringTime0.setDefaultValue(60);
+    wateringTime1.setDefaultValue(60);
+    wateringTime2.setDefaultValue(60);
+    wateringTime3.setDefaultValue(60);
+    wateringTime4.setDefaultValue(60);
+    wateringTime5.setDefaultValue(60);
+    wateringTime6.setDefaultValue(60);
+    plantCnt.setDefaultValue(0).setValidator([] (long candidate) {
+      return ((candidate >= 0) && (candidate <= 6) );
+    });
+    plant1SensorTrigger.setDefaultValue(0);
+    plant2SensorTrigger.setDefaultValue(0);
+    plant3SensorTrigger.setDefaultValue(0);
+  #if (MAX_PLANTS >= 4)
+    plant4SensorTrigger.setDefaultValue(0);
+    plant5SensorTrigger.setDefaultValue(0);
+    plant6SensorTrigger.setDefaultValue(0);
+  #endif
 
-#ifdef HC_SR04
-  waterLevel.setDefaultValue(50);
-#endif
+  #ifdef HC_SR04
+    waterLevel.setDefaultValue(50);
+  #endif
 
-  // Advertise topics
-  plant1.advertise("switch").setName("Pump 1")
-                            .setDatatype("boolean")
-                            .settable(switch1Handler);
-  plant1.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-  plant2.advertise("switch").setName("Pump 2")
-                            .setDatatype("boolean")
-                            .settable(switch2Handler);
-  plant2.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-  plant3.advertise("switch").setName("Pump 3")
-                            .setDatatype("boolean")
-                            .settable(switch3Handler);
-  plant3.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-#if (MAX_PLANTS >= 4)
-  plant4.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-  plant5.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-  plant6.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
-  plant0.advertise("moist").setName("Percent")
-                            .setDatatype("number")
-                            .setUnit("%");
+    // Advertise topics
+    plant1.advertise("switch").setName("Pump 1")
+                              .setDatatype("boolean")
+                              .settable(switch1Handler);
+    plant1.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+    plant2.advertise("switch").setName("Pump 2")
+                              .setDatatype("boolean")
+                              .settable(switch2Handler);
+    plant2.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+    plant3.advertise("switch").setName("Pump 3")
+                              .setDatatype("boolean")
+                              .settable(switch3Handler);
+    plant3.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+  #if (MAX_PLANTS >= 4)
+    plant4.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+    plant5.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+    plant6.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
+    plant0.advertise("moist").setName("Percent")
+                              .setDatatype("number")
+                              .setUnit("%");
 
-#endif
-  sensorTemp.advertise("control")
-              .setName("Temperature")
-              .setDatatype("number")
-              .setUnit("°C");
-  sensorTemp.advertise("temp")
-              .setName("Temperature")
-              .setDatatype("number")
-              .setUnit("°C");
+  #endif
+    sensorTemp.advertise("control")
+                .setName("Temperature")
+                .setDatatype("number")
+                .setUnit("°C");
+    sensorTemp.advertise("temp")
+                .setName("Temperature")
+                .setDatatype("number")
+                .setUnit("°C");
 
-  sensorLipo.advertise("percent")
-              .setName("Percent")
-              .setDatatype("number")
-              .setUnit("%");
-  sensorLipo.advertise("volt")
-              .setName("Volt")
-              .setDatatype("number")
-              .setUnit("V");
+    sensorLipo.advertise("percent")
+                .setName("Percent")
+                .setDatatype("number")
+                .setUnit("%");
+    sensorLipo.advertise("volt")
+                .setName("Volt")
+                .setDatatype("number")
+                .setUnit("V");
 
-  sensorSolar.advertise("percent")
-              .setName("Percent")
-              .setDatatype("number")
-              .setUnit("%");
-  sensorSolar.advertise("volt")
-              .setName("Volt")
-              .setDatatype("number")
-              .setUnit("V");
-  sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
-
+    sensorSolar.advertise("percent")
+                .setName("Percent")
+                .setDatatype("number")
+                .setUnit("%");
+    sensorSolar.advertise("volt")
+                .setName("Volt")
+                .setDatatype("number")
+                .setUnit("V");
+    sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
+  }
+  
   Homie.setup();
 
   /* Intialize inputs and outputs */
@@ -536,18 +545,18 @@ void setup() {
 
 
   // Configure Deep Sleep:
-  if ((deepSleepNightTime.get() > 0) &&
+  if (mConfigured && (deepSleepNightTime.get() > 0) &&
       ( SOLAR_VOLT(solarSensor) < MINIMUM_SOLAR_VOLT)) {
     Serial << "HOMIE | Setup sleeping for " << deepSleepNightTime.get() << " ms as sun is at " << SOLAR_VOLT(solarSensor) << "V"  << endl;
     uint64_t usSleepTime = deepSleepNightTime.get() * 1000U;
     esp_sleep_enable_timer_wakeup(usSleepTime);
-  }else if (deepSleepTime.get()) {
+  }else if (mConfigured && deepSleepTime.get()) {
     Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
     uint64_t usSleepTime = deepSleepTime.get() * 1000U;
     esp_sleep_enable_timer_wakeup(usSleepTime);
   }
 
-  if ( (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && (deepSleepTime.get()) ) {
+  if (mConfigured && (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && (deepSleepTime.get()) ) {
     long sleepEmptyLipo = (deepSleepTime.get() * EMPTY_LIPO_MULTIPL);
     Serial << "HOMIE | Change sleeping to " << sleepEmptyLipo << " ms as lipo is at " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
@@ -559,7 +568,7 @@ void setup() {
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
 
-
+  Serial << "DS18B20 | Initialization " << endl;
   /* Read the temperature sensors once, as first time 85 degree is returned */
   Serial << "DS18B20 | sensors: " << String(dallas.readDevices()) << endl;
   delay(200);
@@ -579,7 +588,7 @@ void setup() {
  * Executs the Homie base functionallity or triggers sleeping, if requested.
  */
 void loop() {
-  if (!mDeepSleep) {
+  if (!mDeepSleep || !mConfigured) {
     if (Serial.available() > 0) {
       // read the incoming byte:
       int incomingByte = Serial.read();
