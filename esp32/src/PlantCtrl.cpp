@@ -12,9 +12,17 @@
 
 #include "PlantCtrl.h"
 
-Plant::Plant(int pinSensor, int pinPump) {
-    this->mPinSensor = pinSensor;
-    this->mPinPump = pinPump;
+Plant::Plant(int pinSensor, int pinPump,
+    HomieNode *plant,
+    HomieSetting<long> *sensorTriggerLevel, 
+    HomieSetting<long> *wateringTime,
+    HomieSetting<long> *wateringIdleTime) {
+        this->mPlant=plant;
+        this->mPinSensor = pinSensor;
+        this->mPinPump = pinPump;
+        this->mSensorTriggerLevel=sensorTriggerLevel;
+        this->mWateringTime=wateringTime;
+        this->mWateringIdleTime=wateringIdleTime;
 }
 
 void Plant::addSenseValue(int analog) {

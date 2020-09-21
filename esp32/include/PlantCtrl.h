@@ -12,6 +12,9 @@
 #ifndef PLANT_CTRL_H
 #define PLANT_CTRL_H
 
+#include <HomieSetting.hpp>
+#include <SendingPromise.hpp>
+
 class Plant {
 
 private:
@@ -21,6 +24,10 @@ private:
     int mValue = 0;     /**< Value of the moist sensor */
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
+    HomieNode *mPlant = NULL;
+    HomieSetting<long> *mSensorTriggerLevel=NULL;
+    HomieSetting<long> *mWateringTime=NULL;
+    HomieSetting<long> *mWateringIdleTime=NULL;
 
 public:
 
@@ -30,7 +37,11 @@ public:
      * @param pinSensor Pin of the Sensor to use to measure moist
      * @param pinPump   Pin of the Pump to use
      */
-    Plant(int pinSensor, int pinPump);
+    Plant(int pinSensor, int pinPump,
+            HomieNode *plant,
+            HomieSetting<long> *sensorTriggerLevel, 
+            HomieSetting<long> *wateringTime,
+            HomieSetting<long> *wateringIdleTime);
 
     /**
      * @brief Add a value, to be measured
@@ -66,11 +77,16 @@ public:
     /**
      * @brief Check if a plant is too dry and needs some water.
      * 
-     * @param boundary 
      * @return true 
      * @return false 
      */
-    bool isPumpRequired(int boundary) { return (this->mValue < boundary); }
+    bool isPumpRequired() {
+         return (this->mSensorTriggerLevel != NULL) && (this->mValue < this->mSensorTriggerLevel->get()); 
+    }
+
+    HomieInternals::SendingPromise& setProperty(const String& property) const {
+        return mPlant->setProperty(property);
+    }
 };
 
 #endif

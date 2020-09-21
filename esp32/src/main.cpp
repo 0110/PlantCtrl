@@ -26,8 +26,6 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 bool mLoopInited = false;
 bool mDeepSleep = false;
 
-bool mPumpIsRunning=false;
-
 int plantSensor1 = 0;
 
 int lipoSenor = -1;
@@ -35,14 +33,13 @@ int lipoSensorValues = 0;
 int solarSensor = -1;
 int solarSensorValues = 0;
 
-int mWaterAtEmptyLevel = 0;
-
 int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 int mButtonClicks = 0;
 bool mConfigured = false;
 
 RTC_DATA_ATTR int gBootCount = 0;
+RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
 #if (MAX_PLANTS >= 1)
 HomieNode plant0("plant0", "Plant 0", "Plant");
@@ -78,6 +75,7 @@ HomieSetting<long> plantCnt("plants", "amout of plants to control (1 ... 7)");
 
 #ifdef  HC_SR04
 HomieSetting<long> waterLevel("watermaxlevel", "Water maximum level in centimeter (50 cm default)");
+HomieSetting<long> waterMinPercent("watermin", "Minimum percentage of water, to activate the pumps (default 5%)");
 #endif
 HomieSetting<long> plant0SensorTrigger("moist0", "Moist0 sensor value, when pump activates");
 HomieSetting<long> plant1SensorTrigger("moist1", "Moist1 sensor value, when pump activates");
@@ -105,25 +103,25 @@ Ds18B20 dallas(SENSOR_DS18B20);
 
 Plant mPlants[MAX_PLANTS] = { 
 #if (MAX_PLANTS >= 1)
-        Plant(SENSOR_PLANT0, OUTPUT_PUMP0), 
+        Plant(SENSOR_PLANT0, OUTPUT_PUMP0, &plant0, &plant0SensorTrigger, &wateringTime0, &wateringIdleTime0), 
 #endif
 #if (MAX_PLANTS >= 2)
-        Plant(SENSOR_PLANT1, OUTPUT_PUMP1), 
+        Plant(SENSOR_PLANT1, OUTPUT_PUMP1, &plant1, &plant1SensorTrigger, &wateringTime1, &wateringIdleTime1), 
 #endif
 #if (MAX_PLANTS >= 3)
-        Plant(SENSOR_PLANT2, OUTPUT_PUMP2), 
+        Plant(SENSOR_PLANT2, OUTPUT_PUMP2, &plant2, &plant2SensorTrigger, &wateringTime2, &wateringIdleTime2), 
 #endif
 #if (MAX_PLANTS >= 4)
-        Plant(SENSOR_PLANT3, OUTPUT_PUMP3), 
+        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, &plant3, &plant3SensorTrigger, &wateringTime3, &wateringIdleTime3),  
 #endif
 #if (MAX_PLANTS >= 5)
-        Plant(SENSOR_PLANT4, OUTPUT_PUMP4), 
+        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, &plant4, &plant4SensorTrigger, &wateringTime4, &wateringIdleTime4),  
 #endif
 #if (MAX_PLANTS >= 6)
-        Plant(SENSOR_PLANT5, OUTPUT_PUMP5), 
+        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, &plant5, &plant5SensorTrigger, &wateringTime5, &wateringIdleTime5),  
 #endif
 #if (MAX_PLANTS >= 7)
-        Plant(SENSOR_PLANT6, OUTPUT_PUMP6) 
+        Plant(SENSOR_PLANT6, OUTPUT_PUMP6, &plant6, &plant6SensorTrigger, &wateringTime6, &wateringIdleTime6) 
 #endif
       };
 
@@ -148,6 +146,8 @@ void readAnalogValues() {
  */
 void loopHandler() {
 
+  int waterLevelPercent = (100 * mWaterGone) / waterLevel.get();
+
   /* Move from Setup to this position, because the Settings are only here available */
   if (!mLoopInited) {
     // Configure Deep Sleep:
@@ -168,80 +168,35 @@ void loopHandler() {
     plant6.setProperty("switch").send(String("OFF"));
 #endif   
 
-    for(int i=0; i < plantCnt.get(); i++) {
+    for(int i=0; i < plantCnt.get() && i < MAX_PLANTS; i++) {
       mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
-      int boundary4MoistSensor=-1;
-      switch (i)
-      {
-      case 0:
-        boundary4MoistSensor = plant1SensorTrigger.get();
-        plant1.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
-        break;
-      case 1:
-        boundary4MoistSensor = plant2SensorTrigger.get();
-        plant2.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095));
-        break;
-      case 2:
-        boundary4MoistSensor = plant3SensorTrigger.get();
-        plant3.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095));
-        break;
-#if (MAX_PLANTS >= 4)
-      case 3:
-        boundary4MoistSensor = plant4SensorTrigger.get();
-        plant4.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095));
-        break;
-      case 4:
-        boundary4MoistSensor = plant5SensorTrigger.get();
-        plant5.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095));
-        break;
-      case 5:
-        boundary4MoistSensor = plant6SensorTrigger.get();
-        plant6.setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095));
-        break;
-#endif
-      }
-
-      mWaterAtEmptyLevel = (mWaterGone <= waterLevel.get());
-      int waterLevelPercent = (100 * mWaterGone) / waterLevel.get();
-      sensorWater.setProperty("remaining").send(String(waterLevelPercent));
-      Serial << "Water : " << mWaterGone << " cm (" << waterLevelPercent << "%)" << endl;
-
-      
-      mPumpIsRunning=false;
-      /* Check if a plant needs water */
-      if (mPlants[i].isPumpRequired(boundary4MoistSensor) && 
-          (mWaterAtEmptyLevel) && 
-          (!mPumpIsRunning)) {
-        if (digitalRead(mPlants[i].getPumpPin()) == LOW) {
-          Serial << "Plant" << (i+1) << " needs water" << endl;
-          switch (i)
-          {
-          case 0:
-            plant1.setProperty("switch").send(String("ON"));
-            break;
-          case 1:
-            plant2.setProperty("switch").send(String("ON"));
-            break;
-          case 2:
-            plant3.setProperty("switch").send(String("ON"));
-            break;
-#if (MAX_PLANTS >= 4)
-          case 3:
-            plant4.setProperty("switch").send(String("ON"));
-            break;
-          case 4:
-            plant5.setProperty("switch").send(String("ON"));
-            break;
-          case 5:
-            plant6.setProperty("switch").send(String("ON"));
-            break;
-#endif
-          }
-        }
-        digitalWrite(mPlants[i].getPumpPin(), HIGH);
-        mPumpIsRunning=true;
+        mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
+      /* the last Plant, that was watered is stored in non volatile memory */
+      if (gCurrentPlant <= 0 && mPlants[i].isPumpRequired()) {
+          /* there was no plant activated -> we can store the first one */
+          gCurrentPlant = i + 1;
+      } else if (gCurrentPlant > 0 && gCurrentPlant < (i+1) && 
+                  mPlants[(gCurrentPlant - 1)].isPumpRequired() == false) {
+          /* The last does not need any more some water -> jump to the next one */
+          gCurrentPlant = i + 1;
       }
     }
+
+    sensorWater.setProperty("remaining").send(String(waterLevelPercent));
+    Serial << "Water : " << mWaterGone << " cm (" << waterLevelPercent << "%)" << endl;
+
+    /* Check if a plant needs water */
+    if (gCurrentPlant > 0) {
+      int plntIdx = (gCurrentPlant-1);
+      if (mPlants[plntIdx].isPumpRequired() && 
+          (waterLevelPercent > waterMinPercent.get()) &&
+          (digitalRead(mPlants[plntIdx].getPumpPin()) == LOW) ) {
+          Serial << "Plant" << plntIdx << " needs water" << endl;
+          mPlants[plntIdx].setProperty("switch").send(String("ON"));
+        }
+        digitalWrite(OUTPUT_PUMP, HIGH);
+        digitalWrite(mPlants[plntIdx].getPumpPin(), HIGH);
+      }
   }
   mLoopInited = true;
 
@@ -271,11 +226,11 @@ void loopHandler() {
   }
 
   /* Main Loop functionality */
-  if ((!mPumpIsRunning) || (!mWaterAtEmptyLevel) ) {
+  if (waterLevelPercent <= waterMinPercent.get()) {
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
         mDeepSleep = true; 
-        Serial << "No Water or Pump" << endl;
+        Serial << "No Water for pumps" << endl;
       }
   }
 
@@ -284,12 +239,10 @@ void loopHandler() {
   if (millis() >= ((MIN_TIME_RUNNING + 5) && 
             (deepSleepTime.get() > 0))) {
     Serial << "No sleeping activated (maximum)" << endl;
-    Serial << "Pump was running:" << mPumpIsRunning << "Water level is empty: " << mWaterAtEmptyLevel << endl;
     mDeepSleep = true;
   } else if ((millis() >= ((MIN_TIME_RUNNING * MS_TO_S) + 0)) &&
       (deepSleepTime.get() > 0)) {
     Serial << "Maximum time reached: " << endl;
-    Serial <<  (mPumpIsRunning ? "Pump was running " : "No Pump ") << (mWaterAtEmptyLevel ? "Water level is empty" : "Water available") << endl;
     mDeepSleep = true;
   }
 }
@@ -462,6 +415,7 @@ void setup() {
 
   #ifdef HC_SR04
     waterLevel.setDefaultValue(50);
+    waterMinPercent.setDefaultValue(5);
   #endif
 
     // Advertise topics

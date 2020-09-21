@@ -20,6 +20,8 @@
   "settings": {
     "deepsleep": 60000,
     "pumpdeepsleep": 1000,
+    "watermaxlevel": 50,
+    "watermin" : 5, 
     "plants" : 3,
     "moist1" : 2000,
     "moist2" : 2000,
