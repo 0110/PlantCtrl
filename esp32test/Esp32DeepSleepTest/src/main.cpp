@@ -2,7 +2,11 @@
 #include "esp_sleep.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  2        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
+
+#define SENSOR_LIPO         34  /**< GPIO 34 (ADC1) */
+#define SENSOR_SOLAR        35  /**< GPIO 35 (ADC1) */
+
 
 #define OUTPUT_PUMP0        23  /**< GPIO 23  */
 #define OUTPUT_PUMP1        22  /**< GPIO 22  */
@@ -15,8 +19,18 @@
 #define OUTPUT_SENSOR       16  /**< GPIO 16 - Enable Sensors  */
 #define OUTPUT_PUMP         13  /**< GPIO 13 - Enable Pumps  */
 
+#define SENSOR_PLANT0       32  /**< GPIO 32 (ADC1) */
+
+
+#define ADC_TO_VOLT(adc)                      ((adc) * 3.3 ) / 4095)
+#define ADC_TO_VOLT_WITH_MULTI(adc, multi)    (((adc) * 3.3 * (multi)) / 4095)
+
+
+#define SOLAR_VOLT(adc)     ADC_TO_VOLT_WITH_MULTI(adc, 4.0306) /**< 100k and 33k voltage dividor */
+#define ADC_5V_TO_3V3(adc)  ADC_TO_VOLT_WITH_MULTI(adc, 1.7)    /**< 33k and 47k8 voltage dividor */
 
 RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR int pumpActive = 0;
 int secondBootCount = 0;
 
 void print_wakeup_reason(){
@@ -57,6 +71,10 @@ void setup() {
   pinMode(OUTPUT_SENSOR, OUTPUT);
   pinMode(OUTPUT_PUMP, OUTPUT);
 
+  pinMode(SENSOR_LIPO, ANALOG);
+  pinMode(SENSOR_SOLAR, ANALOG);
+  pinMode(SENSOR_PLANT0, ANALOG);
+
   setAll2Off();
   
   Serial.begin(115200);
@@ -93,55 +111,46 @@ void setup() {
   pinMode(GPIO_NUM_27, INPUT_PULLUP);
   pinMode(GPIO_NUM_14, INPUT_PULLUP);
   pinMode(GPIO_NUM_12, INPUT_PULLUP);
+
+
+  /* Sensor activieren */
+  digitalWrite(OUTPUT_SENSOR, HIGH);
+
+  /* activate power pump and pump 0 */
+  digitalWrite(OUTPUT_PUMP, HIGH);
 }
 
 
 
-void loop() {
-  Serial.println("------------");
-  Serial.flush(); 
-  delay(1000);
-  digitalWrite(GPIO_NUM_23, analogRead(GPIO_NUM_34) > 3500);
+void loop() {  
+  double value = analogRead(SENSOR_LIPO);
   
-  digitalWrite(OUTPUT_PUMP0, HIGH);
-  delay(1000);
-  setAll2Off();
+  Serial.println(value);
+  
+  double volt = ADC_5V_TO_3V3(value);
+  Serial.print("Lipo: ");
+  Serial.println(volt);
 
-  digitalWrite(OUTPUT_PUMP1, HIGH);
-  delay(1000);
-  setAll2Off();
+  pumpActive = (pumpActive + 1) % 2;
+  if (pumpActive) {
+    digitalWrite(OUTPUT_PUMP0, HIGH);
+  } else {
+    digitalWrite(OUTPUT_PUMP0, LOW);
+  }
 
-  digitalWrite(OUTPUT_PUMP2, HIGH);
-  delay(1000);
-  setAll2Off();
+   double solarVal = analogRead(SENSOR_SOLAR);
+  
+  Serial.println(solarVal);
+  
+  double solarVolt = SOLAR_VOLT(solarVal);
+  Serial.print("Solar: ");
+  Serial.println(solarVolt);
 
-  digitalWrite(OUTPUT_PUMP3, HIGH);
-  delay(1000);
-  setAll2Off();
+  Serial.print("Moist0: ");
+  Serial.println(analogRead(SENSOR_PLANT0));
 
-  digitalWrite(OUTPUT_PUMP4, HIGH);
-  delay(1000);
-  setAll2Off();
-
-  digitalWrite(OUTPUT_PUMP5, HIGH);
-  delay(1000);
-  setAll2Off();
-
-  digitalWrite(OUTPUT_PUMP6, HIGH);
-  delay(1000);
-  setAll2Off();
-
-  digitalWrite(OUTPUT_SENSOR, HIGH);
-  delay(1000);
-  setAll2Off();
-
-  digitalWrite(OUTPUT_PUMP, HIGH);
-  delay(1000);
-  setAll2Off();
-
-  delay(1000);
   delay(1000);
   gpio_deep_sleep_hold_en();
-
+  gpio_hold_en(GPIO_NUM_13);
   esp_deep_sleep_start();
 }
