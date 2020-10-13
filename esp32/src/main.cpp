@@ -405,6 +405,7 @@ void setup() {
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
     Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
     Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 3000" << endl;
   }
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
