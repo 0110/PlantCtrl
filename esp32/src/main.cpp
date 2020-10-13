@@ -231,7 +231,7 @@ void loopHandler() {
   if (waterLevelPercent <= waterMinPercent.get()) {
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        mDeepSleep = true; 
+        mDeepSleep = true;
         Serial << "No Water for pumps" << endl;
       }
   }
@@ -240,7 +240,6 @@ void loopHandler() {
   /* Pump is running, go to sleep after defined time */
   if (millis() >= ((MIN_TIME_RUNNING + 5) && 
             (deepSleepTime.get() > 0))) {
-    Serial << "No sleeping activated (maximum)" << endl;
     mDeepSleep = true;
   } else if ((millis() >= ((MIN_TIME_RUNNING * MS_TO_S) + 0)) &&
       (deepSleepTime.get() > 0)) {
@@ -303,7 +302,7 @@ bool aliveHandler(const HomieRange& range, const String& value) {
   } else {
       mAlive=false;
   }
-  Serial << "Controller " << (mAlive ? " has coffee" : " is tired") << endl;
+  Serial << "HOMIE  | Controller " << (mAlive ? " has coffee" : " is tired") << endl;
   return true;
 }
 
@@ -502,7 +501,7 @@ void setup() {
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
 
-    stayAlive.advertise("stay").setName("Alive").setDatatype("number").settable(aliveHandler);
+    stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
   
   Homie.setup();
@@ -669,8 +668,17 @@ void loop() {
     }
 
   } else {
-    Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
-    Serial.flush();
-    esp_deep_sleep_start();
+    if (!mAlive) {
+      Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
+      Serial.flush();
+      esp_deep_sleep_start();
+    } else {
+      mDeepSleep = false;
+
+      if (((millis()) % 10000) == 0) {
+        /* tell everybody how long we are awoken */
+        stayAlive.setProperty("alive").send( String(millis()/ 1000) );
+      }
+    }
   }
 }
