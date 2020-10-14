@@ -18,9 +18,10 @@ Plant::Plant(int pinSensor, int pinPump,int plantId) {
 
     char plantIdChar = plantId+'0';
 
+    /*
     {
         char* name = "moistZdry";
-        name[6]= plantIdChar;
+        name[5]= plantIdChar;
         mSensorDry = new HomieSetting<long>(name, "Moist sensor dry threshold");
         mSensorDry->setDefaultValue(4095);
         mSensorDry->setValidator([] (long candidate) {
@@ -69,6 +70,7 @@ Plant::Plant(int pinSensor, int pinPump,int plantId) {
             return ((candidate >= 0) && (candidate <= 1024) );
         });
     }
+*/
 }
 
 void Plant::addSenseValue(int analog) {
