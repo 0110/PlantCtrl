@@ -47,7 +47,8 @@
 #define MIN_TIME_RUNNING    5UL  /**< Amount of seconds the controller must stay awoken */
 #define MAX_PLANTS          7 
 #define EMPTY_LIPO_MULTIPL  3    /**< Multiplier to increase time for sleeping when lipo is empty */
-#define MINIMUM_LIPO_VOLT   3.3f /**< Minimum voltage of the Lipo, that must be present */
+#define MINIMUM_LIPO_VOLT   3.6f /**< Minimum voltage of the Lipo, that must be present */
+#define NO_LIPO_VOLT        2.0f /**< No Lipo connected */
 #define MINIMUM_SOLAR_VOLT  4.0f /**< Minimum voltage of the sun, to detect daylight */
 
 #define HC_SR04                  /**< Ultrasonic distance sensor to measure water level */

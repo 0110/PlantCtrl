@@ -12,7 +12,8 @@
 			"istream": "cpp",
 			"limits": "cpp",
 			"streambuf": "cpp",
-			"functional": "cpp"
+			"functional": "cpp",
+			"string": "cpp"
 		}
 	}
 }

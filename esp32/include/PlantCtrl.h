@@ -25,9 +25,12 @@ private:
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
     HomieNode *mPlant = NULL;
-    HomieSetting<long> *mSensorTriggerLevel=NULL;
-    HomieSetting<long> *mWateringTime=NULL;
-    HomieSetting<long> *mWateringIdleTime=NULL;
+    HomieSetting<long> *mSensorDry;
+    HomieSetting<long> *mSensorWet;
+    HomieSetting<long> *mPumpAllowedHourRangeStart;
+    HomieSetting<long> *mPumpAllowedHourRangeEnd;
+    HomieSetting<bool> *mPumpOnlyWhenLowLight;
+    HomieSetting<long> *mPumpCooldownInHours;
 
 public:
 
@@ -38,10 +41,7 @@ public:
      * @param pinPump   Pin of the Pump to use
      */
     Plant(int pinSensor, int pinPump,
-            HomieNode *plant,
-            HomieSetting<long> *sensorTriggerLevel, 
-            HomieSetting<long> *wateringTime,
-            HomieSetting<long> *wateringIdleTime);
+            int plantId);
 
     /**
      * @brief Add a value, to be measured
@@ -81,7 +81,7 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSensorTriggerLevel != NULL) && (this->mValue < this->mSensorTriggerLevel->get()); 
+         return (this->mSensorWet != NULL) && (this->mValue < this->mSensorWet->get()); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
