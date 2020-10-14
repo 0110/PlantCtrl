@@ -25,6 +25,7 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 
 bool mLoopInited = false;
 bool mDeepSleep = false;
+bool mAlive=false;        /**< Controller must not sleep */
 
 int plantSensor1 = 0;
 
@@ -67,6 +68,7 @@ HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
 HomieNode sensorWater("water", "WaterSensor", "Water");
 HomieNode sensorTemp("temperature", "Temperature", "temperature");
+HomieNode stayAlive("stay", "alive", "alive");
 
 HomieSetting<long> deepSleepTime("deepsleep", "time in milliseconds to sleep (0 deactivats it)");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in milliseconds to sleep (0 usese same setting: deepsleep at night, too)");
@@ -229,7 +231,7 @@ void loopHandler() {
   if (waterLevelPercent <= waterMinPercent.get()) {
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        mDeepSleep = true; 
+        mDeepSleep = true;
         Serial << "No Water for pumps" << endl;
       }
   }
@@ -238,7 +240,6 @@ void loopHandler() {
   /* Pump is running, go to sleep after defined time */
   if (millis() >= ((MIN_TIME_RUNNING + 5) && 
             (deepSleepTime.get() > 0))) {
-    Serial << "No sleeping activated (maximum)" << endl;
     mDeepSleep = true;
   } else if ((millis() >= ((MIN_TIME_RUNNING * MS_TO_S) + 0)) &&
       (deepSleepTime.get() > 0)) {
@@ -283,6 +284,26 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
   default:
     return false;
   }
+}
+
+/**
+ * @brief Handle Mqtt commands to keep controller alive
+ * 
+ * @param range multiple transmitted values (not used for this function)
+ * @param value single value
+ * @return true when the command was parsed and executed succuessfully
+ * @return false on errors when parsing the request
+ */
+bool aliveHandler(const HomieRange& range, const String& value) {
+  if (range.isRange) return false;  // only one controller is present
+
+  if (value.equals("ON") || value.equals("On") || value.equals("1")) {
+      mAlive=true;
+  } else {
+      mAlive=false;
+  }
+  Serial << "HOMIE  | Controller " << (mAlive ? " has coffee" : " is tired") << endl;
+  return true;
 }
 
 /**
@@ -380,10 +401,10 @@ void setup() {
   /* activate Wifi again */
   WiFi.mode(WIFI_STA);
 
-
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
     Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
     Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 3000" << endl;
   }
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
@@ -479,6 +500,8 @@ void setup() {
                 .setDatatype("number")
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
+
+    stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
   
   Homie.setup();
@@ -645,8 +668,17 @@ void loop() {
     }
 
   } else {
-    Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
-    Serial.flush();
-    esp_deep_sleep_start();
+    if (!mAlive) {
+      Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
+      Serial.flush();
+      esp_deep_sleep_start();
+    } else {
+      mDeepSleep = false;
+
+      if (((millis()) % 10000) == 0) {
+        /* tell everybody how long we are awoken */
+        stayAlive.setProperty("alive").send( String(millis()/ 1000) );
+      }
+    }
   }
 }
