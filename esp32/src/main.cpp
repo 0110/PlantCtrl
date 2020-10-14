@@ -79,7 +79,7 @@ HomieSetting<long> plantCnt("plants", "amout of plants to control (1 ... 7)");
 HomieSetting<long> waterLevel("watermaxlevel", "Water maximum level in centimeter (50 cm default)");
 HomieSetting<long> waterMinPercent("watermin", "Minimum percentage of water, to activate the pumps (default 5%)");
 #endif
-HomieSetting<long> plant0SensorTrigger("moist0", "Moist0 sensor value, when pump activates");
+HomieSetting<long> plant0SensorTrigger("moist0", "Moist0 sensor dry ");
 HomieSetting<long> plant1SensorTrigger("moist1", "Moist1 sensor value, when pump activates");
 HomieSetting<long> plant2SensorTrigger("moist2", "Moist2 sensor value, when pump activates");
 HomieSetting<long> plant3SensorTrigger("moist3", "Moist3 sensor value, when pump activates");
@@ -104,27 +104,13 @@ HomieSetting<long> wateringIdleTime6("plant6MinPumpIdle", "time in seconds Pump6
 Ds18B20 dallas(SENSOR_DS18B20);
 
 Plant mPlants[MAX_PLANTS] = { 
-#if (MAX_PLANTS >= 1)
         Plant(SENSOR_PLANT0, OUTPUT_PUMP0, &plant0, &plant0SensorTrigger, &wateringTime0, &wateringIdleTime0), 
-#endif
-#if (MAX_PLANTS >= 2)
         Plant(SENSOR_PLANT1, OUTPUT_PUMP1, &plant1, &plant1SensorTrigger, &wateringTime1, &wateringIdleTime1), 
-#endif
-#if (MAX_PLANTS >= 3)
         Plant(SENSOR_PLANT2, OUTPUT_PUMP2, &plant2, &plant2SensorTrigger, &wateringTime2, &wateringIdleTime2), 
-#endif
-#if (MAX_PLANTS >= 4)
-        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, &plant3, &plant3SensorTrigger, &wateringTime3, &wateringIdleTime3),  
-#endif
-#if (MAX_PLANTS >= 5)
-        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, &plant4, &plant4SensorTrigger, &wateringTime4, &wateringIdleTime4),  
-#endif
-#if (MAX_PLANTS >= 6)
-        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, &plant5, &plant5SensorTrigger, &wateringTime5, &wateringIdleTime5),  
-#endif
-#if (MAX_PLANTS >= 7)
+        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, &plant3, &plant3SensorTrigger, &wateringTime3, &wateringIdleTime3), 
+        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, &plant4, &plant4SensorTrigger, &wateringTime4, &wateringIdleTime4), 
+        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, &plant5, &plant5SensorTrigger, &wateringTime5, &wateringIdleTime5), 
         Plant(SENSOR_PLANT6, OUTPUT_PUMP6, &plant6, &plant6SensorTrigger, &wateringTime6, &wateringIdleTime6) 
-#endif
       };
 
 void readAnalogValues() {
@@ -411,7 +397,6 @@ void setup() {
   Homie.setLoopFunction(loopHandler);
 
   mConfigured = Homie.isConfigured();
-  if (mConfigured) {
     // Load the settings
     deepSleepTime.setDefaultValue(0);
     deepSleepNightTime.setDefaultValue(0);
@@ -423,22 +408,31 @@ void setup() {
     wateringTime5.setDefaultValue(60);
     wateringTime6.setDefaultValue(60);
     plantCnt.setDefaultValue(0).setValidator([] (long candidate) {
-      return ((candidate >= 0) && (candidate <= 6) );
+      return ((candidate >= 0) && (candidate <= 7) );
     });
-    plant1SensorTrigger.setDefaultValue(0);
-    plant2SensorTrigger.setDefaultValue(0);
-    plant3SensorTrigger.setDefaultValue(0);
-  #if (MAX_PLANTS >= 4)
-    plant4SensorTrigger.setDefaultValue(0);
-    plant5SensorTrigger.setDefaultValue(0);
-    plant6SensorTrigger.setDefaultValue(0);
-  #endif
+    plant0SensorTrigger.setDefaultValue(4000);
+    plant1SensorTrigger.setDefaultValue(4000);
+    plant2SensorTrigger.setDefaultValue(4000);
+    plant3SensorTrigger.setDefaultValue(4000);
+    plant4SensorTrigger.setDefaultValue(4000);
+    plant5SensorTrigger.setDefaultValue(4000);
+    plant6SensorTrigger.setDefaultValue(4000);
+    wateringDeepSleep.setDefaultValue(60);
+
+    wateringIdleTime0.setDefaultValue(60);
+    wateringIdleTime1.setDefaultValue(60);
+    wateringIdleTime2.setDefaultValue(60);
+    wateringIdleTime3.setDefaultValue(60);
+    wateringIdleTime4.setDefaultValue(60);
+    wateringIdleTime5.setDefaultValue(60);
+    wateringIdleTime6.setDefaultValue(60);
 
   #ifdef HC_SR04
     waterLevel.setDefaultValue(50);
     waterMinPercent.setDefaultValue(5);
   #endif
 
+  if (mConfigured) {
     // Advertise topics
     plant1.advertise("switch").setName("Pump 1")
                               .setDatatype("boolean")
@@ -501,6 +495,7 @@ void setup() {
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
 
+    // Mode 3
     stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
   
