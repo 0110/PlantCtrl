@@ -25,6 +25,7 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 
 bool mLoopInited = false;
 bool mDeepSleep = false;
+bool mAlive=false;        /**< Controller must not sleep */
 
 int plantSensor1 = 0;
 
@@ -67,62 +68,27 @@ HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
 HomieNode sensorWater("water", "WaterSensor", "Water");
 HomieNode sensorTemp("temperature", "Temperature", "temperature");
+HomieNode stayAlive("stay", "alive", "alive");
 
 HomieSetting<long> deepSleepTime("deepsleep", "time in milliseconds to sleep (0 deactivats it)");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in milliseconds to sleep (0 usese same setting: deepsleep at night, too)");
 HomieSetting<long> wateringDeepSleep("pumpdeepsleep", "time seconds to sleep, while a pump is running");
-HomieSetting<long> plantCnt("plants", "amout of plants to control (1 ... 7)");
 
-#ifdef  HC_SR04
-HomieSetting<long> waterLevel("watermaxlevel", "Water maximum level in centimeter (50 cm default)");
-HomieSetting<long> waterMinPercent("watermin", "Minimum percentage of water, to activate the pumps (default 5%)");
-#endif
-HomieSetting<long> plant0SensorTrigger("moist0", "Moist0 sensor value, when pump activates");
-HomieSetting<long> plant1SensorTrigger("moist1", "Moist1 sensor value, when pump activates");
-HomieSetting<long> plant2SensorTrigger("moist2", "Moist2 sensor value, when pump activates");
-HomieSetting<long> plant3SensorTrigger("moist3", "Moist3 sensor value, when pump activates");
-HomieSetting<long> plant4SensorTrigger("moist4", "Moist4 sensor value, when pump activates");
-HomieSetting<long> plant5SensorTrigger("moist5", "Moist5 sensor value, when pump activates");
-HomieSetting<long> plant6SensorTrigger("moist6", "Moist6 sensor value, when pump activates");
-HomieSetting<long> wateringTime0("plant0MaxPumpTime", "time seconds Pump0 is running (60 is the default)");
-HomieSetting<long> wateringTime1("plant1MaxPumpTime", "time seconds Pump1 is running (60 is the default)");
-HomieSetting<long> wateringTime2("plant2MaxPumpTime", "time seconds Pump2 is running (60 is the default)");
-HomieSetting<long> wateringTime3("plant3MaxPumpTime", "time seconds Pump3 is running (60 is the default)");
-HomieSetting<long> wateringTime4("plant4MaxPumpTime", "time seconds Pump4 is running (60 is the default)");
-HomieSetting<long> wateringTime5("plant5MaxPumpTime", "time seconds Pump5 is running (60 is the default)");
-HomieSetting<long> wateringTime6("plant6MaxPumpTime", "time seconds Pump6 is running (60 is the default)");
-HomieSetting<long> wateringIdleTime0("plant0MinPumpIdle", "time in seconds Pump0 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime1("plant1MinPumpIdle", "time in seconds Pump1 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime2("plant2MinPumpIdle", "time in seconds Pump2 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime3("plant3MinPumpIdle", "time in seconds Pump3 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime4("plant4MinPumpIdle", "time in seconds Pump4 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime5("plant5MinPumpIdle", "time in seconds Pump5 will wait (60 is the default)");
-HomieSetting<long> wateringIdleTime6("plant6MinPumpIdle", "time in seconds Pump6 will wait (60 is the default)");
+HomieSetting<long> waterLevelMax("watermaxlevel", "distance at maximum water level");
+HomieSetting<long> waterLevelMin("waterminlevel", "distance at minimum water level (pumps still covered)");
+HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn if below this water level %");
+HomieSetting<long> waterLevelVol("waterVolume", "ml between minimum and maximum");
 
 Ds18B20 dallas(SENSOR_DS18B20);
 
 Plant mPlants[MAX_PLANTS] = { 
-#if (MAX_PLANTS >= 1)
-        Plant(SENSOR_PLANT0, OUTPUT_PUMP0, &plant0, &plant0SensorTrigger, &wateringTime0, &wateringIdleTime0), 
-#endif
-#if (MAX_PLANTS >= 2)
-        Plant(SENSOR_PLANT1, OUTPUT_PUMP1, &plant1, &plant1SensorTrigger, &wateringTime1, &wateringIdleTime1), 
-#endif
-#if (MAX_PLANTS >= 3)
-        Plant(SENSOR_PLANT2, OUTPUT_PUMP2, &plant2, &plant2SensorTrigger, &wateringTime2, &wateringIdleTime2), 
-#endif
-#if (MAX_PLANTS >= 4)
-        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, &plant3, &plant3SensorTrigger, &wateringTime3, &wateringIdleTime3),  
-#endif
-#if (MAX_PLANTS >= 5)
-        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, &plant4, &plant4SensorTrigger, &wateringTime4, &wateringIdleTime4),  
-#endif
-#if (MAX_PLANTS >= 6)
-        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, &plant5, &plant5SensorTrigger, &wateringTime5, &wateringIdleTime5),  
-#endif
-#if (MAX_PLANTS >= 7)
-        Plant(SENSOR_PLANT6, OUTPUT_PUMP6, &plant6, &plant6SensorTrigger, &wateringTime6, &wateringIdleTime6) 
-#endif
+        Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0), 
+        Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1), 
+        Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2), 
+        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3), 
+        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4), 
+        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5), 
+        Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6) 
       };
 
 void readAnalogValues() {
@@ -146,8 +112,6 @@ void readAnalogValues() {
  */
 void loopHandler() {
 
-  int waterLevelPercent = (100 * mWaterGone) / waterLevel.get();
-
   /* Move from Setup to this position, because the Settings are only here available */
   if (!mLoopInited) {
     // Configure Deep Sleep:
@@ -168,7 +132,7 @@ void loopHandler() {
     plant6.setProperty("switch").send(String("OFF"));
 #endif   
 
-    for(int i=0; i < plantCnt.get() && i < MAX_PLANTS; i++) {
+    for(int i=0; i < MAX_PLANTS; i++) {
       mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
         mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
       /* the last Plant, that was watered is stored in non volatile memory */
@@ -182,14 +146,14 @@ void loopHandler() {
       }
     }
 
-    sensorWater.setProperty("remaining").send(String(waterLevelPercent));
-    Serial << "Water : " << mWaterGone << " cm (" << waterLevelPercent << "%)" << endl;
+    sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
+    Serial << "Water : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
 
     /* Check if a plant needs water */
     if (gCurrentPlant > 0) {
       int plntIdx = (gCurrentPlant-1);
       if (mPlants[plntIdx].isPumpRequired() && 
-          (waterLevelPercent > waterMinPercent.get()) &&
+          (mWaterGone > waterLevelMin.get()) &&
           (digitalRead(mPlants[plntIdx].getPumpPin()) == LOW) ) {
           Serial << "Plant" << plntIdx << " needs water" << endl;
           mPlants[plntIdx].setProperty("switch").send(String("ON"));
@@ -226,10 +190,10 @@ void loopHandler() {
   }
 
   /* Main Loop functionality */
-  if (waterLevelPercent <= waterMinPercent.get()) {
+  if (mWaterGone <= waterLevelMin.get()) {
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        mDeepSleep = true; 
+        mDeepSleep = true;
         Serial << "No Water for pumps" << endl;
       }
   }
@@ -238,7 +202,6 @@ void loopHandler() {
   /* Pump is running, go to sleep after defined time */
   if (millis() >= ((MIN_TIME_RUNNING + 5) && 
             (deepSleepTime.get() > 0))) {
-    Serial << "No sleeping activated (maximum)" << endl;
     mDeepSleep = true;
   } else if ((millis() >= ((MIN_TIME_RUNNING * MS_TO_S) + 0)) &&
       (deepSleepTime.get() > 0)) {
@@ -283,6 +246,26 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
   default:
     return false;
   }
+}
+
+/**
+ * @brief Handle Mqtt commands to keep controller alive
+ * 
+ * @param range multiple transmitted values (not used for this function)
+ * @param value single value
+ * @return true when the command was parsed and executed succuessfully
+ * @return false on errors when parsing the request
+ */
+bool aliveHandler(const HomieRange& range, const String& value) {
+  if (range.isRange) return false;  // only one controller is present
+
+  if (value.equals("ON") || value.equals("On") || value.equals("1")) {
+      mAlive=true;
+  } else {
+      mAlive=false;
+  }
+  Serial << "HOMIE  | Controller " << (mAlive ? " has coffee" : " is tired") << endl;
+  return true;
 }
 
 /**
@@ -380,44 +363,21 @@ void setup() {
   /* activate Wifi again */
   WiFi.mode(WIFI_STA);
 
-
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
     Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
     Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 3000" << endl;
   }
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.setLoopFunction(loopHandler);
 
   mConfigured = Homie.isConfigured();
-  if (mConfigured) {
     // Load the settings
     deepSleepTime.setDefaultValue(0);
     deepSleepNightTime.setDefaultValue(0);
-    wateringTime0.setDefaultValue(60);
-    wateringTime1.setDefaultValue(60);
-    wateringTime2.setDefaultValue(60);
-    wateringTime3.setDefaultValue(60);
-    wateringTime4.setDefaultValue(60);
-    wateringTime5.setDefaultValue(60);
-    wateringTime6.setDefaultValue(60);
-    plantCnt.setDefaultValue(0).setValidator([] (long candidate) {
-      return ((candidate >= 0) && (candidate <= 6) );
-    });
-    plant1SensorTrigger.setDefaultValue(0);
-    plant2SensorTrigger.setDefaultValue(0);
-    plant3SensorTrigger.setDefaultValue(0);
-  #if (MAX_PLANTS >= 4)
-    plant4SensorTrigger.setDefaultValue(0);
-    plant5SensorTrigger.setDefaultValue(0);
-    plant6SensorTrigger.setDefaultValue(0);
-  #endif
 
-  #ifdef HC_SR04
-    waterLevel.setDefaultValue(50);
-    waterMinPercent.setDefaultValue(5);
-  #endif
-
+  if (mConfigured) {
     // Advertise topics
     plant1.advertise("switch").setName("Pump 1")
                               .setDatatype("boolean")
@@ -479,12 +439,15 @@ void setup() {
                 .setDatatype("number")
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
+
+    // Mode 3
+    stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
   
   Homie.setup();
 
   /* Intialize inputs and outputs */
-  for(int i=0; i < plantCnt.get(); i++) {
+  for(int i=0; i < MAX_PLANTS; i++) {
     pinMode(mPlants[i].getPumpPin(), OUTPUT);
     pinMode(mPlants[i].getSensorPin(), ANALOG);
     digitalWrite(mPlants[i].getPumpPin(), LOW);
@@ -510,7 +473,10 @@ void setup() {
     esp_sleep_enable_timer_wakeup(usSleepTime);
   }
 
-  if (mConfigured && (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && (deepSleepTime.get()) ) {
+  if (mConfigured && 
+    (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && 
+    (ADC_5V_TO_3V3(lipoSenor) > NO_LIPO_VOLT) &&
+    (deepSleepTime.get()) ) {
     long sleepEmptyLipo = (deepSleepTime.get() * EMPTY_LIPO_MULTIPL);
     Serial << "HOMIE | Change sleeping to " << sleepEmptyLipo << " ms as lipo is at " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
@@ -645,8 +611,17 @@ void loop() {
     }
 
   } else {
-    Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
-    Serial.flush();
-    esp_deep_sleep_start();
+    if (!mAlive) {
+      Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
+      Serial.flush();
+      esp_deep_sleep_start();
+    } else {
+      mDeepSleep = false;
+
+      if (((millis()) % 10000) == 0) {
+        /* tell everybody how long we are awoken */
+        stayAlive.setProperty("alive").send( String(millis()/ 1000) );
+      }
+    }
   }
 }

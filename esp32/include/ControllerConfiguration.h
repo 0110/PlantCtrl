@@ -11,7 +11,7 @@
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
 
-#define FIRMWARE_VERSION        "1.0.1"
+#define FIRMWARE_VERSION        "1.0.2"
 
 #define ADC_TO_VOLT(adc)                      ((adc) * 3.3 ) / 4095)
 #define ADC_TO_VOLT_WITH_MULTI(adc, multi)    (((adc) * 3.3 * (multi)) / 4095)
@@ -47,7 +47,8 @@
 #define MIN_TIME_RUNNING    5UL  /**< Amount of seconds the controller must stay awoken */
 #define MAX_PLANTS          7 
 #define EMPTY_LIPO_MULTIPL  3    /**< Multiplier to increase time for sleeping when lipo is empty */
-#define MINIMUM_LIPO_VOLT   3.3f /**< Minimum voltage of the Lipo, that must be present */
+#define MINIMUM_LIPO_VOLT   3.6f /**< Minimum voltage of the Lipo, that must be present */
+#define NO_LIPO_VOLT        2.0f /**< No Lipo connected */
 #define MINIMUM_SOLAR_VOLT  4.0f /**< Minimum voltage of the sun, to detect daylight */
 
 #define HC_SR04                  /**< Ultrasonic distance sensor to measure water level */

@@ -18,19 +18,32 @@
     "enabled": true
   },
   "settings": {
-    "deepsleep": 60000,
+    "deepsleep"  : 60000,
+    "nightsleep" : 60000,
     "pumpdeepsleep": 1000,
     "watermaxlevel": 50,
     "watermin" : 5, 
     "plants" : 3,
+    "moist0" : 2000,
     "moist1" : 2000,
     "moist2" : 2000,
     "moist3" : 2000,
+    "moist4" : 2000,
+    "moist5" : 2000,
+    "moist6" : 2000,
+    "plant0MaxPumpTime": 1000,
     "plant1MaxPumpTime": 1000,
     "plant2MaxPumpTime": 1000,
     "plant3MaxPumpTime": 1000,
+    "plant4MaxPumpTime": 1000,
+    "plant5MaxPumpTime": 1000,
+    "plant6MaxPumpTime": 1000,
+    "plant0MinPumpIdle": 10000,
     "plant1MinPumpIdle": 10000,
     "plant2MinPumpIdle": 10000,
-    "plant3MinPumpIdle": 10000
+    "plant3MinPumpIdle": 10000,
+    "plant4MinPumpIdle": 10000,
+    "plant5MinPumpIdle": 10000,
+    "plant6MinPumpIdle": 10000
   }
 }
