@@ -1,11 +1,14 @@
 #include <Arduino.h>
 #include "esp_sleep.h"
+#include <DS18B20.h>
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
 
 #define SENSOR_LIPO         34  /**< GPIO 34 (ADC1) */
 #define SENSOR_SOLAR        35  /**< GPIO 35 (ADC1) */
+
+#define SENSOR_DS18B20      2 /**< GPIO 2 */
 
 
 #define OUTPUT_PUMP0        23  /**< GPIO 23  */
@@ -32,6 +35,8 @@
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int pumpActive = 0;
 int secondBootCount = 0;
+
+Ds18B20 ds(SENSOR_DS18B20);
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -61,6 +66,7 @@ void setAll2Off() {
 }
 
 void setup() {
+
   pinMode(OUTPUT_PUMP0, OUTPUT);
   pinMode(OUTPUT_PUMP1, OUTPUT);
   pinMode(OUTPUT_PUMP2, OUTPUT);
@@ -126,6 +132,18 @@ void loop() {
   double value = analogRead(SENSOR_LIPO);
   
   Serial.println(value);
+
+  float temp[2] = {0, 0};
+  float* pFloat = temp;
+  
+  Serial.print("DS18B20 sensors: ");
+  Serial.println(ds.readDevices());
+  delay(200);
+  if (ds.readAllTemperatures(pFloat, 2) > 0) {
+      Serial.println(temp[0]);
+      Serial.println(temp[1]);
+  }
+
   
   double volt = ADC_5V_TO_3V3(value);
   Serial.print("Lipo: ");
