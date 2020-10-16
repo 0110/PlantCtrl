@@ -26,7 +26,6 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 
 /********************* non volatile enable after deepsleep *******************************/
 
-RTC_DATA_ATTR bool coldBoot = true;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0;      /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR long rtcMoistureTrigger0 = 0;   /**<Level for the moisture sensor */
 RTC_DATA_ATTR long rtcMoistureTrigger1 = 0;   /**<Level for the moisture sensor */
@@ -38,12 +37,11 @@ RTC_DATA_ATTR long rtcMoistureTrigger6 = 0;   /**<Level for the moisture sensor 
 
 bool warmBoot = true;
 bool mode2Active = false;
-bool mode3Active = false;
+bool mode3Active = false;   /**< Controller must not sleep */
 
 
 bool mLoopInited = false;
 bool mDeepSleep = false;
-bool mAlive=false;        /**< Controller must not sleep */
 
 int plantSensor1 = 0;
 
@@ -300,11 +298,12 @@ bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
 
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
-      mAlive=true;
+      mode3Active=true;
   } else {
-      mAlive=false;
+      mode3Active=false;
+      esp_deep_sleep_start();
   }
-  Serial << "HOMIE  | Controller " << (mAlive ? " has coffee" : " is tired") << endl;
+  Serial << "HOMIE  | Controller " << (mode3Active ? " has coffee" : " is tired") << endl;
   return true;
 }
 
@@ -351,7 +350,6 @@ void systemInit(){
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.setLoopFunction(loopHandler);
 
-  mConfigured = Homie.isConfigured();
 
   // Set default values
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
@@ -363,6 +361,7 @@ void systemInit(){
   waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
+  mConfigured = Homie.isConfigured();
   if (mConfigured) {
     // Advertise topics
     plant1.advertise("switch").setName("Pump 1")
@@ -490,21 +489,14 @@ void mode2(){
   Serial.println("Init mode 2");
   mode2Active = true;
 
-
   systemInit();
 
   /* Jump into Mode 3, if not configured */
   if (!mConfigured) {
+    Serial.println("upgrade to mode 3");
     mode2Active = false;
     mode3Active = true;
   }
-}
-
-void mode3(){
-  Serial.println("Init mode 3");
-  mode3Active = true;
-  
-  systemInit();
 }
 
 /**
@@ -530,12 +522,7 @@ void setup() {
   }
   /* read button */
   pinMode(BUTTON, INPUT);
-  if(!coldBoot){
-    digitalWrite(OUTPUT_SENSOR, HIGH);
-  }
-  
-  
-  
+ 
   /* Disable Wifi and bluetooth */
   WiFi.mode(WIFI_OFF);
 
@@ -581,33 +568,9 @@ void setup() {
  */
 
 void loop() {
-  if(coldBoot){
-    coldBoot = false;
-    delay(1000);
-    if (digitalRead(BUTTON) == LOW){
-      for(int i = 0;i<10;i++){
-        digitalWrite(OUTPUT_SENSOR, LOW);
-        delay(50);
-        digitalWrite(OUTPUT_SENSOR, HIGH);
-        delay(50);
-      }
-      mode3();
-      return;
-    } else {
-      digitalWrite(OUTPUT_SENSOR, LOW);
-    }
-  }
-
   /* Perform the active modes (non mode1) */
   if (mode3Active || mode2Active) {
     Homie.loop();
-    if(!mode3Active){
-      /* Upgrade to mode 3 via reset */
-      if (digitalRead(BUTTON) == LOW){
-        coldBoot=true;
-        ESP.restart();
-      }
-    }
   } else {
     /* Check which mode shall be selected */
     if(warmBoot){
@@ -615,11 +578,6 @@ void loop() {
       if(mode1()){
         mode2();
       } else {
-        /* Upgrade to mode 3 via reset */
-        if (digitalRead(BUTTON) == LOW){
-          coldBoot=true;
-          ESP.restart();
-        }
         Serial.println("Nothing to do back to sleep");
         Serial.flush();
         esp_deep_sleep_start();
