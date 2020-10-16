@@ -28,16 +28,16 @@ void Plant::init(void) {
     this->mSetting->pSensorWet->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 4095) );
     });
-    this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8);
+    this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 23) );
     });
-    this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20);
+    this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20); // stop pumps at 20:00
     this->mSetting->pPumpAllowedHourRangeEnd->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 23) );
     });
     this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
-    this->mSetting->pPumpCooldownInHours->setDefaultValue(20);
+    this->mSetting->pPumpCooldownInHours->setDefaultValue(20); // minutes
     this->mSetting->pPumpCooldownInHours->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 1024) );
     });

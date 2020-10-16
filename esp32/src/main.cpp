@@ -342,9 +342,15 @@ void setup() {
   Homie.setLoopFunction(loopHandler);
 
   mConfigured = Homie.isConfigured();
-  // Load the settings
-  deepSleepTime.setDefaultValue(0);
+  // Set default values
+  deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
+  wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
+
+  waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
+  waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
+  waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
+  waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
   if (mConfigured) {
     // Advertise topics
