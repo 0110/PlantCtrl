@@ -24,9 +24,9 @@ private:
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
     HomieNode* mPlant = NULL;
+    PlantSettings_t* mSetting;
 
 public:
-    PlantSettings_t* mSetting;
 
     /**
      * @brief Construct a new Plant object
@@ -85,6 +85,10 @@ public:
     }
 
     void init(void);
+
+    long getSettingSensorDry() {
+        return this->mSetting->pSensorDry->get();
+    }
 };
 
 #endif

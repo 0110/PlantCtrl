@@ -13,6 +13,8 @@
 
 #include <Homie.h>
 
+#define DEACTIVATED_PLANT   5000
+
 typedef struct PlantSettings_t {
     HomieSetting<long>* pSensorDry;
     HomieSetting<long>* pSensorWet;

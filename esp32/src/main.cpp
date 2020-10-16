@@ -24,7 +24,18 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define TEMP_INIT_VALUE       -999.0f
 #define TEMP_MAX_VALUE        85.0f
 
+/********************* non volatile enable after deepsleep *******************************/
+
 RTC_DATA_ATTR bool coldBoot = true;
+RTC_DATA_ATTR long rtcDeepSleepTime = 0;      /**< Time, when the microcontroller shall be up again */
+RTC_DATA_ATTR long rtcMoistureTrigger0 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger1 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger2 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger3 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger4 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger5 = 0;   /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoistureTrigger6 = 0;   /**<Level for the moisture sensor */
+
 bool warmBoot = true;
 bool mode2Active = false;
 bool mode3Active = false;
@@ -146,16 +157,11 @@ void loopHandler() {
     /* Publish default values */
     plant0.setProperty("switch").send(String("OFF"));            
     plant1.setProperty("switch").send(String("OFF"));            
-    plant2.setProperty("switch").send(String("OFF"));         
-    
-#if (MAX_PLANTS >= 4)
+    plant2.setProperty("switch").send(String("OFF"));
     plant3.setProperty("switch").send(String("OFF"));            
     plant4.setProperty("switch").send(String("OFF"));
     plant5.setProperty("switch").send(String("OFF"));
-#endif   
-#if (MAX_PLANTS >= 7)
     plant6.setProperty("switch").send(String("OFF"));
-#endif   
 
     for(int i=0; i < MAX_PLANTS; i++) {
       mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
@@ -186,6 +192,15 @@ void loopHandler() {
         digitalWrite(OUTPUT_PUMP, HIGH);
         digitalWrite(mPlants[plntIdx].getPumpPin(), HIGH);
       }
+
+      rtcDeepSleepTime = deepSleepTime.get();
+      rtcMoistureTrigger0 = mPlants[0].getSettingSensorDry();
+      rtcMoistureTrigger1 = mPlants[1].getSettingSensorDry();
+      rtcMoistureTrigger2 = mPlants[2].getSettingSensorDry();
+      rtcMoistureTrigger3 = mPlants[3].getSettingSensorDry();
+      rtcMoistureTrigger4 = mPlants[4].getSettingSensorDry();
+      rtcMoistureTrigger5 = mPlants[5].getSettingSensorDry();
+      rtcMoistureTrigger6 = mPlants[6].getSettingSensorDry();
   }
   mLoopInited = true;
 
@@ -414,7 +429,7 @@ void systemInit(){
     // Mode 3
     stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
-  
+
   Homie.setup();
 }
 
@@ -422,6 +437,51 @@ void systemInit(){
 bool mode1(){
   Serial.println("Init mode 1");
   readSensors();
+
+  if ((rtcDeepSleepTime == 0) ||
+      (rtcMoistureTrigger0 == 0) ||
+      (rtcMoistureTrigger1 == 0) ||
+      (rtcMoistureTrigger2 == 0) ||
+      (rtcMoistureTrigger3 == 0) ||
+      (rtcMoistureTrigger4 == 0) ||
+      (rtcMoistureTrigger5 == 0) ||
+      (rtcMoistureTrigger6 == 0)
+    ) 
+  {
+      Serial.println("Missing RTC information");
+      return true;
+  }
+ 
+  if ((rtcMoistureTrigger0 != DEACTIVATED_PLANT) && (mPlants[0].getSensorValue() < rtcMoistureTrigger0) ) {
+    Serial.println("Moisture of plant 0");
+    return true;
+  }
+  if ((rtcMoistureTrigger1 != DEACTIVATED_PLANT) && (mPlants[1].getSensorValue() < rtcMoistureTrigger1) ) {
+    Serial.println("Moisture of plant 1");
+    return true;
+  }
+  if ((rtcMoistureTrigger2 != DEACTIVATED_PLANT) && (mPlants[2].getSensorValue() < rtcMoistureTrigger2) ) {
+    Serial.println("Moisture of plant 2");
+    return true;
+  }
+  if ((rtcMoistureTrigger3 != DEACTIVATED_PLANT) && (mPlants[3].getSensorValue() < rtcMoistureTrigger3) ) {
+    Serial.println("Moisture of plant 3");
+    return true;
+  }
+  if ((rtcMoistureTrigger4 != DEACTIVATED_PLANT) && (mPlants[4].getSensorValue() < rtcMoistureTrigger4) ) {
+    Serial.println("Moisture of plant 4");
+    return true;
+  }
+  if ((rtcMoistureTrigger5 != DEACTIVATED_PLANT) && (mPlants[5].getSensorValue() < rtcMoistureTrigger5) ) {
+    Serial.println("Moisture of plant 5");
+    return true;
+  }
+  if ((rtcMoistureTrigger6 != DEACTIVATED_PLANT) && (mPlants[6].getSensorValue() < rtcMoistureTrigger6) ) {
+    Serial.println("Moisture of plant 6");
+    return true;
+  }
+  //TODO read sensor values for each plant
+
   //TODO evaluate if something is to do
   return false;
 }
