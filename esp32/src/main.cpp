@@ -14,6 +14,7 @@
 #include "DS18B20.h"
 #include <Homie.h>
 #include "esp_sleep.h"
+#include "RunningMedian.h"
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -22,6 +23,8 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define SOLAR4SENSORS         6.0f
 #define TEMP_INIT_VALUE       -999.0f
 #define TEMP_MAX_VALUE        85.0f
+
+RTC_DATA_ATTR bool coldBoot = false;
 
 bool mLoopInited = false;
 bool mDeepSleep = false;
@@ -42,6 +45,12 @@ bool mConfigured = false;
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
+RunningMedian lipoRawSensor = RunningMedian(5);
+RunningMedian solarRawSensor = RunningMedian(5);
+RunningMedian waterRawSensor = RunningMedian(5);
+RunningMedian temp1 = RunningMedian(5);
+RunningMedian temp2 = RunningMedian(5);
+
 
 Ds18B20 dallas(SENSOR_DS18B20);
 
@@ -55,20 +64,68 @@ Plant mPlants[MAX_PLANTS] = {
         Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6) 
       };
 
-void readAnalogValues() {
-  if (readCounter < AMOUNT_SENOR_QUERYS) {
-    lipoSensorValues += analogRead(SENSOR_LIPO);
-    solarSensorValues += analogRead(SENSOR_SOLAR);
-    readCounter++;
-  } else {
-    lipoSenor = (lipoSensorValues >> SENSOR_QUERY_SHIFTS);
-    lipoSensorValues = 0;
-    solarSensor = (solarSensorValues >> SENSOR_QUERY_SHIFTS);
-    solarSensorValues = 0;
-    
-    readCounter = 0;
-  }
+void readSystemSensors() {
+  lipoRawSensor.add(analogRead(SENSOR_LIPO));
+  solarRawSensor.add(analogRead(SENSOR_SOLAR));
+
+  
 }
+
+/**
+ * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
+ * These sensors (ADC2) can only be read when no Wifi is used.
+ */
+void readSensors() {
+  Serial << "Read sensors..." << endl;
+
+  /* activate all sensors */
+  pinMode(OUTPUT_SENSOR, OUTPUT);
+  digitalWrite(OUTPUT_SENSOR, HIGH);
+
+  delay(100);
+  /* wait before reading something */
+  for (int readCnt=0;readCnt < AMOUNT_SENOR_QUERYS; readCnt++) {
+    for(int i=0; i < MAX_PLANTS; i++) {
+      mPlants[i].addSenseValue(analogRead(mPlants[i].getSensorPin()));
+    }
+  }
+
+  Serial << "DS18B20 | Initialization " << endl;
+  /* Read the temperature sensors once, as first time 85 degree is returned */
+  Serial << "DS18B20 | sensors: " << String(dallas.readDevices()) << endl;
+  delay(200);
+
+
+  /* Required to read the temperature once */
+  float temp[2] = {0, 0};
+  float* pFloat = temp;
+  // first read returns crap, ignore result and read twice
+  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
+      Serial << "DS18B20 | Temperature 1: " << String(temp[0]) << endl;
+      Serial << "DS18B20 | Temperature 2: " << String(temp[1]) << endl;
+  }
+  delay(200);
+  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
+      Serial << "Temperature 1: " << String(temp[0]) << endl;
+      Serial << "Temperature 2: " << String(temp[1]) << endl;
+  }
+
+  temp1.add(temp[0]);
+  temp2.add(temp[1]);
+
+  /* Use the Ultrasonic sensor to measure waterLevel */
+ 
+  digitalWrite(SENSOR_SR04_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(SENSOR_SR04_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(SENSOR_SR04_TRIG, LOW);
+  float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
+  waterRawSensor.add((duration*.343)/2);
+  /* deactivate the sensors */
+  digitalWrite(OUTPUT_SENSOR, LOW);
+}
+
 
 /**
  * @brief cyclic Homie callback
@@ -128,7 +185,7 @@ void loopHandler() {
   }
   mLoopInited = true;
 
-  readAnalogValues();
+  readSensors();
 
   if ((millis() % 1500) == 0) {
     sensorLipo.setProperty("percent").send( String(100 * lipoSenor / 4095) );
@@ -269,80 +326,10 @@ bool switch3Handler(const HomieRange& range, const String& value) {
   return switchGeneralPumpHandler(2, range, value);
 }
 
-/**
- * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
- * These sensors (ADC2) can only be read when no Wifi is used.
- */
-void readSensors() {
-  /* activate all sensors */
-  pinMode(OUTPUT_SENSOR, OUTPUT);
-  digitalWrite(OUTPUT_SENSOR, HIGH);
 
-  delay(100);
-  /* wait before reading something */
-  for (int readCnt=0;readCnt < AMOUNT_SENOR_QUERYS; readCnt++) {
-    for(int i=0; i < MAX_PLANTS; i++) {
-      mPlants[i].addSenseValue(analogRead(mPlants[i].getSensorPin()));
-    }
-  }
 
-#ifdef HC_SR04
-  /* Use the Ultrasonic sensor to measure waterLevel */
-  
-  /* deactivate all sensors and measure the pulse */
-  digitalWrite(SENSOR_SR04_TRIG, LOW);
-  delayMicroseconds(2);
-  digitalWrite(SENSOR_SR04_TRIG, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(SENSOR_SR04_TRIG, LOW);
-  float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
-  float distance = (duration*.0343)/2;
-  mWaterGone = (int) distance;
-  Serial << "HC_SR04 | Distance : " << String(distance) << " cm" << endl;
-#endif
-  /* deactivate the sensors */
-  digitalWrite(OUTPUT_SENSOR, LOW);
-}
-
-/**
- * @brief Startup function
- * Is called once, the controller is started
- */
-void setup() {
-  /* Intialize Plant */
-  for(int i=0; i < MAX_PLANTS; i++) {
-    mPlants[i].init();
-  }
-
-  /* Required to read the temperature once */
-  float temp[2] = {0, 0};
-  float* pFloat = temp;
-
-  /* read button */
-  pinMode(BUTTON, INPUT);
-
-  Serial.begin(115200);
-  Serial.setTimeout(1000); // Set timeout of 1 second
-  Serial << endl << endl;
-  Serial << "Read analog sensors..." << endl;
-  /* Disable Wifi and bluetooth */
-  WiFi.mode(WIFI_OFF);
-  /* now ADC2 can be used */
-  readSensors();
-  /* activate Wifi again */
-  WiFi.mode(WIFI_STA);
-
-  if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
-    Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
-    Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
-    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 5000" << endl;
-  }
-
-  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
-  Homie.setLoopFunction(loopHandler);
-
-  mConfigured = Homie.isConfigured();
-  // Set default values
+void systemInit(){
+    // Set default values
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
   wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
@@ -418,23 +405,74 @@ void setup() {
     // Mode 3
     stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
-  
+}
+
+
+void mode1(){
+  readSensors();
+}
+
+void mode2(){
+  WiFi.mode(WIFI_STA);
   Homie.setup();
+}
+
+void mode3(){
+  WiFi.mode(WIFI_STA);
+  Homie.setup();
+}
+
+/**
+ * @brief Startup function
+ * Is called once, the controller is started
+ */
+void setup() {
+  Serial.begin(115200);
+  Serial.setTimeout(1000); // Set timeout of 1 second
+  Serial << endl << endl;
+  /* Intialize Plant */
+  for(int i=0; i < MAX_PLANTS; i++) {
+    mPlants[i].init();
+  }
 
   /* Intialize inputs and outputs */
+  pinMode(SENSOR_LIPO, ANALOG);
+  pinMode(SENSOR_SOLAR, ANALOG);
   for(int i=0; i < MAX_PLANTS; i++) {
     pinMode(mPlants[i].getPumpPin(), OUTPUT);
     pinMode(mPlants[i].getSensorPin(), ANALOG);
     digitalWrite(mPlants[i].getPumpPin(), LOW);
   }
-  /* Setup Solar and Lipo measurement */
-  pinMode(SENSOR_LIPO, ANALOG);
-  pinMode(SENSOR_SOLAR, ANALOG);
-  /* Read analog values at the start */
-  do {
-    readAnalogValues();
-  } while (readCounter != 0);
+  /* read button */
+  pinMode(BUTTON, INPUT);
+  if(!coldBoot){
+    digitalWrite(OUTPUT_SENSOR, HIGH);
+  }
+  
+  
+  
+  /* Disable Wifi and bluetooth */
+  WiFi.mode(WIFI_OFF);
 
+  if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
+    Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
+    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 5000" << endl;
+  }
+
+  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
+  Homie.setLoopFunction(loopHandler);
+
+  mConfigured = Homie.isConfigured();
+  systemInit();
+
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
+
+
+  mode2();
 
   // Configure Deep Sleep:
   if (mConfigured && (deepSleepNightTime.get() > 0) &&
@@ -457,118 +495,30 @@ void setup() {
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
     mDeepSleep = true;
   }
-
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
-
-  Serial << "DS18B20 | Initialization " << endl;
-  /* Read the temperature sensors once, as first time 85 degree is returned */
-  Serial << "DS18B20 | sensors: " << String(dallas.readDevices()) << endl;
-  delay(200);
-  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-      Serial << "DS18B20 | Temperature 1: " << String(temp[0]) << endl;
-      Serial << "DS18B20 | Temperature 2: " << String(temp[1]) << endl;
-  }
-  delay(200);
-  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-      Serial << "Temperature 1: " << String(temp[0]) << endl;
-      Serial << "Temperature 2: " << String(temp[1]) << endl;
-  }
 }
 
 /**
  * @brief Cyclic call
  * Executs the Homie base functionallity or triggers sleeping, if requested.
  */
+
 void loop() {
+  if(!coldBoot){
+    coldBoot = true;
+    delay(1000);
+    digitalWrite(OUTPUT_SENSOR, LOW);
+  }
   if (!mDeepSleep || !mConfigured) {
-    if (Serial.available() > 0) {
-      // read the incoming byte:
-      int incomingByte = Serial.read();
-
-      switch ((char) incomingByte)
-      {
-      case 'P':
-          Serial << "Activate Sensor OUTPUT " << endl;
-          pinMode(OUTPUT_SENSOR, OUTPUT);
-          digitalWrite(OUTPUT_SENSOR, HIGH);
-        break;
-      case 'p':
-          Serial << "Deactivate Sensor OUTPUT " << endl;
-          pinMode(OUTPUT_SENSOR, OUTPUT);
-          digitalWrite(OUTPUT_SENSOR, LOW);
-        break;
-      default:
-        break;
-      }
-    }
-
     if ((digitalRead(BUTTON) == LOW) && (mButtonClicks % 2) == 0) {
-      float temp[2] = {0, 0};
-      float* pFloat = temp;
       mButtonClicks++;
 
-      Serial << "SELF TEST (clicks: " << String(mButtonClicks) << ")" << endl;
-      
-      Serial << "DS18B20 sensors: " << String(dallas.readDevices()) << endl;
-      delay(200);
-      if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-          Serial << "Temperature 1: " << String(temp[0]) << endl;
-          Serial << "Temperature 2: " << String(temp[1]) << endl;
-      }
-      
       switch(mButtonClicks) {
         case 1:
         case 3:
         case 5:
-          if (mButtonClicks > 1) {
-          Serial << "Read analog sensors..." << endl;
-            /* Disable Wifi and bluetooth */
-            WiFi.mode(WIFI_OFF);
-            delay(50);
-            /* now ADC2 can be used */
-            readSensors();
-          }
-
-          Serial << "Water gone:     " << String(mWaterGone) << " cm" << endl;
-          for(int i=0; i < MAX_PLANTS; i++) {
-            mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
-
-            Serial << "Moist Sensor " << (i+1) << ": " << String(mPlants[i].getSensorValue()) << " Volt: " << String(ADC_5V_TO_3V3(mPlants[i].getSensorValue())) << endl;
-          }
-          /* Read enough values */
-          do {
-            readAnalogValues();
-            Serial << "Read Analog (" << String(readCounter) << ")" << endl;;
-          } while (readCounter != 0);
-
-          Serial << "Lipo Sensor  - Raw: " << String(lipoSenor) << " Volt: " << String(ADC_5V_TO_3V3(lipoSenor)) << endl;
-          Serial << "Solar Sensor - Raw: " << String(solarSensor) << " Volt: " << String(SOLAR_VOLT(solarSensor)) << endl;
+          mode3();
           break;
-          case 7:
-            Serial << "Activate Sensor OUTPUT " << endl;
-            pinMode(OUTPUT_SENSOR, OUTPUT);
-            digitalWrite(OUTPUT_SENSOR, HIGH);
-            break;
-          case 9:
-            Serial << "Activate Pump1 GPIO" << String(mPlants[0].getPumpPin()) << endl;
-            digitalWrite(mPlants[0].getPumpPin(), HIGH);
-            break;
-          case 11:
-            Serial << "Activate Pump2 GPIO" << String(mPlants[1].getPumpPin()) << endl;
-            digitalWrite(mPlants[1].getPumpPin(), HIGH);
-            break;
-          case 13:
-            Serial << "Activate Pump3 GPIO" << String(mPlants[2].getPumpPin()) << endl;
-            digitalWrite(mPlants[2].getPumpPin(), HIGH);
-            break;
-          case 15:
-            Serial << "Activate Pump4/Sensor GPIO" << String(OUTPUT_PUMP4) << endl;
-            digitalWrite(OUTPUT_PUMP4, HIGH);
-            break;
-          default:
+        default:
             Serial << "No further tests! Please reboot" << endl;
       }
       Serial.flush();
