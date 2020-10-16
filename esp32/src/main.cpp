@@ -10,10 +10,10 @@
  */
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
+#include "HomieConfiguration.h"
 #include "DS18B20.h"
 #include <Homie.h>
 #include "esp_sleep.h"
-#include "HomieConfiguration.h"
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -46,13 +46,13 @@ RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant need
 Ds18B20 dallas(SENSOR_DS18B20);
 
 Plant mPlants[MAX_PLANTS] = { 
-        Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0), 
-        Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1), 
-        Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2), 
-        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3), 
-        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4), 
-        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5), 
-        Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6) 
+        Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0), 
+        Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1, &plant1, &mSetting1), 
+        Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2, &plant2, &mSetting2), 
+        Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3, &plant3, &mSetting3), 
+        Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4), 
+        Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5), 
+        Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6) 
       };
 
 void readAnalogValues() {
@@ -330,7 +330,7 @@ void setup() {
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
     Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
     Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
-    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 3000" << endl;
+    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 5000" << endl;
   }
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);

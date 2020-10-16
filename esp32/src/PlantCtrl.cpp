@@ -12,63 +12,34 @@
 
 #include "PlantCtrl.h"
 
-Plant::Plant(int pinSensor, int pinPump,int plantId) {
+Plant::Plant(int pinSensor, int pinPump,int plantId, HomieNode *plant, PlantSettings_t* setting) {
     this->mPinSensor = pinSensor;
     this->mPinPump = pinPump;
-
+    this->mPlant = plant;
     /*
-    {
-        char* name = "moistZdry";
-        name[5]= plantIdChar;
-        mSensorDry = new HomieSetting<long>(name, "Moist sensor dry threshold");
-        mSensorDry->setDefaultValue(4095);
-        mSensorDry->setValidator([] (long candidate) {
-            return ((candidate >= 0) && (candidate <= 4095) );
-        });
-    }
-    {
-        char* name = "moistZwet";
-        name[6]= plantIdChar;
-        mSensorWet = new HomieSetting<long>(name, "Moist sensor wet threshold");
-        mSensorWet->setDefaultValue(0);
-        mSensorWet->setValidator([] (long candidate) {
-            return ((candidate >= 0) && (candidate <= 4095) );
-        });
-    }
-    {
-        char* name = "rangeZhourstart";
-        name[6]= plantIdChar;
-        mPumpAllowedHourRangeStart = new HomieSetting<long>(name, "Range pump allowed hour start");
-        mPumpAllowedHourRangeStart->setDefaultValue(8);
-        mPumpAllowedHourRangeStart->setValidator([] (long candidate) {
-            return ((candidate >= 0) && (candidate <= 23) );
-        });
-    }
-    {
-        char* name = "rangeZhourend";
-        name[6]= plantIdChar;
-        mPumpAllowedHourRangeEnd = new HomieSetting<long>(name, "Range pump allowed hour end");
-        mPumpAllowedHourRangeEnd->setDefaultValue(20);
-        mPumpAllowedHourRangeEnd->setValidator([] (long candidate) {
-            return ((candidate >= 0) && (candidate <= 23) );
-        });
-    }
-    {
-        char* name = "onlyWhenLowLightZ";
-        name[16]= plantIdChar;
-        mPumpOnlyWhenLowLight = new HomieSetting<bool>(name, "Enable the Pump only, when there is light but not enought to charge battery");
-        mPumpOnlyWhenLowLight->setDefaultValue(true);
-    }
-    {
-        char* name = "cooldownpumpZ";
-        name[12]= plantIdChar;
-        mPumpCooldownInHours = new HomieSetting<long>(name, "How long to wait until the pump is activated again");
-        mPumpCooldownInHours->setDefaultValue(20);
-        mPumpCooldownInHours->setValidator([] (long candidate) {
-            return ((candidate >= 0) && (candidate <= 1024) );
-        });
-    }
-*/
+    this->mSetting = mSetting;    
+    this->mSetting.pSensorDry->setDefaultValue(4095);
+    this->mSetting.pSensorDry->setValidator([] (long candidate) {
+        return ((candidate >= 0) && (candidate <= 4095) );
+    });
+    this->mSetting.pSensorWet->setDefaultValue(0);
+    this->mSetting.pSensorWet->setValidator([] (long candidate) {
+        return ((candidate >= 0) && (candidate <= 4095) );
+    });
+    this->mSetting.pPumpAllowedHourRangeStart->setDefaultValue(8);
+    this->mSetting.pPumpAllowedHourRangeStart->setValidator([] (long candidate) {
+        return ((candidate >= 0) && (candidate <= 23) );
+    });
+    this->mSetting.pPumpAllowedHourRangeEnd->setDefaultValue(20);
+    this->mSetting.pPumpAllowedHourRangeEnd->setValidator([] (long candidate) {
+        return ((candidate >= 0) && (candidate <= 23) );
+    });
+    this->mSetting.pPumpOnlyWhenLowLight->setDefaultValue(true);
+    this->mSetting.pPumpCooldownInHours->setDefaultValue(20);
+    this->mSetting.pPumpCooldownInHours->setValidator([] (long candidate) {
+        return ((candidate >= 0) && (candidate <= 1024) );
+    });
+    */
 }
 
 void Plant::addSenseValue(int analog) {

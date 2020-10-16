@@ -11,7 +11,9 @@
 #ifndef HOMIE_PLANT_CONFIG_H
 #define HOMIE_PLANT_CONFIG_H
 
-#include <Homie.h>
+#include "HomieTypes.h"
+
+#define MAX_PLANTS 7
 
 /**
  *********************************** Attributes *******************************
@@ -53,9 +55,17 @@ HomieSetting<long> waterLevelVol("waterVolume", "ml between minimum and maximum"
         HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("rangehourstart##plant", "Range pump allowed hour start"); \
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("rangehourend##plant", "Range pump allowed hour end"); \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("onlyWhenLowLightZ##plant", "Enable the Pump only, when there is light but not enought to charge battery"); \
-        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump##plant", "How long to wait until the pump is activated again");
+        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump##plant", "How long to wait until the pump is activated again"); \
+        PlantSettings_t mSetting##plant = { &mSensorDry##plant, &mSensorWet##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant };
         
 GENERATE_PLANT(0);
 GENERATE_PLANT(1);
+GENERATE_PLANT(2);
+GENERATE_PLANT(3);
+GENERATE_PLANT(4);
+GENERATE_PLANT(5);
+GENERATE_PLANT(6);
+
+
 
 #endif /* HOMIE_PLANT_CONFIG_H */

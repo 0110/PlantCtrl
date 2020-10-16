@@ -12,8 +12,7 @@
 #ifndef PLANT_CTRL_H
 #define PLANT_CTRL_H
 
-#include <HomieSetting.hpp>
-#include <SendingPromise.hpp>
+#include "HomieTypes.h"
 
 class Plant {
 
@@ -25,12 +24,7 @@ private:
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
     HomieNode *mPlant = NULL;
-    HomieSetting<long> *mSensorDry;
-    HomieSetting<long> *mSensorWet;
-    HomieSetting<long> *mPumpAllowedHourRangeStart;
-    HomieSetting<long> *mPumpAllowedHourRangeEnd;
-    HomieSetting<bool> *mPumpOnlyWhenLowLight;
-    HomieSetting<long> *mPumpCooldownInHours;
+    PlantSettings_t mSetting;
 
 public:
 
@@ -41,7 +35,9 @@ public:
      * @param pinPump   Pin of the Pump to use
      */
     Plant(int pinSensor, int pinPump,
-            int plantId);
+            int plantId, 
+            HomieNode* plant,
+            PlantSettings_t* setting);
 
     /**
      * @brief Add a value, to be measured
@@ -81,7 +77,7 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSensorWet != NULL) && (this->mValue < this->mSensorWet->get()); 
+         return (this->mSetting.pSensorWet != NULL) && (this->mValue < this->mSetting.pSensorWet->get()); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
