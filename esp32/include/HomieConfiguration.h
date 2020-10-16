@@ -49,22 +49,22 @@ HomieSetting<long> waterLevelVol("waterVolume", "ml between minimum and maximum"
 
 /** Plant specific ones */
 
-#define GENERATE_PLANT(plant)   \
-        HomieSetting<long> mSensorDry##plant = HomieSetting<long>("moistdry##plant", "Moist sensor dry threshold"); \
-        HomieSetting<long> mSensorWet##plant = HomieSetting<long>("moistwet##plant", "Moist sensor wet threshold"); \
-        HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("rangehourstart##plant", "Range pump allowed hour start"); \
-        HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("rangehourend##plant", "Range pump allowed hour end"); \
-        HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("onlyWhenLowLightZ##plant", "Enable the Pump only, when there is light but not enought to charge battery"); \
-        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump##plant", "How long to wait until the pump is activated again"); \
+#define GENERATE_PLANT(plant, strplant)   \
+        HomieSetting<long> mSensorDry##plant = HomieSetting<long>("moistdry" strplant, "Plant " strplant "- Moist sensor dry threshold"); \
+        HomieSetting<long> mSensorWet##plant = HomieSetting<long>("moistwet" strplant, "Plant" strplant " - Moist sensor wet threshold"); \
+        HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("rangehourstart" strplant, "Plant" strplant " - Range pump allowed hour start"); \
+        HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("rangehourend" strplant, "Plant" strplant " - Range pump allowed hour end"); \
+        HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("onlyWhenLowLightZ" strplant, "Plant" strplant " - Enable the Pump only, when there is light but not enought to charge battery"); \
+        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump" strplant, "Plant" strplant " - How long to wait until the pump is activated again"); \
         PlantSettings_t mSetting##plant = { &mSensorDry##plant, &mSensorWet##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant };
         
-GENERATE_PLANT(0);
-GENERATE_PLANT(1);
-GENERATE_PLANT(2);
-GENERATE_PLANT(3);
-GENERATE_PLANT(4);
-GENERATE_PLANT(5);
-GENERATE_PLANT(6);
+GENERATE_PLANT(0, "0");
+GENERATE_PLANT(1, "1");
+GENERATE_PLANT(2, "2");
+GENERATE_PLANT(3, "3");
+GENERATE_PLANT(4, "4");
+GENERATE_PLANT(5, "5");
+GENERATE_PLANT(6, "6");
 
 
 
