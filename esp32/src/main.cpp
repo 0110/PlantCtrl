@@ -13,7 +13,7 @@
 #include "DS18B20.h"
 #include <Homie.h>
 #include "esp_sleep.h"
-
+#include "HomieConfiguration.h"
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -42,42 +42,6 @@ bool mConfigured = false;
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
-#if (MAX_PLANTS >= 1)
-HomieNode plant0("plant0", "Plant 0", "Plant");
-#endif
-#if (MAX_PLANTS >= 2)
-HomieNode plant1("plant1", "Plant 1", "Plant");
-#endif
-#if (MAX_PLANTS >= 3)
-HomieNode plant2("plant2", "Plant 2", "Plant");
-#endif
-#if (MAX_PLANTS >= 4)
-HomieNode plant3("plant3", "Plant 3", "Plant");
-#endif
-#if (MAX_PLANTS >= 5)
-HomieNode plant4("plant4", "Plant 4", "Plant");
-#endif
-#if (MAX_PLANTS >= 6)
-HomieNode plant5("plant5", "Plant 5", "Plant");
-#endif
-#if (MAX_PLANTS >= 7)
-HomieNode plant6("plant6", "Plant 6", "Plant");
-#endif
-
-HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
-HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
-HomieNode sensorWater("water", "WaterSensor", "Water");
-HomieNode sensorTemp("temperature", "Temperature", "temperature");
-HomieNode stayAlive("stay", "alive", "alive");
-
-HomieSetting<long> deepSleepTime("deepsleep", "time in milliseconds to sleep (0 deactivats it)");
-HomieSetting<long> deepSleepNightTime("nightsleep", "time in milliseconds to sleep (0 usese same setting: deepsleep at night, too)");
-HomieSetting<long> wateringDeepSleep("pumpdeepsleep", "time seconds to sleep, while a pump is running");
-
-HomieSetting<long> waterLevelMax("watermaxlevel", "distance at maximum water level");
-HomieSetting<long> waterLevelMin("waterminlevel", "distance at minimum water level (pumps still covered)");
-HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn if below this water level %");
-HomieSetting<long> waterLevelVol("waterVolume", "ml between minimum and maximum");
 
 Ds18B20 dallas(SENSOR_DS18B20);
 

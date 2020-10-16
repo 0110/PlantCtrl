@@ -16,8 +16,6 @@ Plant::Plant(int pinSensor, int pinPump,int plantId) {
     this->mPinSensor = pinSensor;
     this->mPinPump = pinPump;
 
-    char plantIdChar = plantId+'0';
-
     /*
     {
         char* name = "moistZdry";

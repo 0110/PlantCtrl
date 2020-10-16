@@ -13,7 +13,8 @@
 			"limits": "cpp",
 			"streambuf": "cpp",
 			"functional": "cpp",
-			"string": "cpp"
+			"string": "cpp",
+			"typeinfo": "cpp"
 		}
 	}
 }
