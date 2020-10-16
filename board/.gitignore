@@ -33,3 +33,4 @@ _autosave-*
 *.net
 
 # Autorouter files (exported from Pcbnew)
+fp-info-cache
