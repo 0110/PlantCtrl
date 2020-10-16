@@ -24,7 +24,11 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define TEMP_INIT_VALUE       -999.0f
 #define TEMP_MAX_VALUE        85.0f
 
-RTC_DATA_ATTR bool coldBoot = false;
+RTC_DATA_ATTR bool coldBoot = true;
+bool warmBoot = true;
+bool mode2Active = false;
+bool mode3Active = false;
+
 
 bool mLoopInited = false;
 bool mDeepSleep = false;
@@ -326,10 +330,16 @@ bool switch3Handler(const HomieRange& range, const String& value) {
   return switchGeneralPumpHandler(2, range, value);
 }
 
-
-
 void systemInit(){
-    // Set default values
+  WiFi.mode(WIFI_STA);
+
+  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
+  Homie.setLoopFunction(loopHandler);
+  Homie.setup();
+
+  mConfigured = Homie.isConfigured();
+
+  // Set default values
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
   wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
@@ -408,18 +418,32 @@ void systemInit(){
 }
 
 
-void mode1(){
+bool mode1(){
+  Serial.println("Init mode 1");
   readSensors();
+  //TODO evaluate if something is to do
+  return false;
 }
 
 void mode2(){
-  WiFi.mode(WIFI_STA);
-  Homie.setup();
+  Serial.println("Init mode 2");
+  mode2Active = true;
+
+
+  systemInit();
+
+  /* Jump into Mode 3, if not configured */
+  if (!mConfigured) {
+    mode2Active = false;
+    mode3Active = true;
+  }
 }
 
 void mode3(){
-  WiFi.mode(WIFI_STA);
-  Homie.setup();
+  Serial.println("Init mode 3");
+  mode3Active = true;
+  
+  systemInit();
 }
 
 /**
@@ -460,19 +484,12 @@ void setup() {
     Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 5000" << endl;
   }
 
-  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
-  Homie.setLoopFunction(loopHandler);
-
-  mConfigured = Homie.isConfigured();
-  systemInit();
-
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
 
-
-  mode2();
+  // Big TODO use here the settings in RTC_Memory
 
   // Configure Deep Sleep:
   if (mConfigured && (deepSleepNightTime.get() > 0) &&
@@ -503,50 +520,55 @@ void setup() {
  */
 
 void loop() {
-  if(!coldBoot){
-    coldBoot = true;
+  if(coldBoot){
+    coldBoot = false;
     delay(1000);
-    digitalWrite(OUTPUT_SENSOR, LOW);
-  }
-  if (!mDeepSleep || !mConfigured) {
-    if ((digitalRead(BUTTON) == LOW) && (mButtonClicks % 2) == 0) {
-      mButtonClicks++;
-
-      switch(mButtonClicks) {
-        case 1:
-        case 3:
-        case 5:
-          mode3();
-          break;
-        default:
-            Serial << "No further tests! Please reboot" << endl;
+    if (digitalRead(BUTTON) == LOW){
+      for(int i = 0;i<10;i++){
+        digitalWrite(OUTPUT_SENSOR, LOW);
+        delay(50);
+        digitalWrite(OUTPUT_SENSOR, HIGH);
+        delay(50);
       }
-      Serial.flush();
-    }else if (mButtonClicks > 0 && (digitalRead(BUTTON) == HIGH) && (mButtonClicks % 2) == 1) {
-      Serial << "Self Test Ended" << endl;
-      mButtonClicks++;
-      /* Always reset all outputs */
-      digitalWrite(OUTPUT_SENSOR, LOW);
-      for(int i=0; i < MAX_PLANTS; i++) {
-        digitalWrite(mPlants[i].getPumpPin(), LOW);
-      }
-      digitalWrite(OUTPUT_PUMP4, LOW);
-    } else if (mButtonClicks == 0) {
-      Homie.loop();
-    }
-
-  } else {
-    if (!mAlive) {
-      Serial << (millis()/ 1000) << "s running; sleeeping ..." << endl;
-      Serial.flush();
-      esp_deep_sleep_start();
+      mode3();
+      return;
     } else {
-      mDeepSleep = false;
+      digitalWrite(OUTPUT_SENSOR, LOW);
+    }
+  }
 
-      if (((millis()) % 10000) == 0) {
-        /* tell everybody how long we are awoken */
-        stayAlive.setProperty("alive").send( String(millis()/ 1000) );
+  /* Perform the active modes (non mode1) */
+  if (mode3Active || mode2Active) {
+    Homie.loop();
+    if(!mode3Active){
+      /* Upgrade to mode 3 via reset */
+      if (digitalRead(BUTTON) == LOW){
+        coldBoot=true;
+        ESP.restart();
       }
     }
+  } else {
+    /* Check which mode shall be selected */
+    if(warmBoot){
+      warmBoot = false;
+      if(mode1()){
+        mode2();
+      } else {
+        /* Upgrade to mode 3 via reset */
+        if (digitalRead(BUTTON) == LOW){
+          coldBoot=true;
+          ESP.restart();
+        }
+        Serial.println("Nothing to do back to sleep");
+        Serial.flush();
+        esp_deep_sleep_start();
+      }
+    }
+  }
+
+  if(millis() > 30000 && !mode3Active){
+    Serial << (millis()/ 1000) << "s running; going to suicide ..." << endl;
+    Serial.flush();
+    esp_deep_sleep_start();
   }
 }
