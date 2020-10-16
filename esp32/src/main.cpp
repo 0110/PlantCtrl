@@ -335,7 +335,6 @@ void systemInit(){
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.setLoopFunction(loopHandler);
-  Homie.setup();
 
   mConfigured = Homie.isConfigured();
 
@@ -415,6 +414,8 @@ void systemInit(){
     // Mode 3
     stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
+  
+  Homie.setup();
 }
 
 
