@@ -12,34 +12,36 @@
 
 #include "PlantCtrl.h"
 
-Plant::Plant(int pinSensor, int pinPump,int plantId, HomieNode *plant, PlantSettings_t* setting) {
+Plant::Plant(int pinSensor, int pinPump,int plantId, HomieNode* plant, PlantSettings_t* setting) {
     this->mPinSensor = pinSensor;
     this->mPinPump = pinPump;
     this->mPlant = plant;
-    /*
-    this->mSetting = mSetting;    
-    this->mSetting.pSensorDry->setDefaultValue(4095);
-    this->mSetting.pSensorDry->setValidator([] (long candidate) {
+    this->mSetting = setting;    
+}
+
+void Plant::init(void) {
+    this->mSetting->pSensorDry->setDefaultValue(4095);
+    this->mSetting->pSensorDry->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 4095) );
     });
-    this->mSetting.pSensorWet->setDefaultValue(0);
-    this->mSetting.pSensorWet->setValidator([] (long candidate) {
+    this->mSetting->pSensorWet->setDefaultValue(0);
+    this->mSetting->pSensorWet->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 4095) );
     });
-    this->mSetting.pPumpAllowedHourRangeStart->setDefaultValue(8);
-    this->mSetting.pPumpAllowedHourRangeStart->setValidator([] (long candidate) {
+    this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8);
+    this->mSetting->pPumpAllowedHourRangeStart->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 23) );
     });
-    this->mSetting.pPumpAllowedHourRangeEnd->setDefaultValue(20);
-    this->mSetting.pPumpAllowedHourRangeEnd->setValidator([] (long candidate) {
+    this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20);
+    this->mSetting->pPumpAllowedHourRangeEnd->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 23) );
     });
-    this->mSetting.pPumpOnlyWhenLowLight->setDefaultValue(true);
-    this->mSetting.pPumpCooldownInHours->setDefaultValue(20);
-    this->mSetting.pPumpCooldownInHours->setValidator([] (long candidate) {
+    this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
+    this->mSetting->pPumpCooldownInHours->setDefaultValue(20);
+    this->mSetting->pPumpCooldownInHours->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 1024) );
     });
-    */
+    
 }
 
 void Plant::addSenseValue(int analog) {

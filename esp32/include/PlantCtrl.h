@@ -23,10 +23,10 @@ private:
     int mValue = 0;     /**< Value of the moist sensor */
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
-    HomieNode *mPlant = NULL;
-    PlantSettings_t mSetting;
+    HomieNode* mPlant = NULL;
 
 public:
+    PlantSettings_t* mSetting;
 
     /**
      * @brief Construct a new Plant object
@@ -77,12 +77,14 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSetting.pSensorWet != NULL) && (this->mValue < this->mSetting.pSensorWet->get()); 
+         return (this->mSetting->pSensorWet != NULL) && (this->mValue < this->mSetting->pSensorWet->get()); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
         return mPlant->setProperty(property);
     }
+
+    void init(void);
 };
 
 #endif

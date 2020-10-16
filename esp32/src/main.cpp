@@ -309,6 +309,11 @@ void readSensors() {
  * Is called once, the controller is started
  */
 void setup() {
+  /* Intialize Plant */
+  for(int i=0; i < MAX_PLANTS; i++) {
+    mPlants[i].init();
+  }
+
   /* Required to read the temperature once */
   float temp[2] = {0, 0};
   float* pFloat = temp;
@@ -337,9 +342,9 @@ void setup() {
   Homie.setLoopFunction(loopHandler);
 
   mConfigured = Homie.isConfigured();
-    // Load the settings
-    deepSleepTime.setDefaultValue(0);
-    deepSleepNightTime.setDefaultValue(0);
+  // Load the settings
+  deepSleepTime.setDefaultValue(0);
+  deepSleepNightTime.setDefaultValue(0);
 
   if (mConfigured) {
     // Advertise topics
