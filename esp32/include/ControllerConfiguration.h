@@ -50,6 +50,8 @@
 #define MINIMUM_LIPO_VOLT   3.6f /**< Minimum voltage of the Lipo, that must be present */
 #define NO_LIPO_VOLT        2.0f /**< No Lipo connected */
 #define MINIMUM_SOLAR_VOLT  4.0f /**< Minimum voltage of the sun, to detect daylight */
+#define SOLAR_CHARGE_MIN_VOLTAGE 7
+#define SOLAR_CHARGE_MAX_VOLTAGE 9
 
 #define HC_SR04                  /**< Ultrasonic distance sensor to measure water level */
 #define SENSOR_SR04_ECHO    17   /**< GPIO 17 - Echo */
