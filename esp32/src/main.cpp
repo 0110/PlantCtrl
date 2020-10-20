@@ -95,6 +95,83 @@ void readSystemSensors() {
   
 }
 
+int determineNextPump();
+void setLastActivationForPump(int pumpId, long time);
+
+
+//FIXME real impl
+long getCurrentTime(){
+  return 1337;
+}
+
+//wait till homie flushed mqtt ect.
+void prepareSleep() {
+  //FIXME wait till pending mqtt is done, then start sleep via event or whatever
+  //Homie.prepareToSleep();
+}
+
+void mode2MQTT(){
+   if (deepSleepTime.get()) {
+      Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
+    }
+    /* Publish default values */
+
+  if(lastPumpRunning != -1){
+    long waterDiff = mWaterGone-lastWaterValue;
+    //TODO attribute used water in ml to plantid
+  }
+  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
+  Serial << "Water : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
+  lastWaterValue = mWaterGone;
+  
+  if (mWaterGone <= waterLevelMin.get()) {
+      /* let the ESP sleep qickly, as nothing must be done */
+      if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
+        Serial << "No Water for pumps" << endl;
+        t.after(50, prepareSleep);
+        return;
+      }
+  }
+
+  sensorLipo.setProperty("percent").send( String(100 * lipoSenor / 4095) );
+  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoSenor)) );
+  sensorSolar.setProperty("percent").send(String((100 * solarSensor ) / 4095));
+  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarSensor)) );
+
+  float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
+  float* pFloat = temp;
+  int devices = dallas.readAllTemperatures(pFloat, 2);
+  if (devices < 2) {
+    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
+      sensorTemp.setProperty("control").send( String(pFloat[0]));
+  }
+  } else if (devices >= 2) {      
+    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
+      sensorTemp.setProperty("temp").send( String(pFloat[0]));
+    }
+    if ((pFloat[1] > TEMP_INIT_VALUE) && (pFloat[1] < TEMP_MAX_VALUE) ) {
+      sensorTemp.setProperty("control").send( String(pFloat[1]));
+    }
+  }
+
+  bool lipoTempWarning = abs(temp[1] - temp[2]) > 5;
+  if(lipoTempWarning){
+    t.after(50, prepareSleep);
+    return;
+  }
+
+  digitalWrite(OUTPUT_PUMP, LOW);
+  for(int i=0; i < MAX_PLANTS; i++) {
+    digitalWrite(mPlants[i].mPinPump, LOW); 
+  }
+
+  lastPumpRunning = determineNextPump();
+  if(lastPumpRunning != -1){
+    setLastActivationForPump(lastPumpRunning, getCurrentTime());
+    digitalWrite(mPlants[lastPumpRunning].mPinPump, HIGH);  
+  }
+}
+
 void setMoistureTrigger(int plantId, long value){
   if(plantId == 0){
     rtcMoistureTrigger0 = value;
@@ -143,27 +220,27 @@ void setLastActivationForPump(int plantId, long value){
   } 
 }
 
-void getLastActivationForPump(int plantId){
+long getLastActivationForPump(int plantId){
   if(plantId == 0){
-    return rtcLastActive0
+    return rtcLastActive0;
   }
   if(plantId == 1){
-    return rtcLastActive1
+    return rtcLastActive1;
   }
   if(plantId == 2){
-    return rtcLastActive2
+    return rtcLastActive2;
   }
   if(plantId == 3){
-    return rtcLastActive4
+    return rtcLastActive3;
   }
   if(plantId == 4){
-    return rtcLastActive4
+    return rtcLastActive4;
   }
   if(plantId == 5){
-    return rtcLastActive5
+    return rtcLastActive5;
   }
   if(plantId == 6){
-    return rtcLastActive6
+    return rtcLastActive6;
   }
   return -1;
 }
@@ -223,15 +300,8 @@ void readSensors() {
   digitalWrite(OUTPUT_SENSOR, LOW);
 }
 
-//wait till homie flushed mqtt ect.
-void prepareSleep() {
-  Homie.prepareToSleep();
-}
 
-//FIXME real impl
-long getCurrentTime(){
-  return 1337;
-}
+
 
 //Homie.getMqttClient().disconnect();
 
@@ -261,7 +331,7 @@ void onHomieEvent(const HomieEvent& event) {
 }
 
 int determineNextPump(){
-  float solarValue = solarRawSensor.getMedian()
+  float solarValue = solarRawSensor.getMedian();
   bool isLowLight =(ADC_5V_TO_3V3(solarValue) > SOLAR_CHARGE_MIN_VOLTAGE || ADC_5V_TO_3V3(solarValue)  < SOLAR_CHARGE_MAX_VOLTAGE);
 
   
@@ -274,12 +344,12 @@ int determineNextPump(){
     long lastActivation = getLastActivationForPump(i);
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
-    if(mPlants[i].mSetting->pPumpCooldownInHours > sinceLastActivation * ){
-      setMoistureTrigger(i, DEACTIVATED_PLANT)
+    if(mPlants[i].mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600 / 1000){
+      setMoistureTrigger(i, DEACTIVATED_PLANT);
       continue;
     }
     //skip as it is not low light
-    if(!isLowLight && mPlants[i].mSetting->pPumpOnlyWhenLowLight.get()){
+    if(!isLowLight && mPlants[i].mSetting->pPumpOnlyWhenLowLight->get()){
       continue;
     }
 
@@ -288,68 +358,6 @@ int determineNextPump(){
     }
   }
   return -1;
-}
-
-void mode2MQTT(){
-   if (deepSleepTime.get()) {
-      Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
-    }
-    /* Publish default values */
-
-  if(lastPumpRunning != -1){
-    long waterDiff = mWaterGone-lastWaterValue
-    //TODO attribute used water in ml to plantid
-  }
-  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
-  Serial << "Water : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
-  lastWaterValue = mWaterGone
-  
-  if (mWaterGone <= waterLevelMin.get()) {
-      /* let the ESP sleep qickly, as nothing must be done */
-      if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        Serial << "No Water for pumps" << endl;
-        t.after(50, prepareSleep);
-        return;
-      }
-  }
-
-  sensorLipo.setProperty("percent").send( String(100 * lipoSenor / 4095) );
-  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoSenor)) );
-  sensorSolar.setProperty("percent").send(String((100 * solarSensor ) / 4095));
-  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarSensor)) );
-
-  float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
-  float* pFloat = temp;
-  int devices = dallas.readAllTemperatures(pFloat, 2);
-  if (devices < 2) {
-    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("control").send( String(pFloat[0]));
-  }
-  } else if (devices >= 2) {      
-    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("temp").send( String(pFloat[0]));
-    }
-    if ((pFloat[1] > TEMP_INIT_VALUE) && (pFloat[1] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("control").send( String(pFloat[1]));
-    }
-  }
-
-  bool lipoTempWarning = math.abs(temp[1] - temp[2]) > 5;
-  if(lipoTempWarning){
-    t.after(50, prepareSleep);
-    return;
-  }
-
-  digitalWrite(OUTPUT_PUMP, LOW);
-  for(int i=0; i < MAX_PLANTS; i++) {
-    digitalWrite(mPlants[pumpOrNegative].mPinPump, LOW); 
-  }
-
-  lastPumpRunning = determineNextPump()
-  if(pumpOrNegative != -1){
-    setLastActivationForPump(pumpOrNegative, getCurrentTime())
-    digitalWrite(mPlants[pumpOrNegative].mPinPump, HIGH);  
-  }
 }
 
 
@@ -453,8 +461,6 @@ void systemInit(){
   WiFi.mode(WIFI_STA);
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
-  Homie.setLoopFunction(loopHandler);
-
 
   // Set default values
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */

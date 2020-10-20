@@ -17,15 +17,15 @@
 class Plant {
 
 private:
-    int mPinSensor=0;   /**< Pin of the moist sensor */
-    int mPinPump=0;     /**< Pin of the pump */
-
     int mValue = 0;     /**< Value of the moist sensor */
 
     int mAnalogValue=0; /**< moist sensor values, used for a calculation */
     HomieNode* mPlant = NULL;
 
 public:
+    //FIXME visibility
+    int mPinSensor=0;   /**< Pin of the moist sensor */
+    int mPinPump=0;     /**< Pin of the pump */
     PlantSettings_t* mSetting;
     /**
      * @brief Construct a new Plant object
