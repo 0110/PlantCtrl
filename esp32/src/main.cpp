@@ -415,7 +415,6 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
  */
 bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
-
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
       mode3Active=true;
   } else {
@@ -605,7 +604,6 @@ bool mode1(){
 
 void mode2(){
   Serial.println("m2");
-
   systemInit();
 
   /* Jump into Mode 3, if not configured */

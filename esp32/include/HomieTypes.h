@@ -17,7 +17,6 @@
 
 typedef struct PlantSettings_t {
     HomieSetting<long>* pSensorDry;
-    HomieSetting<long>* pSensorWet;
     HomieSetting<long>* pPumpAllowedHourRangeStart;
     HomieSetting<long>* pPumpAllowedHourRangeEnd;
     HomieSetting<bool>* pPumpOnlyWhenLowLight;
