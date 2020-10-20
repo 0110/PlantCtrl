@@ -24,10 +24,6 @@ void Plant::init(void) {
     this->mSetting->pSensorDry->setValidator([] (long candidate) {
         return (((candidate >= 0) && (candidate <= 4095) ) || candidate == DEACTIVATED_PLANT);
     });
-    this->mSetting->pSensorWet->setDefaultValue(0);
-    this->mSetting->pSensorWet->setValidator([] (long candidate) {
-        return ((candidate >= 0) && (candidate <= 4095) );
-    });
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([] (long candidate) {
         return ((candidate >= 0) && (candidate <= 23) );

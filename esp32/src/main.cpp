@@ -116,7 +116,7 @@ bool prepareSleep(void *) {
 
 void mode2MQTT(){
    if (deepSleepTime.get()) {
-      Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
+      Serial << "sleeping for " << deepSleepTime.get() << endl;
     }
     /* Publish default values */
 
@@ -125,13 +125,13 @@ void mode2MQTT(){
     //TODO attribute used water in ml to plantid
   }
   sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
-  Serial << "Water : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
+  Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
   lastWaterValue = mWaterGone;
   
   if (mWaterGone <= waterLevelMin.get()) {
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        Serial << "No Water for pumps" << endl;
+        Serial << "No W" << endl;
         /* in 500 microseconds */
         wait4sleep.in(500, prepareSleep);
         return;
@@ -255,7 +255,7 @@ long getLastActivationForPump(int plantId){
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
 void readSensors() {
-  Serial << "Read sensors..." << endl;
+  Serial << "rs" << endl;
 
   /* activate all sensors */
   pinMode(OUTPUT_SENSOR, OUTPUT);
@@ -269,9 +269,9 @@ void readSensors() {
     }
   }
 
-  Serial << "DS18B20 | Initialization " << endl;
+  Serial << "DS18B20" << endl;
   /* Read the temperature sensors once, as first time 85 degree is returned */
-  Serial << "DS18B20 | sensors: " << String(dallas.readDevices()) << endl;
+  Serial << "DS18B20" << String(dallas.readDevices()) << endl;
   delay(200);
 
 
@@ -280,13 +280,13 @@ void readSensors() {
   float* pFloat = temp;
   // first read returns crap, ignore result and read twice
   if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-      Serial << "DS18B20 | Temperature 1: " << String(temp[0]) << endl;
-      Serial << "DS18B20 | Temperature 2: " << String(temp[1]) << endl;
+      Serial << "t1: " << String(temp[0]) << endl;
+      Serial << "t2: " << String(temp[1]) << endl;
   }
   delay(200);
   if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-      Serial << "Temperature 1: " << String(temp[0]) << endl;
-      Serial << "Temperature 2: " << String(temp[1]) << endl;
+      Serial << "t1: " << String(temp[0]) << endl;
+      Serial << "t2: " << String(temp[1]) << endl;
   }
 
   temp1.add(temp[0]);
@@ -327,10 +327,10 @@ void onHomieEvent(const HomieEvent& event) {
       if(!mode3Active){
         mode2MQTT();
       }
-      Homie.getLogger() << "MQTT connected, preparing for deep sleep after 100ms..." << endl;
+      Homie.getLogger() << "MQTT 1" << endl;
       break;
     case HomieEventType::READY_TO_SLEEP:
-      Homie.getLogger() << "Ready to sleep" << endl;
+      Homie.getLogger() << "rtsleep" << endl;
       esp_deep_sleep_start();
       break;
   }
@@ -415,14 +415,13 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
  */
 bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
-
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
       mode3Active=true;
   } else {
       mode3Active=false;
       esp_deep_sleep_start();
   }
-  Serial << "HOMIE  | Controller " << (mode3Active ? " has coffee" : " is tired") << endl;
+  Serial << (mode3Active ? "stayalive" : "") << endl;
   return true;
 }
 
@@ -551,7 +550,7 @@ void systemInit(){
 
 
 bool mode1(){
-  Serial.println("Init mode 1");
+  Serial.println("m1");
   readSensors();
   //queue sensor values for 
 
@@ -565,36 +564,36 @@ bool mode1(){
       (rtcMoistureTrigger6 == 0)
     ) 
   {
-      Serial.println("Missing RTC information");
+      Serial.println("RTCm2");
       return true;
   }
  
   if ((rtcMoistureTrigger0 != DEACTIVATED_PLANT) && (mPlants[0].getSensorValue() < rtcMoistureTrigger0) ) {
-    Serial.println("Moisture of plant 0");
+    Serial.println("mt0");
     return true;
   }
   if ((rtcMoistureTrigger1 != DEACTIVATED_PLANT) && (mPlants[1].getSensorValue() < rtcMoistureTrigger1) ) {
-    Serial.println("Moisture of plant 1");
+    Serial.println("mt1");
     return true;
   }
   if ((rtcMoistureTrigger2 != DEACTIVATED_PLANT) && (mPlants[2].getSensorValue() < rtcMoistureTrigger2) ) {
-    Serial.println("Moisture of plant 2");
+    Serial.println("mt2");
     return true;
   }
   if ((rtcMoistureTrigger3 != DEACTIVATED_PLANT) && (mPlants[3].getSensorValue() < rtcMoistureTrigger3) ) {
-    Serial.println("Moisture of plant 3");
+    Serial.println("mt3");
     return true;
   }
   if ((rtcMoistureTrigger4 != DEACTIVATED_PLANT) && (mPlants[4].getSensorValue() < rtcMoistureTrigger4) ) {
-    Serial.println("Moisture of plant 4");
+    Serial.println("mt4");
     return true;
   }
   if ((rtcMoistureTrigger5 != DEACTIVATED_PLANT) && (mPlants[5].getSensorValue() < rtcMoistureTrigger5) ) {
-    Serial.println("Moisture of plant 5");
+    Serial.println("mt5");
     return true;
   }
   if ((rtcMoistureTrigger6 != DEACTIVATED_PLANT) && (mPlants[6].getSensorValue() < rtcMoistureTrigger6) ) {
-    Serial.println("Moisture of plant 6");
+    Serial.println("mt6");
     return true;
   }
   //check how long it was already in mode1 if to long goto mode2
@@ -604,13 +603,12 @@ bool mode1(){
 }
 
 void mode2(){
-  Serial.println("Init mode 2");
-
+  Serial.println("m2");
   systemInit();
 
   /* Jump into Mode 3, if not configured */
   if (!mConfigured) {
-    Serial.println("upgrade to mode 3");
+    Serial.println("m3");
     mode3Active = true;
   }
 }
@@ -643,9 +641,8 @@ void setup() {
   WiFi.mode(WIFI_OFF);
 
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS) {
-    Serial << "HOMIE | Settings: " << HomieInternals::MAX_CONFIG_SETTING_SIZE << "/" << MAX_CONFIG_SETTING_ITEMS << endl;
-    Serial << "      | Update Limits.hpp : MAX_CONFIG_SETTING_SIZE to " << MAX_CONFIG_SETTING_ITEMS << endl;
-    Serial << "      | Update Limits.hpp : MAX_JSON_CONFIG_FILE_SIZE to 5000" << endl;
+    //increase the config settings to 50 and the json to 3000
+    Serial << "Limits.hpp" << endl;
   }
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
@@ -658,11 +655,11 @@ void setup() {
   // Configure Deep Sleep:
   if (mConfigured && (deepSleepNightTime.get() > 0) &&
       ( SOLAR_VOLT(solarSensor) < MINIMUM_SOLAR_VOLT)) {
-    Serial << "HOMIE | Setup sleeping for " << deepSleepNightTime.get() << " ms as sun is at " << SOLAR_VOLT(solarSensor) << "V"  << endl;
+    Serial << deepSleepNightTime.get() << "ms ds " << SOLAR_VOLT(solarSensor) << "V"  << endl;
     uint64_t usSleepTime = deepSleepNightTime.get() * 1000U;
     esp_sleep_enable_timer_wakeup(usSleepTime);
   }else if (mConfigured && deepSleepTime.get()) {
-    Serial << "HOMIE | Setup sleeping for " << deepSleepTime.get() << " ms" << endl;
+    Serial << deepSleepTime.get() << " ms ds" << endl;
     uint64_t usSleepTime = deepSleepTime.get() * 1000U;
     esp_sleep_enable_timer_wakeup(usSleepTime);
   }
@@ -672,7 +669,7 @@ void setup() {
     (ADC_5V_TO_3V3(lipoSenor) > NO_LIPO_VOLT) &&
     (deepSleepTime.get()) ) {
     long sleepEmptyLipo = (deepSleepTime.get() * EMPTY_LIPO_MULTIPL);
-    Serial << "HOMIE | Change sleeping to " << sleepEmptyLipo << " ms as lipo is at " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
+    Serial << sleepEmptyLipo << " ms lipo " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
     mDeepSleep = true;
   }
@@ -680,7 +677,7 @@ void setup() {
   if(mode1()){
     mode2();
   } else {
-    Serial.println("Nothing to do back to sleep");
+    Serial.println("nop");
     Serial.flush();
     esp_deep_sleep_start();
   }
@@ -695,7 +692,7 @@ void loop() {
   Homie.loop();
 
   if(millis() > 30000 && !mode3Active){
-    Serial << (millis()/ 1000) << "s running; going to suicide ..." << endl;
+    Serial << (millis()/ 1000) << " ds watchdog" << endl;
     Serial.flush();
     esp_deep_sleep_start();
   }

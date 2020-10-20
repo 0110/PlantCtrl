@@ -76,7 +76,7 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSetting->pSensorWet != NULL) && (this->mValue < this->mSetting->pSensorWet->get()); 
+         return (this->mSetting->pSensorDry != NULL) && (this->mValue < this->mSetting->pSensorDry->get()); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
