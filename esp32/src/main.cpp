@@ -468,7 +468,6 @@ void homieLoop(){
 
 void systemInit(){
   WiFi.mode(WIFI_STA);
-  Serial.println("1");
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
 
@@ -476,24 +475,15 @@ void systemInit(){
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
   wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
-
-Serial.println("2");
-
   waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
   waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
-  Serial.println("4");
   Homie.setLoopFunction(homieLoop);
-  Serial.println("5");
   Homie.setup();
-  Serial.println("6");
-
-  Serial.println("3");
 
   mConfigured = Homie.isConfigured();
-  Serial.println("3b");
   if (mConfigured) {
     // Advertise topics
     plant1.advertise("switch").setName("Pump 1")
@@ -554,10 +544,8 @@ Serial.println("2");
                 .setDatatype("number")
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
-
-    // Mode 3
-    stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
+  stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
 }
 
 
