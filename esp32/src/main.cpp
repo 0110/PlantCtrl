@@ -47,7 +47,6 @@ RTC_DATA_ATTR long lastWaterValue = 0;
 
 
 bool warmBoot = true;
-bool mode2Active = false;
 bool mode3Active = false;   /**< Controller must not sleep */
 
 
@@ -318,7 +317,7 @@ void onHomieEvent(const HomieEvent& event) {
 
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
-      if(mode2Active){
+      if(!mode3Active){
         mode2MQTT();
       }
       Homie.getLogger() << "MQTT connected, preparing for deep sleep after 100ms..." << endl;
@@ -599,14 +598,12 @@ bool mode1(){
 
 void mode2(){
   Serial.println("Init mode 2");
-  mode2Active = true;
 
   systemInit();
 
   /* Jump into Mode 3, if not configured */
   if (!mConfigured) {
     Serial.println("upgrade to mode 3");
-    mode2Active = false;
     mode3Active = true;
   }
 }
@@ -672,6 +669,14 @@ void setup() {
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
     mDeepSleep = true;
   }
+
+  if(mode1()){
+    mode2();
+  } else {
+    Serial.println("Nothing to do back to sleep");
+    Serial.flush();
+    esp_deep_sleep_start();
+  }
 }
 
 /**
@@ -680,22 +685,7 @@ void setup() {
  */
 
 void loop() {
-  /* Perform the active modes (non mode1) */
-  if (mode3Active || mode2Active) {
-    Homie.loop();
-  } else {
-    /* Check which mode shall be selected */
-    if(warmBoot){
-      warmBoot = false;
-      if(mode1()){
-        mode2();
-      } else {
-        Serial.println("Nothing to do back to sleep");
-        Serial.flush();
-        esp_deep_sleep_start();
-      }
-    }
-  }
+  Homie.loop();
 
   if(millis() > 30000 && !mode3Active){
     Serial << (millis()/ 1000) << "s running; going to suicide ..." << endl;
