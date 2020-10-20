@@ -311,15 +311,16 @@ void readSensors() {
 //Homie.getMqttClient().disconnect();
 
 void onHomieEvent(const HomieEvent& event) {
+  const String OFF = String("OFF");
   switch(event.type) {
     case HomieEventType::MQTT_READY:
-      plant0.setProperty("switch").send(String("OFF"));            
-      plant1.setProperty("switch").send(String("OFF"));            
-      plant2.setProperty("switch").send(String("OFF"));
-      plant3.setProperty("switch").send(String("OFF"));            
-      plant4.setProperty("switch").send(String("OFF"));
-      plant5.setProperty("switch").send(String("OFF"));
-      plant6.setProperty("switch").send(String("OFF"));
+      plant0.setProperty("switch").send(OFF);            
+      plant1.setProperty("switch").send(OFF);            
+      plant2.setProperty("switch").send(OFF);
+      plant3.setProperty("switch").send(OFF);            
+      plant4.setProperty("switch").send(OFF);
+      plant5.setProperty("switch").send(OFF);
+      plant6.setProperty("switch").send(OFF);
 
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
@@ -468,7 +469,6 @@ void homieLoop(){
 
 void systemInit(){
   WiFi.mode(WIFI_STA);
-  Serial.println("1");
 
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
 
@@ -476,24 +476,15 @@ void systemInit(){
   deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
   wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
-
-Serial.println("2");
-
   waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
   waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
-  Serial.println("4");
   Homie.setLoopFunction(homieLoop);
-  Serial.println("5");
   Homie.setup();
-  Serial.println("6");
-
-  Serial.println("3");
 
   mConfigured = Homie.isConfigured();
-  Serial.println("3b");
   if (mConfigured) {
     // Advertise topics
     plant1.advertise("switch").setName("Pump 1")
@@ -554,10 +545,8 @@ Serial.println("2");
                 .setDatatype("number")
                 .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
-
-    // Mode 3
-    stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
   }
+  stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
 }
 
 
