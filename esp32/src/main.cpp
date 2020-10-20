@@ -16,6 +16,7 @@
 #include "time.h"
 #include "esp_sleep.h"
 #include "RunningMedian.h"
+#include <arduino-timer.h>
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -65,6 +66,9 @@ int readCounter = 0;
 int mButtonClicks = 0;
 bool mConfigured = false;
 
+
+auto wait4sleep = timer_create_default(); // create a timer with default settings
+
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
@@ -104,9 +108,10 @@ long getCurrentTime(){
 }
 
 //wait till homie flushed mqtt ect.
-void prepareSleep() {
+bool prepareSleep(void *) {
   //FIXME wait till pending mqtt is done, then start sleep via event or whatever
   //Homie.prepareToSleep();
+  return true; // repeat? true there is something in the queue to be done
 }
 
 void mode2MQTT(){
@@ -127,7 +132,8 @@ void mode2MQTT(){
       /* let the ESP sleep qickly, as nothing must be done */
       if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
         Serial << "No Water for pumps" << endl;
-        t.after(50, prepareSleep);
+        /* in 500 microseconds */
+        wait4sleep.in(500, prepareSleep);
         return;
       }
   }
@@ -155,7 +161,7 @@ void mode2MQTT(){
 
   bool lipoTempWarning = abs(temp[1] - temp[2]) > 5;
   if(lipoTempWarning){
-    t.after(50, prepareSleep);
+    wait4sleep.in(500, prepareSleep);
     return;
   }
 
