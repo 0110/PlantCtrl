@@ -311,15 +311,16 @@ void readSensors() {
 //Homie.getMqttClient().disconnect();
 
 void onHomieEvent(const HomieEvent& event) {
+  const String OFF = String("OFF");
   switch(event.type) {
     case HomieEventType::MQTT_READY:
-      plant0.setProperty("switch").send(String("OFF"));            
-      plant1.setProperty("switch").send(String("OFF"));            
-      plant2.setProperty("switch").send(String("OFF"));
-      plant3.setProperty("switch").send(String("OFF"));            
-      plant4.setProperty("switch").send(String("OFF"));
-      plant5.setProperty("switch").send(String("OFF"));
-      plant6.setProperty("switch").send(String("OFF"));
+      plant0.setProperty("switch").send(OFF);            
+      plant1.setProperty("switch").send(OFF);            
+      plant2.setProperty("switch").send(OFF);
+      plant3.setProperty("switch").send(OFF);            
+      plant4.setProperty("switch").send(OFF);
+      plant5.setProperty("switch").send(OFF);
+      plant6.setProperty("switch").send(OFF);
 
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
