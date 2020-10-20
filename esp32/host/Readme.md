@@ -59,5 +59,27 @@ arguments:
 python ota_updater.py -l localhost -u admin -d secure -t "homie/" -i "device-id" /path/to/firmware.bin
 ```
 
+The Parameter can be extracted from the serial console
+```serial
+{} Stored configuration
+  • Hardware device ID: 12345abcd
+  • Device ID: MyDeviceId
+  • Name: MyDeviceName
+  • Device Stats Interval: 60 sec
+  • Wi-Fi:
+    ◦ SSID: MyWifi
+    ◦ Password not shown
+  • MQTT:
+    ◦ Host: 192.168.0.2
+    ◦ Port: 1883
+    ◦ Base topic: /test/
+    ◦ Auth? no
+```
+
+will result in the following command (when executed in this folder):
+```bash
+python ota_updater.py -l 192.168.0.2 -t "/test/" -i "MyDeviceId" ../.pio/build/esp32doit-devkit-v1/firmware.bin
+```
+
 ### Source
 https://github.com/homieiot/homie-esp8266/blob/develop/scripts/ota_updater
