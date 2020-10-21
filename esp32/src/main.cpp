@@ -57,11 +57,6 @@ bool mDeepSleep = false;
 
 int plantSensor1 = 0;
 
-int lipoSenor = -1;
-int lipoSensorValues = 0;
-int solarSensor = -1;
-int solarSensorValues = 0;
-
 int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 int mButtonClicks = 0;
@@ -94,9 +89,7 @@ Plant mPlants[MAX_PLANTS] = {
 
 void readSystemSensors() {
   lipoRawSensor.add(analogRead(SENSOR_LIPO));
-  solarRawSensor.add(analogRead(SENSOR_SOLAR));
-
-  
+  solarRawSensor.add(analogRead(SENSOR_SOLAR)); 
 }
 
 int determineNextPump();
@@ -116,6 +109,8 @@ bool prepareSleep(void *) {
 }
 
 void mode2MQTT(){
+  readSystemSensors();
+
    if (deepSleepTime.get()) {
       Serial << "sleeping for " << deepSleepTime.get() << endl;
     }
@@ -139,10 +134,10 @@ void mode2MQTT(){
       }
   }
 
-  sensorLipo.setProperty("percent").send( String(100 * lipoSenor / 4095) );
-  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoSenor)) );
-  sensorSolar.setProperty("percent").send(String((100 * solarSensor ) / 4095));
-  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarSensor)) );
+  sensorLipo.setProperty("percent").send( String(100 * lipoRawSensor.getAverage() / 4095) );
+  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoRawSensor.getAverage())) );
+  sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage() ) / 4095));
+  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarRawSensor.getAverage())) );
 
   float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
   float* pFloat = temp;
@@ -256,7 +251,9 @@ long getLastActivationForPump(int plantId){
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
 void readSensors() {
-  Serial << "rs" << endl;
+  Serial << "Read Sensors" << endl;
+
+  readSystemSensors();
 
   /* activate all sensors */
   pinMode(OUTPUT_SENSOR, OUTPUT);
@@ -340,9 +337,6 @@ void onHomieEvent(const HomieEvent& event) {
       break;
     case HomieEventType::OTA_SUCCESSFUL:
       digitalWrite(OUTPUT_SENSOR, LOW);
-      break;
-    default:
-      printf("Event %d\r\n", (uint8_t) event.type);
       break;
   }
 }
@@ -671,8 +665,8 @@ void setup() {
 
   // Configure Deep Sleep:
   if (mConfigured && (deepSleepNightTime.get() > 0) &&
-      ( SOLAR_VOLT(solarSensor) < MINIMUM_SOLAR_VOLT)) {
-    Serial << deepSleepNightTime.get() << "ms ds " << SOLAR_VOLT(solarSensor) << "V"  << endl;
+      ( SOLAR_VOLT(solarRawSensor.getAverage()) < MINIMUM_SOLAR_VOLT)) {
+    Serial << deepSleepNightTime.get() << "ms ds " << SOLAR_VOLT(solarRawSensor.getAverage()) << "V"  << endl;
     uint64_t usSleepTime = deepSleepNightTime.get() * 1000U;
     esp_sleep_enable_timer_wakeup(usSleepTime);
   }else if (mConfigured && deepSleepTime.get()) {
@@ -682,11 +676,11 @@ void setup() {
   }
 
   if (mConfigured && 
-    (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && 
-    (ADC_5V_TO_3V3(lipoSenor) > NO_LIPO_VOLT) &&
+    (ADC_5V_TO_3V3(lipoRawSensor.getAverage()) < MINIMUM_LIPO_VOLT) && 
+    (ADC_5V_TO_3V3(lipoRawSensor.getAverage()) > NO_LIPO_VOLT) &&
     (deepSleepTime.get()) ) {
     long sleepEmptyLipo = (deepSleepTime.get() * EMPTY_LIPO_MULTIPL);
-    Serial << sleepEmptyLipo << " ms lipo " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
+    Serial << sleepEmptyLipo << " ms lipo " << ADC_5V_TO_3V3(lipoRawSensor.getAverage()) << "V" << endl;
     esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
     mDeepSleep = true;
   }
