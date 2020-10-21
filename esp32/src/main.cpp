@@ -147,11 +147,10 @@ void mode2MQTT(){
   float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
   float* pFloat = temp;
   int devices = dallas.readAllTemperatures(pFloat, 2);
-  
   if (devices < 2) {
     if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
       sensorTemp.setProperty("control").send( String(pFloat[0]));
-    }
+  }
   } else if (devices >= 2) {      
     if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
       sensorTemp.setProperty("temp").send( String(pFloat[0]));
@@ -271,6 +270,7 @@ void readSensors() {
     }
   }
 
+  Serial << "DS18B20" << endl;
   /* Read the temperature sensors once, as first time 85 degree is returned */
   Serial << "DS18B20" << String(dallas.readDevices()) << endl;
   delay(200);
@@ -311,7 +311,16 @@ void readSensors() {
 void onHomieEvent(const HomieEvent& event) {
   const String OFF = String("OFF");
   switch(event.type) {
+    case HomieEventType::SENDING_STATISTICS:
+      mode2MQTT();
+      Homie.getLogger() << "My statistics" << endl;
+      break;
     case HomieEventType::MQTT_READY:
+      //wait for rtc sync?
+      rtcDeepSleepTime = deepSleepTime.get();
+      mode2MQTT();
+      Homie.getLogger() << "MQTT 1" << endl;
+
       plant0.setProperty("switch").send(OFF);            
       plant1.setProperty("switch").send(OFF);            
       plant2.setProperty("switch").send(OFF);
@@ -320,10 +329,6 @@ void onHomieEvent(const HomieEvent& event) {
       plant5.setProperty("switch").send(OFF);
       plant6.setProperty("switch").send(OFF);
 
-      //wait for rtc sync?
-      rtcDeepSleepTime = deepSleepTime.get();
-      mode2MQTT();
-      Homie.getLogger() << "MQTT 1" << endl;
       break;
     case HomieEventType::READY_TO_SLEEP:
       Homie.getLogger() << "rtsleep" << endl;
@@ -335,7 +340,6 @@ void onHomieEvent(const HomieEvent& event) {
       break;
     case HomieEventType::OTA_SUCCESSFUL:
       digitalWrite(OUTPUT_SENSOR, LOW);
-      mode3Active=false;
       break;
     default:
       printf("Event %d\r\n", (uint8_t) event.type);
@@ -479,7 +483,7 @@ void systemInit(){
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
 
   // Set default values
-  deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
+  deepSleepTime.setDefaultValue(30000);    /* 30 seconds in milliseconds */
   deepSleepNightTime.setDefaultValue(0);
   wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
   waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
@@ -488,6 +492,7 @@ void systemInit(){
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
   Homie.setLoopFunction(homieLoop);
+  Homie.onEvent(onHomieEvent);
   Homie.setup();
 
   mConfigured = Homie.isConfigured();
@@ -558,6 +563,11 @@ void systemInit(){
 
 bool mode1(){
   Serial.println("m1");
+
+  struct timeval tv_now;
+  gettimeofday(&tv_now, NULL);
+  Serial << tv_now.tv_sec << " curtime" << endl;
+
   readSensors();
   //queue sensor values for 
 
@@ -699,7 +709,7 @@ void loop() {
   Homie.loop();
 
   if(millis() > 30000 && !mode3Active){
-    Serial << (millis()/ 1000) << "s gone" << endl;
+    Serial << (millis()/ 1000) << "s alive" << endl;
     Serial.flush();
     esp_deep_sleep_start();
   }
