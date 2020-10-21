@@ -17,6 +17,7 @@
 #include "esp_sleep.h"
 #include "RunningMedian.h"
 #include <arduino-timer.h>
+#include <stdint.h>
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -305,9 +306,6 @@ void readSensors() {
   digitalWrite(OUTPUT_SENSOR, LOW);
 }
 
-
-
-
 //Homie.getMqttClient().disconnect();
 
 void onHomieEvent(const HomieEvent& event) {
@@ -332,6 +330,17 @@ void onHomieEvent(const HomieEvent& event) {
     case HomieEventType::READY_TO_SLEEP:
       Homie.getLogger() << "rtsleep" << endl;
       esp_deep_sleep_start();
+      break;
+    case HomieEventType::OTA_STARTED:
+      Serial.println("OTA DS Disabled");
+      mode3Active=true;
+      break;
+    case HomieEventType::OTA_SUCCESSFUL:
+      Serial.println("OTA DS reenabled");
+      mode3Active=false;
+      break;
+    default:
+      printf("Event %d\r\n", (uint8_t) event.type);
       break;
   }
 }
@@ -415,13 +424,13 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
  */
 bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
+  Serial << value  << endl;
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
       mode3Active=true;
   } else {
       mode3Active=false;
-      esp_deep_sleep_start();
   }
-  Serial << (mode3Active ? "stayalive" : "") << endl;
+ 
   return true;
 }
 
@@ -690,9 +699,12 @@ void setup() {
 
 void loop() {
   Homie.loop();
+  if(mode3Active){
+    digitalWrite(OUTPUT_SENSOR, HIGH);
+  }
 
   if(millis() > 30000 && !mode3Active){
-    Serial << (millis()/ 1000) << " ds watchdog" << endl;
+    Serial << (millis()/ 1000) << "s gone" << endl;
     Serial.flush();
     esp_deep_sleep_start();
   }
