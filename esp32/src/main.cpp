@@ -714,6 +714,7 @@ void setup() {
   }
   /* read button */
   pinMode(BUTTON, INPUT);
+  pinMode(OUTPUT_PUMP, OUTPUT);
  
   /* Disable Wifi and bluetooth */
   WiFi.mode(WIFI_OFF);
