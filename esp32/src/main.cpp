@@ -315,6 +315,9 @@ void onHomieEvent(const HomieEvent& event) {
     case HomieEventType::MQTT_READY:
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
+      Serial << rtcDeepSleepTime << " ms ds" << endl;
+      esp_sleep_enable_timer_wakeup( (rtcDeepSleepTime * 1000U) );
+
       mode2MQTT();
       Homie.getLogger() << "MQTT 1" << endl;
 
@@ -663,16 +666,10 @@ void setup() {
 
   // Big TODO use here the settings in RTC_Memory
 
-  // Configure Deep Sleep:
-  if (mConfigured && (deepSleepNightTime.get() > 0) &&
-      ( SOLAR_VOLT(solarRawSensor.getAverage()) < MINIMUM_SOLAR_VOLT)) {
+  //Panik mode, the Lipo is empty, sleep a long long time:
+  if ( SOLAR_VOLT(solarRawSensor.getAverage()) < MINIMUM_SOLAR_VOLT) {
     Serial << deepSleepNightTime.get() << "ms ds " << SOLAR_VOLT(solarRawSensor.getAverage()) << "V"  << endl;
-    uint64_t usSleepTime = deepSleepNightTime.get() * 1000U;
-    esp_sleep_enable_timer_wakeup(usSleepTime);
-  }else if (mConfigured && deepSleepTime.get()) {
-    Serial << deepSleepTime.get() << " ms ds" << endl;
-    uint64_t usSleepTime = deepSleepTime.get() * 1000U;
-    esp_sleep_enable_timer_wakeup(usSleepTime);
+    esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP);
   }
 
   if (mConfigured && 

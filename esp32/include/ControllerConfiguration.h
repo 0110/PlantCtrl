@@ -59,4 +59,6 @@
 
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 
+#define PANIK_MODE_DEEPSLEEP    18000000000U  /**< 5 hours in usecond */
+
 #endif
