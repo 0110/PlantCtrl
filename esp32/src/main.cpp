@@ -121,6 +121,13 @@ bool prepareSleep(void *) {
 }
 
 void espDeepSleepFor(long seconds){
+  delay(1500);
+  gpio_deep_sleep_hold_en();
+  gpio_hold_en(GPIO_NUM_13); //pump pwr
+  //gpio_hold_en(GPIO_NUM_23); //p0
+  //FIXME fix for outher outputs
+  
+
   Serial.print("Going to sleep for ");
   Serial.print(seconds);
   Serial.println(" seconds");
@@ -140,14 +147,17 @@ void mode2MQTT(){
     digitalWrite(mPlants[i].mPinPump, LOW); 
   }
 
-   if (deepSleepTime.get()) {
-      Serial << "sleeping for " << deepSleepTime.get() << endl;
-    }
-    /* Publish default values */
+  if (deepSleepTime.get()) {
+    Serial << "sleeping for " << deepSleepTime.get() << endl;
+  }
+  /* Publish default values */
 
   if(lastPumpRunning != -1){
     long waterDiff = mWaterGone-lastWaterValue;
     //TODO attribute used water in ml to plantid
+  }
+  for(int i=0; i < MAX_PLANTS; i++) {
+    mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
   }
   sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
   Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
@@ -181,11 +191,14 @@ void mode2MQTT(){
     return;
   }
 
-
-  bool hasWater = mWaterGone > waterLevelMin.get();
+  bool hasWater = true;//FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
   lastPumpRunning = determineNextPump();
+  if(lastPumpRunning != -1 && !hasWater){
+    Serial.println("Want to pump but no water");
+  }
   if(lastPumpRunning != -1 && hasWater){
+    digitalWrite(OUTPUT_PUMP, HIGH);
     setLastActivationForPump(lastPumpRunning, getCurrentTime());
     digitalWrite(mPlants[lastPumpRunning].mPinPump, HIGH);  
   }
@@ -385,30 +398,29 @@ void onHomieEvent(const HomieEvent& event) {
 
 int determineNextPump(){
   float solarValue = getSolarVoltage();
-  bool isLowLight =(ADC_5V_TO_3V3(solarValue) > SOLAR_CHARGE_MIN_VOLTAGE || ADC_5V_TO_3V3(solarValue)  < SOLAR_CHARGE_MAX_VOLTAGE);
-
-  
-
+  bool isLowLight =(solarValue > SOLAR_CHARGE_MIN_VOLTAGE || solarValue < SOLAR_CHARGE_MAX_VOLTAGE);
 
   //FIXME instead of for, use sorted by last activation index to ensure equal runtime?
   for(int i=0; i < MAX_PLANTS; i++) {
-    mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
-    mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
     long lastActivation = getLastActivationForPump(i);
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
     if(mPlants[i].mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600){
-      setMoistureTrigger(i, DEACTIVATED_PLANT);
-      continue;
+      Serial.println("Skipping due to cooldown");
+      //setMoistureTrigger(i, DEACTIVATED_PLANT);
+      //continue;
     }
     //skip as it is not low light
     if(!isLowLight && mPlants[i].mSetting->pPumpOnlyWhenLowLight->get()){
+      Serial.println("Skipping due to light");
       continue;
     }
 
     if(mPlants->isPumpRequired()){
+      Serial.println("Requested pumpin");
       return i;
     }
+    Serial.println("No pump required");
   }
   return -1;
 }
