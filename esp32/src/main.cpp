@@ -86,6 +86,14 @@ Plant mPlants[MAX_PLANTS] = {
         Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6) 
       };
 
+float getBatteryVoltage(){
+  return ADC_5V_TO_3V3(lipoRawSensor.getAverage());
+}
+
+float getSolarVoltage(){
+  return SOLAR_VOLT(solarRawSensor.getAverage());
+}
+
 void readSystemSensors() {
   lipoRawSensor.add(analogRead(SENSOR_LIPO));
   solarRawSensor.add(analogRead(SENSOR_SOLAR)); 
@@ -120,6 +128,8 @@ void espDeepSleepFor(long seconds){
   wait4sleep.in(500, prepareSleep);
 }
 
+
+
 void mode2MQTT(){
   readSystemSensors();
 
@@ -144,9 +154,9 @@ void mode2MQTT(){
   lastWaterValue = mWaterGone;
 
   sensorLipo.setProperty("percent").send( String(100 * lipoRawSensor.getAverage() / 4095) );
-  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoRawSensor.getAverage())) );
+  sensorLipo.setProperty("volt").send( String(getBatteryVoltage()) );
   sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage() ) / 4095));
-  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarRawSensor.getAverage())) );
+  sensorSolar.setProperty("volt").send( String(getSolarVoltage()) );
 
   float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
   float* pFloat = temp;
@@ -179,9 +189,8 @@ void mode2MQTT(){
     setLastActivationForPump(lastPumpRunning, getCurrentTime());
     digitalWrite(mPlants[lastPumpRunning].mPinPump, HIGH);  
   }
-  float solarValue = solarRawSensor.getMedian();
   if(lastPumpRunning == -1 || !hasWater){
-    if((ADC_5V_TO_3V3(solarValue) < SOLAR_CHARGE_MIN_VOLTAGE)){
+    if(getSolarVoltage() < SOLAR_CHARGE_MIN_VOLTAGE){
       gotoMode2AfterThisTimestamp = getCurrentTime()+deepSleepNightTime.get();
       Serial.println("No pumps to activate and low light, deepSleepNight");
       espDeepSleepFor(deepSleepNightTime.get());
@@ -375,7 +384,7 @@ void onHomieEvent(const HomieEvent& event) {
 }
 
 int determineNextPump(){
-  float solarValue = solarRawSensor.getMedian();
+  float solarValue = getSolarVoltage();
   bool isLowLight =(ADC_5V_TO_3V3(solarValue) > SOLAR_CHARGE_MIN_VOLTAGE || ADC_5V_TO_3V3(solarValue)  < SOLAR_CHARGE_MAX_VOLTAGE);
 
   
@@ -710,9 +719,9 @@ void setup() {
   // Big TODO use here the settings in RTC_Memory
 
   //Panik mode, the Lipo is empty, sleep a long long time:
-  if ((ADC_5V_TO_3V3(lipoRawSensor.getAverage()) < MINIMUM_LIPO_VOLT) && 
-    (ADC_5V_TO_3V3(lipoRawSensor.getAverage()) > NO_LIPO_VOLT)) {
-    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << ADC_5V_TO_3V3(lipoRawSensor.getAverage()) << "V" << endl;
+  if ((getBatteryVoltage() < MINIMUM_LIPO_VOLT) && 
+    (getBatteryVoltage() > NO_LIPO_VOLT)) {
+    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << getBatteryVoltage() << "V" << endl;
     esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
     esp_deep_sleep_start();
   }
