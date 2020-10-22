@@ -20,7 +20,7 @@ Plant::Plant(int pinSensor, int pinPump,int plantId, HomieNode* plant, PlantSett
 }
 
 void Plant::init(void) {
-    this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
+    this->mSetting->pSensorDry->setDefaultValue(4095);
     this->mSetting->pSensorDry->setValidator([] (long candidate) {
         return (((candidate >= 0) && (candidate <= 4095) ) || candidate == DEACTIVATED_PLANT);
     });
@@ -41,10 +41,5 @@ void Plant::init(void) {
 }
 
 void Plant::addSenseValue(int analog) {
-    this->mAnalogValue += analog;
-}
-
-void Plant::calculateSensorValue(int amountMeasurePoints) {
-    this->mValue = this->mAnalogValue / amountMeasurePoints;
-    this->mAnalogValue = 0;
+    this->moistureRaw.add(analog);
 }

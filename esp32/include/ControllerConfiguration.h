@@ -46,7 +46,6 @@
 
 #define MIN_TIME_RUNNING    5UL  /**< Amount of seconds the controller must stay awoken */
 #define MAX_PLANTS          7 
-#define EMPTY_LIPO_MULTIPL  3    /**< Multiplier to increase time for sleeping when lipo is empty */
 #define MINIMUM_LIPO_VOLT   3.6f /**< Minimum voltage of the Lipo, that must be present */
 #define NO_LIPO_VOLT        2.0f /**< No Lipo connected */
 #define MINIMUM_SOLAR_VOLT  4.0f /**< Minimum voltage of the sun, to detect daylight */
@@ -58,5 +57,8 @@
 #define SENSOR_SR04_TRIG    23   /**< GPIO 23 - Trigger */
 
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
+
+#define PANIK_MODE_DEEPSLEEP   (60*60*5U)  /**< 5 hours in usecond */
+#define PANIK_MODE_DEEPSLEEP_US (PANIK_MODE_DEEPSLEEP*1000*1000)
 
 #endif

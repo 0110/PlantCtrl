@@ -13,13 +13,12 @@
 #define PLANT_CTRL_H
 
 #include "HomieTypes.h"
+#include "RunningMedian.h"
 
 class Plant {
 
 private:
-    int mValue = 0;     /**< Value of the moist sensor */
-
-    int mAnalogValue=0; /**< moist sensor values, used for a calculation */
+    RunningMedian moistureRaw = RunningMedian(5);
     HomieNode* mPlant = NULL;
 
 public:
@@ -46,14 +45,6 @@ public:
     void addSenseValue(int analogValue);
     
     /**
-     * @brief Calculate the value based on the information
-     * @see amountMeasurePoints
-     * Internal memory, used by addSenseValue will be resetted
-     * @return int  analog value
-     */
-    void calculateSensorValue(int amountMeasurePoints);
-
-    /**
      * @brief Get the Sensor Pin of the analog measuring
      * 
      * @return int 
@@ -67,7 +58,7 @@ public:
      */
     int getPumpPin() { return mPinPump; }
 
-    int getSensorValue() { return mValue; }
+    int getSensorValue() { return moistureRaw.getMedian(); }
 
     /**
      * @brief Check if a plant is too dry and needs some water.
@@ -76,7 +67,7 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSetting->pSensorDry != NULL) && (this->mValue < this->mSetting->pSensorDry->get()); 
+         return (this->mSetting->pSensorDry != NULL) && (this->moistureRaw.getMedian() < this->mSetting->pSensorDry->get()); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
@@ -84,10 +75,6 @@ public:
     }
 
     void init(void);
-
-    long getSettingSensorDry() {
-        return this->mSetting->pSensorDry->get();
-    }
 };
 
 #endif

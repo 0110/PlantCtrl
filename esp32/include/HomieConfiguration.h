@@ -37,7 +37,6 @@ HomieNode stayAlive("stay", "alive", "alive");
 /**
  *********************************** Settings *******************************
  */
-
 HomieSetting<long> deepSleepTime("deepsleep", "time in milliseconds to sleep (0 deactivats it)");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in milliseconds to sleep (0 uses same setting: deepsleep at night, too)");
 HomieSetting<long> wateringDeepSleep("pumpdeepsleep", "time seconds to sleep, while a pump is running");

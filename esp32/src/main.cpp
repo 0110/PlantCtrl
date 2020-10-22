@@ -17,6 +17,7 @@
 #include "esp_sleep.h"
 #include "RunningMedian.h"
 #include <arduino-timer.h>
+#include <stdint.h>
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -28,6 +29,7 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 
 /********************* non volatile enable after deepsleep *******************************/
 
+RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0;      /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR long rtcLastActive0 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger0 = 0;   /**<Level for the moisture sensor */
@@ -46,20 +48,13 @@ RTC_DATA_ATTR long rtcMoistureTrigger6 = 0;   /**<Level for the moisture sensor 
 RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
 
+const char* ntpServer = "pool.ntp.org";
 
 bool warmBoot = true;
 bool mode3Active = false;   /**< Controller must not sleep */
 
 
-bool mLoopInited = false;
-bool mDeepSleep = false;
-
 int plantSensor1 = 0;
-
-int lipoSenor = -1;
-int lipoSensorValues = 0;
-int solarSensor = -1;
-int solarSensorValues = 0;
 
 int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
@@ -91,57 +86,87 @@ Plant mPlants[MAX_PLANTS] = {
         Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6) 
       };
 
+float getBatteryVoltage(){
+  return ADC_5V_TO_3V3(lipoRawSensor.getAverage());
+}
+
+float getSolarVoltage(){
+  return SOLAR_VOLT(solarRawSensor.getAverage());
+}
+
 void readSystemSensors() {
   lipoRawSensor.add(analogRead(SENSOR_LIPO));
-  solarRawSensor.add(analogRead(SENSOR_SOLAR));
-
-  
+  solarRawSensor.add(analogRead(SENSOR_SOLAR)); 
 }
 
 int determineNextPump();
 void setLastActivationForPump(int pumpId, long time);
 
 
-//FIXME real impl
 long getCurrentTime(){
-  return 1337;
+  struct timeval tv_now;
+  gettimeofday(&tv_now, NULL);
+  return tv_now.tv_sec;
 }
 
 //wait till homie flushed mqtt ect.
 bool prepareSleep(void *) {
   //FIXME wait till pending mqtt is done, then start sleep via event or whatever
   //Homie.prepareToSleep();
+  bool queueIsEmpty = true;
+  if(queueIsEmpty){
+    esp_deep_sleep_start();
+  }
   return true; // repeat? true there is something in the queue to be done
 }
 
+void espDeepSleepFor(long seconds){
+  delay(1500);
+  gpio_deep_sleep_hold_en();
+  gpio_hold_en(GPIO_NUM_13); //pump pwr
+  //gpio_hold_en(GPIO_NUM_23); //p0
+  //FIXME fix for outher outputs
+  
+
+  Serial.print("Going to sleep for ");
+  Serial.print(seconds);
+  Serial.println(" seconds");
+  esp_sleep_enable_timer_wakeup( (seconds * 1000U * 1000U) );
+  wait4sleep.in(500, prepareSleep);
+}
+
+
+
 void mode2MQTT(){
-   if (deepSleepTime.get()) {
-      Serial << "sleeping for " << deepSleepTime.get() << endl;
-    }
-    /* Publish default values */
+  readSystemSensors();
+
+  configTime(0, 0, ntpServer);
+
+  digitalWrite(OUTPUT_PUMP, LOW);
+  for(int i=0; i < MAX_PLANTS; i++) {
+    digitalWrite(mPlants[i].mPinPump, LOW); 
+  }
+
+  if (deepSleepTime.get()) {
+    Serial << "sleeping for " << deepSleepTime.get() << endl;
+  }
+  /* Publish default values */
 
   if(lastPumpRunning != -1){
     long waterDiff = mWaterGone-lastWaterValue;
     //TODO attribute used water in ml to plantid
   }
+  for(int i=0; i < MAX_PLANTS; i++) {
+    mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
+  }
   sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
   Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
   lastWaterValue = mWaterGone;
-  
-  if (mWaterGone <= waterLevelMin.get()) {
-      /* let the ESP sleep qickly, as nothing must be done */
-      if ((millis() >= (MIN_TIME_RUNNING * MS_TO_S)) && (deepSleepTime.get() > 0)) {
-        Serial << "No W" << endl;
-        /* in 500 microseconds */
-        wait4sleep.in(500, prepareSleep);
-        return;
-      }
-  }
 
-  sensorLipo.setProperty("percent").send( String(100 * lipoSenor / 4095) );
-  sensorLipo.setProperty("volt").send( String(ADC_5V_TO_3V3(lipoSenor)) );
-  sensorSolar.setProperty("percent").send(String((100 * solarSensor ) / 4095));
-  sensorSolar.setProperty("volt").send( String(SOLAR_VOLT(solarSensor)) );
+  sensorLipo.setProperty("percent").send( String(100 * lipoRawSensor.getAverage() / 4095) );
+  sensorLipo.setProperty("volt").send( String(getBatteryVoltage()) );
+  sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage() ) / 4095));
+  sensorSolar.setProperty("volt").send( String(getSolarVoltage()) );
 
   float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
   float* pFloat = temp;
@@ -161,20 +186,39 @@ void mode2MQTT(){
 
   bool lipoTempWarning = abs(temp[0] - temp[1]) > 5;
   if(lipoTempWarning){
-    wait4sleep.in(500, prepareSleep);
+    Serial.println("Lipo temp incorrect, panic mode deepsleep");
+    espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
     return;
   }
 
-  digitalWrite(OUTPUT_PUMP, LOW);
-  for(int i=0; i < MAX_PLANTS; i++) {
-    digitalWrite(mPlants[i].mPinPump, LOW); 
-  }
-
+  bool hasWater = true;//FIXMEmWaterGone > waterLevelMin.get();
+  //FIXME no water warning message
   lastPumpRunning = determineNextPump();
-  if(lastPumpRunning != -1){
+  if(lastPumpRunning != -1 && !hasWater){
+    Serial.println("Want to pump but no water");
+  }
+  if(lastPumpRunning != -1 && hasWater){
+    digitalWrite(OUTPUT_PUMP, HIGH);
     setLastActivationForPump(lastPumpRunning, getCurrentTime());
     digitalWrite(mPlants[lastPumpRunning].mPinPump, HIGH);  
   }
+  if(lastPumpRunning == -1 || !hasWater){
+    if(getSolarVoltage() < SOLAR_CHARGE_MIN_VOLTAGE){
+      gotoMode2AfterThisTimestamp = getCurrentTime()+deepSleepNightTime.get();
+      Serial.println("No pumps to activate and low light, deepSleepNight");
+      espDeepSleepFor(deepSleepNightTime.get());
+    }else {
+      gotoMode2AfterThisTimestamp = getCurrentTime()+deepSleepTime.get();
+      Serial.println("No pumps to activate, deepSleep");
+      espDeepSleepFor(deepSleepTime.get());
+    }
+    
+  }else {
+    gotoMode2AfterThisTimestamp = 0;
+    Serial.println("Running pump, watering deepsleep");
+    espDeepSleepFor(wateringDeepSleep.get());
+  }
+  
 }
 
 void setMoistureTrigger(int plantId, long value){
@@ -255,7 +299,9 @@ long getLastActivationForPump(int plantId){
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
 void readSensors() {
-  Serial << "rs" << endl;
+  Serial << "Read Sensors" << endl;
+
+  readSystemSensors();
 
   /* activate all sensors */
   pinMode(OUTPUT_SENSOR, OUTPUT);
@@ -305,15 +351,26 @@ void readSensors() {
   digitalWrite(OUTPUT_SENSOR, LOW);
 }
 
-
-
-
 //Homie.getMqttClient().disconnect();
 
 void onHomieEvent(const HomieEvent& event) {
   const String OFF = String("OFF");
   switch(event.type) {
+    case HomieEventType::SENDING_STATISTICS:
+      mode2MQTT();
+      Homie.getLogger() << "My statistics" << endl;
+      break;
     case HomieEventType::MQTT_READY:
+      //wait for rtc sync?
+      rtcDeepSleepTime = deepSleepTime.get();
+      Serial << rtcDeepSleepTime << " ms ds" << endl;
+
+      //saveguard, should be overriden in mode2MQTT normally
+      esp_sleep_enable_timer_wakeup( (rtcDeepSleepTime * 1000U) );
+
+      mode2MQTT();
+      Homie.getLogger() << "MQTT 1" << endl;
+
       plant0.setProperty("switch").send(OFF);            
       plant1.setProperty("switch").send(OFF);            
       plant2.setProperty("switch").send(OFF);
@@ -322,46 +379,48 @@ void onHomieEvent(const HomieEvent& event) {
       plant5.setProperty("switch").send(OFF);
       plant6.setProperty("switch").send(OFF);
 
-      //wait for rtc sync?
-      rtcDeepSleepTime = deepSleepTime.get();
-      if(!mode3Active){
-        mode2MQTT();
-      }
-      Homie.getLogger() << "MQTT 1" << endl;
       break;
     case HomieEventType::READY_TO_SLEEP:
       Homie.getLogger() << "rtsleep" << endl;
       esp_deep_sleep_start();
       break;
+    case HomieEventType::OTA_STARTED:
+      digitalWrite(OUTPUT_SENSOR, HIGH);
+      mode3Active=true;
+      break;
+    case HomieEventType::OTA_SUCCESSFUL:
+      digitalWrite(OUTPUT_SENSOR, LOW);
+      break;
+    default:
+      break;
   }
 }
 
 int determineNextPump(){
-  float solarValue = solarRawSensor.getMedian();
-  bool isLowLight =(ADC_5V_TO_3V3(solarValue) > SOLAR_CHARGE_MIN_VOLTAGE || ADC_5V_TO_3V3(solarValue)  < SOLAR_CHARGE_MAX_VOLTAGE);
-
-  
-
+  float solarValue = getSolarVoltage();
+  bool isLowLight =(solarValue > SOLAR_CHARGE_MIN_VOLTAGE || solarValue < SOLAR_CHARGE_MAX_VOLTAGE);
 
   //FIXME instead of for, use sorted by last activation index to ensure equal runtime?
   for(int i=0; i < MAX_PLANTS; i++) {
-    mPlants[i].calculateSensorValue(AMOUNT_SENOR_QUERYS);
-    mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
     long lastActivation = getLastActivationForPump(i);
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
-    if(mPlants[i].mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600 / 1000){
-      setMoistureTrigger(i, DEACTIVATED_PLANT);
-      continue;
+    if(mPlants[i].mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600){
+      Serial.println("Skipping due to cooldown");
+      //setMoistureTrigger(i, DEACTIVATED_PLANT);
+      //continue;
     }
     //skip as it is not low light
     if(!isLowLight && mPlants[i].mSetting->pPumpOnlyWhenLowLight->get()){
+      Serial.println("Skipping due to light");
       continue;
     }
 
     if(mPlants->isPumpRequired()){
+      Serial.println("Requested pumpin");
       return i;
     }
+    Serial.println("No pump required");
   }
   return -1;
 }
@@ -415,13 +474,13 @@ bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const Str
  */
 bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
+  Serial << value  << endl;
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
       mode3Active=true;
   } else {
       mode3Active=false;
-      esp_deep_sleep_start();
   }
-  Serial << (mode3Active ? "stayalive" : "") << endl;
+ 
   return true;
 }
 
@@ -472,15 +531,19 @@ void systemInit(){
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
 
   // Set default values
-  deepSleepTime.setDefaultValue(300000);    /* 5 minutes in milliseconds */
-  deepSleepNightTime.setDefaultValue(0);
-  wateringDeepSleep.setDefaultValue(60000); /* 1 minute in milliseconds */
+  
+  //in seconds
+  deepSleepTime.setDefaultValue(10);
+  deepSleepNightTime.setDefaultValue(30);
+  wateringDeepSleep.setDefaultValue(5);
+
   waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
   waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
 
   Homie.setLoopFunction(homieLoop);
+  Homie.onEvent(onHomieEvent);
   Homie.setup();
 
   mConfigured = Homie.isConfigured();
@@ -551,6 +614,12 @@ void systemInit(){
 
 bool mode1(){
   Serial.println("m1");
+  Serial << getCurrentTime() << " curtime" << endl;
+
+  if(rtcDeepSleepTime > 0){
+    esp_sleep_enable_timer_wakeup( (rtcDeepSleepTime * 1000U) );
+  }
+
   readSensors();
   //queue sensor values for 
 
@@ -598,7 +667,16 @@ bool mode1(){
   }
   //check how long it was already in mode1 if to long goto mode2
 
-  //TODO evaluate if something is to do
+  long cTime = getCurrentTime();
+  if(cTime < 100000){
+    Serial.println("Starting mode 2 due to missing ntp");
+    //missing ntp time boot to mode3
+    return true;
+  }
+  if(gotoMode2AfterThisTimestamp < cTime){
+    Serial.println("Starting mode 2 after specified mode1 time");
+    return true;
+  }
   return false;
 }
 
@@ -636,6 +714,7 @@ void setup() {
   }
   /* read button */
   pinMode(BUTTON, INPUT);
+  pinMode(OUTPUT_PUMP, OUTPUT);
  
   /* Disable Wifi and bluetooth */
   WiFi.mode(WIFI_OFF);
@@ -652,26 +731,12 @@ void setup() {
 
   // Big TODO use here the settings in RTC_Memory
 
-  // Configure Deep Sleep:
-  if (mConfigured && (deepSleepNightTime.get() > 0) &&
-      ( SOLAR_VOLT(solarSensor) < MINIMUM_SOLAR_VOLT)) {
-    Serial << deepSleepNightTime.get() << "ms ds " << SOLAR_VOLT(solarSensor) << "V"  << endl;
-    uint64_t usSleepTime = deepSleepNightTime.get() * 1000U;
-    esp_sleep_enable_timer_wakeup(usSleepTime);
-  }else if (mConfigured && deepSleepTime.get()) {
-    Serial << deepSleepTime.get() << " ms ds" << endl;
-    uint64_t usSleepTime = deepSleepTime.get() * 1000U;
-    esp_sleep_enable_timer_wakeup(usSleepTime);
-  }
-
-  if (mConfigured && 
-    (ADC_5V_TO_3V3(lipoSenor) < MINIMUM_LIPO_VOLT) && 
-    (ADC_5V_TO_3V3(lipoSenor) > NO_LIPO_VOLT) &&
-    (deepSleepTime.get()) ) {
-    long sleepEmptyLipo = (deepSleepTime.get() * EMPTY_LIPO_MULTIPL);
-    Serial << sleepEmptyLipo << " ms lipo " << ADC_5V_TO_3V3(lipoSenor) << "V" << endl;
-    esp_sleep_enable_timer_wakeup(sleepEmptyLipo * 1000U);
-    mDeepSleep = true;
+  //Panik mode, the Lipo is empty, sleep a long long time:
+  if ((getBatteryVoltage() < MINIMUM_LIPO_VOLT) && 
+    (getBatteryVoltage() > NO_LIPO_VOLT)) {
+    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << getBatteryVoltage() << "V" << endl;
+    esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
+    esp_deep_sleep_start();
   }
 
   if(mode1()){
@@ -692,7 +757,7 @@ void loop() {
   Homie.loop();
 
   if(millis() > 30000 && !mode3Active){
-    Serial << (millis()/ 1000) << " ds watchdog" << endl;
+    Serial << (millis()/ 1000) << "s alive" << endl;
     Serial.flush();
     esp_deep_sleep_start();
   }
