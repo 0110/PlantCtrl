@@ -11,7 +11,7 @@
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
 
-#define FIRMWARE_VERSION        "1.0.3"
+#define FIRMWARE_VERSION        "1.0.4"
 
 #define ADC_TO_VOLT(adc)                      ((adc) * 3.3 ) / 4095)
 #define ADC_TO_VOLT_WITH_MULTI(adc, multi)    (((adc) * 3.3 * (multi)) / 4095)

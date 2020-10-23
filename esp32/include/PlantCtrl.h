@@ -70,7 +70,16 @@ public:
 
     void init(void);
 
+    /** @fn  bool isInCooldown(long sinceLastActivation)
+     *  @brief determine, if the plant was recently casted
+     *  @param sinceLastActivation timestamp of last time
+     */
     bool isInCooldown(long sinceLastActivation) {
+        /* if the time difference is greater than one month, we know these are initial values */
+        if (sinceLastActivation > (60 * 60 * 24 * 30)) {
+            return false;
+        }
+
         return (this->mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600);
     }
 

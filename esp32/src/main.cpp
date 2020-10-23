@@ -120,10 +120,12 @@ bool prepareSleep(void *) {
   return true; // repeat? true there is something in the queue to be done
 }
 
-void espDeepSleepFor(long seconds){
+void espDeepSleepFor(long seconds, bool activatePump = false){
   delay(1500);
   gpio_deep_sleep_hold_en();
-  gpio_hold_en(GPIO_NUM_13); //pump pwr
+  if (activatePump) {
+    gpio_hold_en(GPIO_NUM_13); //pump pwr
+  }
   //gpio_hold_en(GPIO_NUM_23); //p0
   //FIXME fix for outher outputs
   
@@ -216,7 +218,7 @@ void mode2MQTT(){
   }else {
     gotoMode2AfterThisTimestamp = 0;
     Serial.println("Running pump, watering deepsleep");
-    espDeepSleepFor(wateringDeepSleep.get());
+    espDeepSleepFor(wateringDeepSleep.get(), true);
   }
   
 }
