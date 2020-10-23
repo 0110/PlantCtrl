@@ -144,7 +144,7 @@ void mode2MQTT(){
 
   digitalWrite(OUTPUT_PUMP, LOW);
   for(int i=0; i < MAX_PLANTS; i++) {
-    digitalWrite(mPlants[i].mPinPump, LOW); 
+    mPlants[i].deactivatePump();
   }
 
   if (deepSleepTime.get()) {
@@ -200,7 +200,7 @@ void mode2MQTT(){
   if(lastPumpRunning != -1 && hasWater){
     digitalWrite(OUTPUT_PUMP, HIGH);
     setLastActivationForPump(lastPumpRunning, getCurrentTime());
-    digitalWrite(mPlants[lastPumpRunning].mPinPump, HIGH);  
+    mPlants[lastPumpRunning].activatePump();
   }
   if(lastPumpRunning == -1 || !hasWater){
     if(getSolarVoltage() < SOLAR_CHARGE_MIN_VOLTAGE){
@@ -311,7 +311,7 @@ void readSensors() {
   /* wait before reading something */
   for (int readCnt=0;readCnt < AMOUNT_SENOR_QUERYS; readCnt++) {
     for(int i=0; i < MAX_PLANTS; i++) {
-      mPlants[i].addSenseValue(analogRead(mPlants[i].getSensorPin()));
+      mPlants[i].addSenseValue();
     }
   }
 
@@ -354,7 +354,6 @@ void readSensors() {
 //Homie.getMqttClient().disconnect();
 
 void onHomieEvent(const HomieEvent& event) {
-  const String OFF = String("OFF");
   switch(event.type) {
     case HomieEventType::SENDING_STATISTICS:
       mode2MQTT();
@@ -370,15 +369,9 @@ void onHomieEvent(const HomieEvent& event) {
 
       mode2MQTT();
       Homie.getLogger() << "MQTT 1" << endl;
-
-      plant0.setProperty("switch").send(OFF);            
-      plant1.setProperty("switch").send(OFF);            
-      plant2.setProperty("switch").send(OFF);
-      plant3.setProperty("switch").send(OFF);            
-      plant4.setProperty("switch").send(OFF);
-      plant5.setProperty("switch").send(OFF);
-      plant6.setProperty("switch").send(OFF);
-
+      for(int i=0; i < MAX_PLANTS; i++) {
+        mPlants[i].postMQTTconnection();
+      }
       break;
     case HomieEventType::READY_TO_SLEEP:
       Homie.getLogger() << "rtsleep" << endl;
@@ -405,13 +398,13 @@ int determineNextPump(){
     long lastActivation = getLastActivationForPump(i);
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
-    if(mPlants[i].mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600){
+    if(mPlants[i].isInCooldown(sinceLastActivation) ){
       Serial.println("Skipping due to cooldown");
       //setMoistureTrigger(i, DEACTIVATED_PLANT);
       //continue;
     }
     //skip as it is not low light
-    if(!isLowLight && mPlants[i].mSetting->pPumpOnlyWhenLowLight->get()){
+    if(!isLowLight && mPlants[i].isAllowedOnlyAtLowLight()){
       Serial.println("Skipping due to light");
       continue;
     }
@@ -423,45 +416,6 @@ int determineNextPump(){
     Serial.println("No pump required");
   }
   return -1;
-}
-
-
-bool switchGeneralPumpHandler(const int pump, const HomieRange& range, const String& value) {
-  if (range.isRange) return false;  // only one switch is present
-  switch (pump)
-  {
-#if MAX_PLANTS >= 1
-  case 0:
-#endif
-#if MAX_PLANTS >= 2
-  case 1:
-#endif
-  #if MAX_PLANTS >= 3
-#endif
-  case 2:
-#if MAX_PLANTS >= 4
-  case 3:
-#endif
-#if MAX_PLANTS >= 5
-  case 4:
-#endif
-#if MAX_PLANTS >= 6
-  case 5:
-#endif
-
-    if ((value.equals("ON")) || (value.equals("On")) || (value.equals("on")) || (value.equals("true"))) {
-      digitalWrite(mPlants[pump].getPumpPin(), HIGH);
-      return true;
-    } else if ((value.equals("OFF")) || (value.equals("Off")) || (value.equals("off")) || (value.equals("false")) ) {
-      digitalWrite(mPlants[pump].getPumpPin(), LOW);
-      return true;
-    } else {
-      return false;
-    }
-    break;
-  default:
-    return false;
-  }
 }
 
 /**
@@ -482,43 +436,6 @@ bool aliveHandler(const HomieRange& range, const String& value) {
   }
  
   return true;
-}
-
-/**
- * @brief Handle Mqtt commands for the pumpe, responsible for the first plant
- * 
- * @param range multiple transmitted values (not used for this function)
- * @param value single value
- * @return true when the command was parsed and executed succuessfully
- * @return false on errors when parsing the request
- */
-bool switch1Handler(const HomieRange& range, const String& value) {
-  return switchGeneralPumpHandler(0, range, value);
-}
-
-
-/**
- * @brief Handle Mqtt commands for the pumpe, responsible for the second plant
- * 
- * @param range multiple transmitted values (not used for this function)
- * @param value single value
- * @return true when the command was parsed and executed succuessfully
- * @return false on errors when parsing the request
- */
-bool switch2Handler(const HomieRange& range, const String& value) {
-  return switchGeneralPumpHandler(1, range, value);
-}
-
-/**
- * @brief Handle Mqtt commands for the pumpe, responsible for the third plant
- * 
- * @param range multiple transmitted values (not used for this function)
- * @param value single value
- * @return true when the command was parsed and executed succuessfully
- * @return false on errors when parsing the request
- */
-bool switch3Handler(const HomieRange& range, const String& value) {
-  return switchGeneralPumpHandler(2, range, value);
 }
 
 void homieLoop(){
@@ -548,38 +465,9 @@ void systemInit(){
 
   mConfigured = Homie.isConfigured();
   if (mConfigured) {
-    // Advertise topics
-    plant1.advertise("switch").setName("Pump 1")
-                              .setDatatype("boolean")
-                              .settable(switch1Handler);
-    plant1.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant2.advertise("switch").setName("Pump 2")
-                              .setDatatype("boolean")
-                              .settable(switch2Handler);
-    plant2.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant3.advertise("switch").setName("Pump 3")
-                              .setDatatype("boolean")
-                              .settable(switch3Handler);
-    plant3.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant4.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant5.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant6.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-    plant0.advertise("moist").setName("Percent")
-                              .setDatatype("number")
-                              .setUnit("%");
-
+    for(int i=0; i < MAX_PLANTS; i++) {
+      mPlants[i].advertise();
+    }
     sensorTemp.advertise("control")
                 .setName("Temperature")
                 .setDatatype("number")
@@ -707,13 +595,10 @@ void setup() {
   /* Intialize inputs and outputs */
   pinMode(SENSOR_LIPO, ANALOG);
   pinMode(SENSOR_SOLAR, ANALOG);
-  for(int i=0; i < MAX_PLANTS; i++) {
-    pinMode(mPlants[i].getPumpPin(), OUTPUT);
-    pinMode(mPlants[i].getSensorPin(), ANALOG);
-    digitalWrite(mPlants[i].getPumpPin(), LOW);
-  }
   /* read button */
   pinMode(BUTTON, INPUT);
+
+  /* Power pins */
   pinMode(OUTPUT_PUMP, OUTPUT);
  
   /* Disable Wifi and bluetooth */

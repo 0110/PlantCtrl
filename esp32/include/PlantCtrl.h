@@ -20,12 +20,12 @@ class Plant {
 private:
     RunningMedian moistureRaw = RunningMedian(5);
     HomieNode* mPlant = NULL;
-
-public:
-    //FIXME visibility
     int mPinSensor=0;   /**< Pin of the moist sensor */
     int mPinPump=0;     /**< Pin of the pump */
     PlantSettings_t* mSetting;
+    bool mConnected = false;
+
+public:
     /**
      * @brief Construct a new Plant object
      * 
@@ -37,28 +37,21 @@ public:
             HomieNode* plant,
             PlantSettings_t* setting);
 
+    void postMQTTconnection(void);
+
+    void advertise(void);
+
     /**
-     * @brief Add a value, to be measured
+     * @brief Measure a new analog moister value
      * 
-     * @param analogValue 
      */
-    void addSenseValue(int analogValue);
+    void addSenseValue(void);
     
-    /**
-     * @brief Get the Sensor Pin of the analog measuring
-     * 
-     * @return int 
-     */
-    int  getSensorPin() { return mPinSensor; }
-
-    /**
-     * @brief Get the Pump Pin object
-     * 
-     * @return int 
-     */
-    int getPumpPin() { return mPinPump; }
-
     int getSensorValue() { return moistureRaw.getMedian(); }
+
+    void deactivatePump(void);
+
+    void activatePump(void);
 
     /**
      * @brief Check if a plant is too dry and needs some water.
@@ -73,8 +66,17 @@ public:
     HomieInternals::SendingPromise& setProperty(const String& property) const {
         return mPlant->setProperty(property);
     }
+    bool switchHandler(const HomieRange& range, const String& value);
 
     void init(void);
+
+    bool isInCooldown(long sinceLastActivation) {
+        return (this->mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600);
+    }
+
+    bool isAllowedOnlyAtLowLight(void) {
+        return this->mSetting->pPumpOnlyWhenLowLight->get();
+    }
 };
 
 #endif
