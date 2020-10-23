@@ -379,10 +379,12 @@ void onHomieEvent(const HomieEvent& event) {
       break;
     case HomieEventType::OTA_STARTED:
       digitalWrite(OUTPUT_SENSOR, HIGH);
+      digitalWrite(OUTPUT_PUMP, LOW);
       mode3Active=true;
       break;
     case HomieEventType::OTA_SUCCESSFUL:
       digitalWrite(OUTPUT_SENSOR, LOW);
+      digitalWrite(OUTPUT_PUMP, LOW);
       break;
     default:
       break;
@@ -399,9 +401,9 @@ int determineNextPump(){
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
     if(mPlants[i].isInCooldown(sinceLastActivation) ){
-      Serial.println("Skipping due to cooldown");
-      //setMoistureTrigger(i, DEACTIVATED_PLANT);
-      //continue;
+      Serial.printf("%d Skipping due to cooldown\r\n", i);
+      setMoistureTrigger(i, DEACTIVATED_PLANT);
+      continue;
     }
     //skip as it is not low light
     if(!isLowLight && mPlants[i].isAllowedOnlyAtLowLight()){
@@ -410,7 +412,7 @@ int determineNextPump(){
     }
 
     if(mPlants->isPumpRequired()){
-      Serial.println("Requested pumpin");
+      Serial.printf("%d Requested pumping\r\n", i);
       return i;
     }
     Serial.println("No pump required");
