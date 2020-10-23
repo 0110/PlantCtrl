@@ -52,13 +52,12 @@ const char* ntpServer = "pool.ntp.org";
 
 bool warmBoot = true;
 bool mode3Active = false;   /**< Controller must not sleep */
-
+bool mDeepsleep = false;
 
 int plantSensor1 = 0;
 
 int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
-int mButtonClicks = 0;
 bool mConfigured = false;
 
 
@@ -112,12 +111,13 @@ long getCurrentTime(){
 //wait till homie flushed mqtt ect.
 bool prepareSleep(void *) {
   //FIXME wait till pending mqtt is done, then start sleep via event or whatever
-  //Homie.prepareToSleep();
+  //Homie.disableResetTrigger();
+  
   bool queueIsEmpty = true;
   if(queueIsEmpty){
-    esp_deep_sleep_start();
+    mDeepsleep = true;
   }
-  return true; // repeat? true there is something in the queue to be done
+  return false; // repeat? true there is something in the queue to be done
 }
 
 void espDeepSleepFor(long seconds, bool activatePump = false){
@@ -125,6 +125,11 @@ void espDeepSleepFor(long seconds, bool activatePump = false){
   gpio_deep_sleep_hold_en();
   if (activatePump) {
     gpio_hold_en(GPIO_NUM_13); //pump pwr
+  } else {
+    digitalWrite(OUTPUT_PUMP, LOW);
+    for (int i=0; i < MAX_PLANTS; i++) {
+      mPlants[i].deactivatePump();
+    }
   }
   //gpio_hold_en(GPIO_NUM_23); //p0
   //FIXME fix for outher outputs
@@ -145,7 +150,7 @@ void mode2MQTT(){
   configTime(0, 0, ntpServer);
 
   digitalWrite(OUTPUT_PUMP, LOW);
-  for(int i=0; i < MAX_PLANTS; i++) {
+  for (int i=0; i < MAX_PLANTS; i++) {
     mPlants[i].deactivatePump();
   }
 
@@ -417,7 +422,7 @@ int determineNextPump(){
       Serial.printf("%d Requested pumping\r\n", i);
       return i;
     }
-    Serial.println("No pump required");
+    Serial.printf("%d No pump required\r\n", i);
   }
   return -1;
 }
@@ -643,7 +648,11 @@ void setup() {
  */
 
 void loop() {
-  Homie.loop();
+  if (!mDeepsleep) {
+    Homie.loop();
+  } else {
+    esp_deep_sleep_start();
+  }
 
   if(millis() > 30000 && !mode3Active){
     Serial << (millis()/ 1000) << "s alive" << endl;
