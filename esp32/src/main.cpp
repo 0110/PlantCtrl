@@ -472,7 +472,7 @@ void systemInit(){
   deepSleepNightTime.setDefaultValue(30);
   wateringDeepSleep.setDefaultValue(5);
 
-  waterLevelMax.setDefaultValue(1000);    /* 100cm in mm */
+  /* waterLevelMax 1000    */             /* 100cm in mm */
   waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500);    /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000);    /* 5l in ml */
