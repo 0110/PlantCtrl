@@ -21,7 +21,7 @@ Plant::Plant(int pinSensor, int pinPump,int plantId, HomieNode* plant, PlantSett
 
 void Plant::init(void) {
     /* Initialize Home Settings validator */
-    this->mSetting->pSensorDry->setDefaultValue(4095);
+    this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
     this->mSetting->pSensorDry->setValidator([] (long candidate) {
         return (((candidate >= 0) && (candidate <= 4095) ) || candidate == DEACTIVATED_PLANT);
     });

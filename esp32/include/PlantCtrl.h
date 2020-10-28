@@ -60,7 +60,9 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSetting->pSensorDry != NULL) && (this->moistureRaw.getMedian() < this->mSetting->pSensorDry->get()); 
+         return (this->mSetting->pSensorDry != NULL) 
+            && (this->moistureRaw.getMedian() > this->mSetting->pSensorDry->get())
+            && (this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT); 
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {
