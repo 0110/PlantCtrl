@@ -122,10 +122,17 @@ bool prepareSleep(void *) {
 
 void espDeepSleepFor(long seconds, bool activatePump = false){
   delay(1500);
-  gpio_deep_sleep_hold_en();
+
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
   if (activatePump) {
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+    gpio_deep_sleep_hold_en();
     gpio_hold_en(GPIO_NUM_13); //pump pwr
   } else {
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+    gpio_hold_dis(GPIO_NUM_13); //pump pwr
     digitalWrite(OUTPUT_PUMP, LOW);
     for (int i=0; i < MAX_PLANTS; i++) {
       mPlants[i].deactivatePump();
@@ -370,10 +377,6 @@ void onHomieEvent(const HomieEvent& event) {
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
       Serial << rtcDeepSleepTime << " ms ds" << endl;
-
-      //saveguard, should be overriden in mode2MQTT normally
-      esp_sleep_enable_timer_wakeup( (rtcDeepSleepTime * 1000U) );
-
       mode2MQTT();
       Homie.getLogger() << "MQTT 1" << endl;
       for(int i=0; i < MAX_PLANTS; i++) {
@@ -513,10 +516,6 @@ bool mode1(){
   Serial.println("m1");
   Serial << getCurrentTime() << " curtime" << endl;
 
-  if(rtcDeepSleepTime > 0){
-    esp_sleep_enable_timer_wakeup( (rtcDeepSleepTime * 1000U) );
-  }
-
   readSensors();
   //queue sensor values for 
 
@@ -618,11 +617,6 @@ void setup() {
     Serial << "Limits.hpp" << endl;
   }
 
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
-
   // Big TODO use here the settings in RTC_Memory
 
   //Panik mode, the Lipo is empty, sleep a long long time:
@@ -630,6 +624,10 @@ void setup() {
     (getBatteryVoltage() > NO_LIPO_VOLT)) {
     Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << getBatteryVoltage() << "V" << endl;
     esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
     esp_deep_sleep_start();
   }
 
