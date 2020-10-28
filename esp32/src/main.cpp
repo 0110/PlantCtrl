@@ -133,6 +133,7 @@ void espDeepSleepFor(long seconds, bool activatePump = false){
   } else {
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
+    gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_PUMP, LOW);
     for (int i=0; i < MAX_PLANTS; i++) {
       mPlants[i].deactivatePump();
@@ -515,6 +516,9 @@ void systemInit(){
 bool mode1(){
   Serial.println("m1");
   Serial << getCurrentTime() << " curtime" << endl;
+
+  /* Disable all sleeping stuff before reading sensors */
+  gpio_deep_sleep_hold_dis();
 
   readSensors();
   //queue sensor values for 
