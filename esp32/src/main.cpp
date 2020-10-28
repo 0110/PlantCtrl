@@ -371,18 +371,17 @@ void readSensors() {
 void onHomieEvent(const HomieEvent& event) {
   switch(event.type) {
     case HomieEventType::SENDING_STATISTICS:
-      mode2MQTT();
       Homie.getLogger() << "My statistics" << endl;
       break;
     case HomieEventType::MQTT_READY:
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
-      Serial << rtcDeepSleepTime << " ms ds" << endl;
-      mode2MQTT();
-      Homie.getLogger() << "MQTT 1" << endl;
+      Serial << "MQTT ready " << rtcDeepSleepTime << " ms ds" << endl;
       for(int i=0; i < MAX_PLANTS; i++) {
         mPlants[i].postMQTTconnection();
       }
+
+      mode2MQTT();
       break;
     case HomieEventType::READY_TO_SLEEP:
       Homie.getLogger() << "rtsleep" << endl;
@@ -391,11 +390,17 @@ void onHomieEvent(const HomieEvent& event) {
     case HomieEventType::OTA_STARTED:
       digitalWrite(OUTPUT_SENSOR, HIGH);
       digitalWrite(OUTPUT_PUMP, LOW);
+      gpio_hold_dis(GPIO_NUM_13); //pump pwr
+      gpio_deep_sleep_hold_dis();
+      for (int i=0; i < MAX_PLANTS; i++) {
+        mPlants[i].deactivatePump();
+      }
       mode3Active=true;
       break;
     case HomieEventType::OTA_SUCCESSFUL:
       digitalWrite(OUTPUT_SENSOR, LOW);
       digitalWrite(OUTPUT_PUMP, LOW);
+      ESP.restart();
       break;
     default:
       break;
