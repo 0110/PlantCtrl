@@ -170,25 +170,25 @@ Temp Sensor
 $Comp
 L Connector_Generic:Conn_01x03 J6
 U 1 1 5F109CD6
-P 10450 2150
-F 0 "J6" H 10368 1825 50  0000 C CNN
-F 1 "Conn_01x03" H 10368 1916 50  0000 C CNN
-F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 10450 2150 50  0001 C CNN
-F 3 "~" H 10450 2150 50  0001 C CNN
-	1    10450 2150
+P 10300 2200
+F 0 "J6" H 10218 1875 50  0000 C CNN
+F 1 "Conn_01x03" H 10218 1966 50  0000 C CNN
+F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 10300 2200 50  0001 C CNN
+F 3 "~" H 10300 2200 50  0001 C CNN
+	1    10300 2200
 	-1   0    0    1   
 $EndComp
-Text GLabel 10650 2150 2    50   Input ~ 0
+Text GLabel 10500 2200 2    50   Input ~ 0
 Temp
 $Comp
 L power:GND #PWR033
 U 1 1 5F10D99F
-P 10650 2250
-F 0 "#PWR033" H 10650 2000 50  0001 C CNN
-F 1 "GND" H 10500 2200 50  0000 R CNN
-F 2 "" H 10650 2250 50  0001 C CNN
-F 3 "" H 10650 2250 50  0001 C CNN
-	1    10650 2250
+P 10500 2300
+F 0 "#PWR033" H 10500 2050 50  0001 C CNN
+F 1 "GND" H 10350 2250 50  0000 R CNN
+F 2 "" H 10500 2300 50  0001 C CNN
+F 3 "" H 10500 2300 50  0001 C CNN
+	1    10500 2300
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -577,8 +577,6 @@ GND
 Text GLabel 2000 5200 2    50   Input ~ 0
 3_3V
 Text GLabel 4150 5700 0    50   Input ~ 0
-3_3V
-Text GLabel 10650 2050 2    50   Input ~ 0
 3_3V
 NoConn ~ 4200 7500
 Text GLabel 800  5200 0    50   Input ~ 0
@@ -2859,8 +2857,6 @@ F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 10050 1500 50  0
 	1    10200 1250
 	1    0    0    -1  
 $EndComp
-Text GLabel 10150 800  0    50   Input ~ 0
-PWR_SENSORS
 Wire Wire Line
 	10150 800  10200 800 
 Wire Wire Line
@@ -2870,7 +2866,7 @@ Wire Wire Line
 Wire Wire Line
 	10650 800  10650 950 
 Connection ~ 10200 800 
-Text Notes 10250 1800 0    105  ~ 0
+Text Notes 10100 1850 0    105  ~ 0
 One Wire
 Wire Wire Line
 	10700 3800 10500 3800
@@ -2886,4 +2882,8 @@ F 3 "~" H 4400 3200 50  0001 C CNN
 	1    4400 3200
 	0    1    1    0   
 $EndComp
+Text GLabel 10150 800  0    50   Input ~ 0
+PWR_SENSORS
+Text GLabel 10500 2100 2    50   Input ~ 0
+PWR_SENSORS
 $EndSCHEMATC
