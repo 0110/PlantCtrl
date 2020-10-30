@@ -340,16 +340,16 @@ void readSensors() {
   float temp[2] = {0, 0};
   float* pFloat = temp;
   for(int i=0; i < 10; i++) {
-    // first read returns crap, ignore result and read twice
     if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-        Serial << "t1: " << String(temp[0]) << endl;
-        Serial << "t2: " << String(temp[1]) << endl;
+      Serial << "t1: " << String(temp[0]) << endl;
+      Serial << "t2: " << String(temp[1]) << endl;
+      // first read returns crap, ignore result and read again
+      if (i <= 2) {
+        temp1.add(temp[0]);
+        temp2.add(temp[1]);
+      }
     }
     delay(200);
-    if (i <= 2) {
-      temp1.add(temp[0]);
-      temp2.add(temp[1]);
-    }
   }
 
   /* Use the Ultrasonic sensor to measure waterLevel */
