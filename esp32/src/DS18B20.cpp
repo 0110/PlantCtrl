@@ -36,6 +36,9 @@ int Ds18B20::readAllTemperatures(float* pTemperatures, int maxTemperatures) {
     byte addr[8];
     uint8_t scratchPad[SCRATCHPADSIZE];
     int currentTemp = 0;
+#ifdef DS_DEBUG
+    int i;
+#endif
 
     while (this->mDs->search(addr)) {
 #ifdef DS_DEBUG
