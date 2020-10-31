@@ -36,21 +36,15 @@ int Ds18B20::readAllTemperatures(float* pTemperatures, int maxTemperatures) {
     byte addr[8];
     uint8_t scratchPad[SCRATCHPADSIZE];
     int currentTemp = 0;
-#ifdef DS_DEBUG
-    int i;
-#endif
 
     while (this->mDs->search(addr)) {
-#ifdef DS_DEBUG
-        Serial.print(" ROM =");
-        for (i = 0; i < 8; i++) {
-            Serial.write(' ');
-            Serial.print(addr[i], HEX);
-        }
-#endif
         this->mDs->reset();
         this->mDs->select(addr);
         this->mDs->write(STARTCONV);
+    }
+    delay(750);
+    
+    while (this->mDs->search(addr)) {
         this->mDs->reset();
         this->mDs->select(addr);
         this->mDs->write(READSCRATCH);
@@ -68,14 +62,6 @@ int Ds18B20::readAllTemperatures(float* pTemperatures, int maxTemperatures) {
         // byte 7: DS18S20: COUNT_PER_C
         //         DS18B20 & DS1822: store for crc
         // byte 8: SCRATCHPAD_CRC
-#ifdef DS_DEBUG
-        Serial.write("\r\nDATA:");
-        for (uint8_t i = 0; i < 9; i++) {
-            Serial.print(scratchPad[i], HEX);
-        }
-#else
-        delay(50);
-#endif
         for (uint8_t i = 0; i < 9; i++) {
             scratchPad[i] = this->mDs->read();
         }

@@ -51,8 +51,8 @@ RTC_DATA_ATTR long lastWaterValue = 0;
 const char* ntpServer = "pool.ntp.org";
 
 bool warmBoot = true;
-bool mode3Active = false;   /**< Controller must not sleep */
-bool mDeepsleep = false;
+bool volatile mode3Active = false;   /**< Controller must not sleep */
+bool volatile mDeepsleep = false;
 
 int plantSensor1 = 0;
 
@@ -121,7 +121,9 @@ bool prepareSleep(void *) {
 }
 
 void espDeepSleepFor(long seconds, bool activatePump = false){
-  delay(1500);
+  if(mode3Active){
+    return;
+  }
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
@@ -147,7 +149,8 @@ void espDeepSleepFor(long seconds, bool activatePump = false){
   Serial.print(seconds);
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup( (seconds * 1000U * 1000U) );
-  wait4sleep.in(500, prepareSleep);
+  //wait4sleep.in(500, prepareSleep);
+  mDeepsleep=true;
 }
 
 
@@ -183,27 +186,16 @@ void mode2MQTT(){
   sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage() ) / 4095));
   sensorSolar.setProperty("volt").send( String(getSolarVoltage()) );
 
-  float temp[2] = { TEMP_INIT_VALUE, TEMP_INIT_VALUE };
-  float* pFloat = temp;
-  int devices = dallas.readAllTemperatures(pFloat, 2);
-  if (devices < 2) {
-    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("control").send( String(pFloat[0]));
-  }
-  } else if (devices >= 2) {      
-    if ((pFloat[0] > TEMP_INIT_VALUE) && (pFloat[0] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("temp").send( String(pFloat[0]));
-    }
-    if ((pFloat[1] > TEMP_INIT_VALUE) && (pFloat[1] < TEMP_MAX_VALUE) ) {
-      sensorTemp.setProperty("control").send( String(pFloat[1]));
-    }
-  }
+  float t1 = temp1.getMedian();
+  float t2 = temp2.getMedian();
+  sensorTemp.setProperty("control").send( String(t1));
+  sensorTemp.setProperty("temp").send( String(t2));
 
-  bool lipoTempWarning = abs(temp[0] - temp[1]) > 5;
+  bool lipoTempWarning = t1!=85 && t2!=85 && abs(t1 - t2) > 10;
   if(lipoTempWarning){
-    Serial.println("Lipo temp incorrect, panic mode deepsleep");
-    espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
-    return;
+    Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
+    //espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
+    //return;
   }
 
   bool hasWater = true;//FIXMEmWaterGone > waterLevelMin.get();
@@ -339,18 +331,12 @@ void readSensors() {
   /* Required to read the temperature once */
   float temp[2] = {0, 0};
   float* pFloat = temp;
-  for(int i=0; i < 10; i++) {
-    // first read returns crap, ignore result and read twice
-    if (dallas.readAllTemperatures(pFloat, 2) > 0) {
-        Serial << "t1: " << String(temp[0]) << endl;
-        Serial << "t2: " << String(temp[1]) << endl;
-    }
-    delay(200);
-    if (i <= 2) {
-      temp1.add(temp[0]);
-      temp2.add(temp[1]);
-    }
+  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
+    Serial << "t1: " << String(temp[0]) << endl;
+    Serial << "t2: " << String(temp[1]) << endl;
   }
+  temp1.add(temp[0]);
+  temp2.add(temp[1]);
 
   /* Use the Ultrasonic sensor to measure waterLevel */
  
