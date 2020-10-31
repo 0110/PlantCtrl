@@ -22,10 +22,10 @@ private:
     HomieNode* mPlant = NULL;
     int mPinSensor=0;   /**< Pin of the moist sensor */
     int mPinPump=0;     /**< Pin of the pump */
-    PlantSettings_t* mSetting;
     bool mConnected = false;
 
 public:
+    PlantSettings_t* mSetting;
     /**
      * @brief Construct a new Plant object
      * 
