@@ -26,6 +26,7 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define SOLAR4SENSORS         6.0f
 #define TEMP_INIT_VALUE       -999.0f
 #define TEMP_MAX_VALUE        85.0f
+#define HalfHour 60
 
 /********************* non volatile enable after deepsleep *******************************/
 
@@ -93,6 +94,30 @@ float getSolarVoltage(){
   return SOLAR_VOLT(solarRawSensor.getAverage());
 }
 
+void setMoistureTrigger(int plantId, long value){
+  if(plantId == 0){
+    rtcMoistureTrigger0 = value;
+  }
+  if(plantId == 1){
+    rtcMoistureTrigger1 = value;
+  }
+    if(plantId == 2){
+    rtcMoistureTrigger2 = value;
+  }
+    if(plantId == 3){
+    rtcMoistureTrigger3 = value;
+  }
+    if(plantId == 4){
+    rtcMoistureTrigger4 = value;
+  }
+    if(plantId == 5){
+    rtcMoistureTrigger5 = value;
+  }
+  if(plantId == 6){
+    rtcMoistureTrigger6 = value;
+  } 
+}
+
 void readSystemSensors() {
   lipoRawSensor.add(analogRead(SENSOR_LIPO));
   solarRawSensor.add(analogRead(SENSOR_SOLAR)); 
@@ -108,32 +133,30 @@ long getCurrentTime(){
   return tv_now.tv_sec;
 }
 
-//wait till homie flushed mqtt ect.
-bool prepareSleep(void *) {
-  //FIXME wait till pending mqtt is done, then start sleep via event or whatever
-  //Homie.disableResetTrigger();
-  
-  bool queueIsEmpty = true;
-  if(queueIsEmpty){
-    mDeepsleep = true;
-  }
-  return false; // repeat? true there is something in the queue to be done
-}
-
 void espDeepSleepFor(long seconds, bool activatePump = false){
   if(mode3Active){
+    Serial << "abort deepsleep, mode3Active" << endl;
     return;
   }
+  for(int i = 0;i<10;i++){
+    long cTime = getCurrentTime();
+    if(cTime < 100000){
+      Serial << "Wait for ntp" << endl;
+      delay(100);
+    } else {
+      break;
+    }
+  }
+
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
   if (activatePump) {
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
     gpio_deep_sleep_hold_en();
     gpio_hold_en(GPIO_NUM_13); //pump pwr
   } else {
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
     gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_PUMP, LOW);
@@ -145,11 +168,10 @@ void espDeepSleepFor(long seconds, bool activatePump = false){
   //FIXME fix for outher outputs
   
 
-  Serial.print("Going to sleep for ");
+  Serial.print("Trying to sleep for ");
   Serial.print(seconds);
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup( (seconds * 1000U * 1000U) );
-  //wait4sleep.in(500, prepareSleep);
   mDeepsleep=true;
 }
 
@@ -166,7 +188,7 @@ void mode2MQTT(){
   }
 
   if (deepSleepTime.get()) {
-    Serial << "sleeping for " << deepSleepTime.get() << endl;
+    Serial << "deepsleep time is configured to " << deepSleepTime.get() << endl;
   }
   /* Publish default values */
 
@@ -191,12 +213,20 @@ void mode2MQTT(){
   sensorTemp.setProperty("control").send( String(t1));
   sensorTemp.setProperty("temp").send( String(t2));
 
+  //give mqtt time, use via publish callback instead?
+  delay(100);
+
   bool lipoTempWarning = t1!=85 && t2!=85 && abs(t1 - t2) > 10;
   if(lipoTempWarning){
     Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
     //espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
     //return;
   }
+
+  for(int i=0; i < MAX_PLANTS; i++) {
+    setMoistureTrigger(i, mPlants[i].mSetting->pSensorDry->get());
+  }
+  
 
   bool hasWater = true;//FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
@@ -214,10 +244,12 @@ void mode2MQTT(){
       gotoMode2AfterThisTimestamp = getCurrentTime()+deepSleepNightTime.get();
       Serial.println("No pumps to activate and low light, deepSleepNight");
       espDeepSleepFor(deepSleepNightTime.get());
+      rtcDeepSleepTime = deepSleepNightTime.get();
     }else {
       gotoMode2AfterThisTimestamp = getCurrentTime()+deepSleepTime.get();
       Serial.println("No pumps to activate, deepSleep");
       espDeepSleepFor(deepSleepTime.get());
+      rtcDeepSleepTime = deepSleepTime.get();
     }
     
   }else {
@@ -228,29 +260,32 @@ void mode2MQTT(){
   
 }
 
-void setMoistureTrigger(int plantId, long value){
+long getMoistureTrigger(int plantId){
   if(plantId == 0){
-    rtcMoistureTrigger0 = value;
+    return rtcMoistureTrigger0;
   }
   if(plantId == 1){
-    rtcMoistureTrigger1 = value;
+    return rtcMoistureTrigger1;
   }
     if(plantId == 2){
-    rtcMoistureTrigger2 = value;
+    return rtcMoistureTrigger2;
   }
     if(plantId == 3){
-    rtcMoistureTrigger3 = value;
+    return rtcMoistureTrigger3;
   }
     if(plantId == 4){
-    rtcMoistureTrigger4 = value;
+    return rtcMoistureTrigger4;
   }
     if(plantId == 5){
-    rtcMoistureTrigger5 = value;
+    return rtcMoistureTrigger5;
   }
   if(plantId == 6){
-    rtcMoistureTrigger6 = value;
+    return rtcMoistureTrigger6;
   } 
+  return -1;
 }
+
+
 
 void setLastActivationForPump(int plantId, long value){
   if(plantId == 0){
@@ -361,7 +396,7 @@ void onHomieEvent(const HomieEvent& event) {
     case HomieEventType::MQTT_READY:
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
-      Serial << "MQTT ready " << rtcDeepSleepTime << " ms ds" << endl;
+      Serial << "MQTT ready " << endl;
       for(int i=0; i < MAX_PLANTS; i++) {
         mPlants[i].postMQTTconnection();
       }
@@ -464,6 +499,7 @@ void systemInit(){
 
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
+  //Homie.disableLogging();
   Homie.setup();
 
   mConfigured = Homie.isConfigured();
@@ -513,48 +549,25 @@ bool mode1(){
   readSensors();
   //queue sensor values for 
 
-  if ((rtcDeepSleepTime == 0) ||
-      (rtcMoistureTrigger0 == 0) ||
-      (rtcMoistureTrigger1 == 0) ||
-      (rtcMoistureTrigger2 == 0) ||
-      (rtcMoistureTrigger3 == 0) ||
-      (rtcMoistureTrigger4 == 0) ||
-      (rtcMoistureTrigger5 == 0) ||
-      (rtcMoistureTrigger6 == 0)
-    ) 
-  {
-      Serial.println("RTCm2");
+  if (rtcDeepSleepTime == 0){
+    Serial.println("1 missing rtc value, going to mode2");
+    return true;
+  }
+  for(int i = 0;i<6;i++){
+    long trigger =getMoistureTrigger(i);
+    if(trigger == 0){
+      Serial << "Missing rtc trigger " << i << endl;
       return true;
+    }
+    if(trigger == DEACTIVATED_PLANT){
+      continue;
+    }
+    if(mPlants[0].getSensorValue() <= trigger){
+      Serial << "plant dry starting mode 2" << i << endl;
+      return true;
+    }
   }
- 
-  if ((rtcMoistureTrigger0 != DEACTIVATED_PLANT) && (mPlants[0].getSensorValue() < rtcMoistureTrigger0) ) {
-    Serial.println("mt0");
-    return true;
-  }
-  if ((rtcMoistureTrigger1 != DEACTIVATED_PLANT) && (mPlants[1].getSensorValue() < rtcMoistureTrigger1) ) {
-    Serial.println("mt1");
-    return true;
-  }
-  if ((rtcMoistureTrigger2 != DEACTIVATED_PLANT) && (mPlants[2].getSensorValue() < rtcMoistureTrigger2) ) {
-    Serial.println("mt2");
-    return true;
-  }
-  if ((rtcMoistureTrigger3 != DEACTIVATED_PLANT) && (mPlants[3].getSensorValue() < rtcMoistureTrigger3) ) {
-    Serial.println("mt3");
-    return true;
-  }
-  if ((rtcMoistureTrigger4 != DEACTIVATED_PLANT) && (mPlants[4].getSensorValue() < rtcMoistureTrigger4) ) {
-    Serial.println("mt4");
-    return true;
-  }
-  if ((rtcMoistureTrigger5 != DEACTIVATED_PLANT) && (mPlants[5].getSensorValue() < rtcMoistureTrigger5) ) {
-    Serial.println("mt5");
-    return true;
-  }
-  if ((rtcMoistureTrigger6 != DEACTIVATED_PLANT) && (mPlants[6].getSensorValue() < rtcMoistureTrigger6) ) {
-    Serial.println("mt6");
-    return true;
-  }
+
   //check how long it was already in mode1 if to long goto mode2
 
   long cTime = getCurrentTime();
@@ -566,6 +579,8 @@ bool mode1(){
   if(gotoMode2AfterThisTimestamp < cTime){
     Serial.println("Starting mode 2 after specified mode1 time");
     return true;
+  } else {
+    Serial << "Mode2 Timer " << gotoMode2AfterThisTimestamp << " curtime " << cTime << endl;
   }
   return false;
 }
@@ -629,8 +644,7 @@ void setup() {
     mode2();
   } else {
     Serial.println("nop");
-    Serial.flush();
-    esp_deep_sleep_start();
+    espDeepSleepFor(rtcDeepSleepTime);
   }
 }
 
@@ -640,15 +654,17 @@ void setup() {
  */
 
 void loop() {
-  if (!mDeepsleep) {
+  if (!mDeepsleep || mode3Active) {
     Homie.loop();
   } else {
+    Serial << "Bye" << endl; 
+    Serial.flush();
     esp_deep_sleep_start();
   }
 
   if(millis() > 30000 && !mode3Active){
-    Serial << (millis()/ 1000) << "s alive" << endl;
+    Serial << (millis()/ 1000) << "not terminated watchdog putting to sleep" << endl;
     Serial.flush();
-    esp_deep_sleep_start();
+    espDeepSleepFor(rtcDeepSleepTime);
   }
 }
