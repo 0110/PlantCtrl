@@ -453,8 +453,8 @@ void systemInit(){
   // Set default values
   
   //in seconds
-  deepSleepTime.setDefaultValue(10);
-  deepSleepNightTime.setDefaultValue(30);
+  deepSleepTime.setDefaultValue(60);
+  deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
 
   /* waterLevelMax 1000    */             /* 100cm in mm */
@@ -504,11 +504,8 @@ void systemInit(){
 
 
 bool mode1(){
-  Serial.println("m1");
+  Serial.println("==== Mode 1 ====");
   Serial << getCurrentTime() << " curtime" << endl;
-
-  /* Disable all sleeping stuff before reading sensors */
-  gpio_deep_sleep_hold_dis();
 
   readSensors();
   //queue sensor values for 
@@ -571,7 +568,7 @@ bool mode1(){
 }
 
 void mode2(){
-  Serial.println("m2");
+  Serial.println("==== Mode 2 ====");
   systemInit();
 
   /* Jump into Mode 3, if not configured */
