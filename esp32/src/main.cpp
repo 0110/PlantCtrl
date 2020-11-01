@@ -550,16 +550,16 @@ bool mode1(){
     Serial.println("1 missing rtc value, going to mode2");
     return true;
   }
-  for(int i = 0;i<6;i++){
+  for(int i = 0; i < MAX_PLANTS; i++){
     long trigger =getMoistureTrigger(i);
-    if(trigger == 0){
+    if (trigger == 0) {
       Serial << "Missing rtc trigger " << i << endl;
       return true;
     }
     if(trigger == DEACTIVATED_PLANT){
       continue;
     }
-    if(mPlants[0].getSensorValue() <= trigger){
+    if(mPlants[i].getSensorValue() <= trigger){
       Serial << "plant dry starting mode 2" << i << endl;
       return true;
     }
