@@ -475,7 +475,6 @@ int determineNextPump(){
  */
 bool aliveHandler(const HomieRange& range, const String& value) {
   if (range.isRange) return false;  // only one controller is present
-  Serial << value  << endl;
   if (value.equals("ON") || value.equals("On") || value.equals("1")) {
       mode3Active=true;
   } else {
@@ -673,5 +672,10 @@ void loop() {
     Serial << (millis()/ 1000) << "not terminated watchdog putting to sleep" << endl;
     Serial.flush();
     espDeepSleepFor(rtcDeepSleepTime);
+  }
+
+  /* Toggel Senor LED to visualize mode 3 */
+  if (mode3Active && (millis() % 100) == 0) {
+      digitalWrite(OUTPUT_SENSOR, ! digitalRead(OUTPUT_SENSOR));
   }
 }
