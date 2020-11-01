@@ -45,6 +45,7 @@ HomieSetting<long> waterLevelMax("watermaxlevel", "distance (mm) at maximum wate
 HomieSetting<long> waterLevelMin("waterminlevel", "distance (mm) at minimum water level (pumps still covered)");
 HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn (mm) if below this water level %");
 HomieSetting<long> waterLevelVol("waterVolume", "(ml) between minimum and maximum");
+HomieSetting<const char *>ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
 
 /** Plant specific ones */
 

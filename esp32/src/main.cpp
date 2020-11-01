@@ -49,8 +49,6 @@ RTC_DATA_ATTR long rtcMoistureTrigger6 = 0;   /**<Level for the moisture sensor 
 RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
 
-const char* ntpServer = "pool.ntp.org";
-
 bool warmBoot = true;
 bool volatile mode3Active = false;   /**< Controller must not sleep */
 bool volatile mDeepsleep = false;
@@ -179,8 +177,6 @@ void espDeepSleepFor(long seconds, bool activatePump = false){
 
 void mode2MQTT(){
   readSystemSensors();
-
-  configTime(0, 0, ntpServer);
 
   digitalWrite(OUTPUT_PUMP, LOW);
   for (int i=0; i < MAX_PLANTS; i++) {
@@ -488,7 +484,7 @@ bool aliveHandler(const HomieRange& range, const String& value) {
 }
 
 void homieLoop(){
-
+  
 }
 
 void systemInit(){
@@ -502,6 +498,7 @@ void systemInit(){
   deepSleepTime.setDefaultValue(60);
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
+  ntpServer.setDefaultValue("pool.ntp.org");
 
   /* waterLevelMax 1000    */             /* 100cm in mm */
   waterLevelMin.setDefaultValue(50);      /* 5cm in mm */
@@ -512,6 +509,8 @@ void systemInit(){
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
   Homie.setup();
+
+  configTime(0, 0, ntpServer.get());
 
   mConfigured = Homie.isConfigured();
   if (mConfigured) {
