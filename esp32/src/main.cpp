@@ -399,9 +399,11 @@ void onHomieEvent(const HomieEvent& event) {
       Homie.getLogger() << "My statistics" << endl;
       break;
     case HomieEventType::MQTT_READY:
+      Serial.printf("NTP Setup with server %s\r\n", ntpServer.get());
+      configTime(0, 0, ntpServer.get());
       //wait for rtc sync?
       rtcDeepSleepTime = deepSleepTime.get();
-      Serial << "MQTT ready " << endl;
+      Serial << "Setup plants" << endl;
       for(int i=0; i < MAX_PLANTS; i++) {
         mPlants[i].postMQTTconnection();
       }
@@ -484,7 +486,7 @@ bool aliveHandler(const HomieRange& range, const String& value) {
 }
 
 void homieLoop(){
-  
+
 }
 
 void systemInit(){
@@ -509,8 +511,6 @@ void systemInit(){
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
   Homie.setup();
-
-  configTime(0, 0, ntpServer.get());
 
   mConfigured = Homie.isConfigured();
   if (mConfigured) {
