@@ -26,7 +26,7 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define SOLAR4SENSORS         6.0f
 #define TEMP_INIT_VALUE       -999.0f
 #define TEMP_MAX_VALUE        85.0f
-#define HalfHour 60
+#define HalfHour              60
 
 /********************* non volatile enable after deepsleep *******************************/
 
@@ -208,10 +208,15 @@ void mode2MQTT(){
   sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage() ) / 4095));
   sensorSolar.setProperty("volt").send( String(getSolarVoltage()) );
 
+  
   float t1 = temp1.getMedian();
+  if (t1 != NAN) {
+    sensorTemp.setProperty("control").send( String(t1));
+  }
   float t2 = temp2.getMedian();
-  sensorTemp.setProperty("control").send( String(t1));
-  sensorTemp.setProperty("temp").send( String(t2));
+  if (t2 != NAN) {
+    sensorTemp.setProperty("temp").send( String(t2));
+  }
 
   //give mqtt time, use via publish callback instead?
   delay(100);
@@ -364,14 +369,18 @@ void readSensors() {
 
 
   /* Required to read the temperature once */
-  float temp[2] = {0, 0};
+  float temp[2] = {TEMP_MAX_VALUE, TEMP_MAX_VALUE};
   float* pFloat = temp;
-  if (dallas.readAllTemperatures(pFloat, 2) > 0) {
+  int sensors = dallas.readAllTemperatures(pFloat, 2);
+  if (sensors > 0) {
     Serial << "t1: " << String(temp[0]) << endl;
-    Serial << "t2: " << String(temp[1]) << endl;
+    temp1.add(temp[0]);
   }
-  temp1.add(temp[0]);
-  temp2.add(temp[1]);
+  if (sensors > 1) {
+    Serial << "t2: " << String(temp[1]) << endl;
+    temp2.add(temp[1]);
+  }
+
 
   /* Use the Ultrasonic sensor to measure waterLevel */
  
@@ -408,8 +417,9 @@ void onHomieEvent(const HomieEvent& event) {
       esp_deep_sleep_start();
       break;
     case HomieEventType::OTA_STARTED:
+      Homie.getLogger() << "OTA started" << endl;
       digitalWrite(OUTPUT_SENSOR, HIGH);
-      digitalWrite(OUTPUT_PUMP, LOW);
+      digitalWrite(OUTPUT_PUMP, HIGH);
       gpio_hold_dis(GPIO_NUM_13); //pump pwr
       gpio_deep_sleep_hold_dis();
       for (int i=0; i < MAX_PLANTS; i++) {
@@ -418,6 +428,7 @@ void onHomieEvent(const HomieEvent& event) {
       mode3Active=true;
       break;
     case HomieEventType::OTA_SUCCESSFUL:
+    Homie.getLogger() << "OTA successfull" << endl;
       digitalWrite(OUTPUT_SENSOR, LOW);
       digitalWrite(OUTPUT_PUMP, LOW);
       ESP.restart();
@@ -588,7 +599,7 @@ void mode2(){
 
   /* Jump into Mode 3, if not configured */
   if (!mConfigured) {
-    Serial.println("m3");
+    Serial.println("==== Mode 3 ====");
     mode3Active = true;
   }
 }
