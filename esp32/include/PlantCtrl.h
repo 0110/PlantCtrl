@@ -60,9 +60,24 @@ public:
      * @return false 
      */
     bool isPumpRequired() {
-         return (this->mSetting->pSensorDry != NULL) 
-            && (this->moistureRaw.getMedian() > this->mSetting->pSensorDry->get())
-            && (this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT); 
+        bool isDry = getCurrentMoisture() > getSettingsMoisture();
+        bool isActive = isPumpTriggerActive();
+        return isDry && isActive;
+    }
+
+    bool isPumpTriggerActive(){
+        return this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT;
+    }
+
+    float getCurrentMoisture(){
+        return this->moistureRaw.getMedian();
+    }
+    long getSettingsMoisture(){
+        if(this->mSetting->pSensorDry != NULL){
+            return this->mSetting->pSensorDry->get();
+        } else {
+            return DEACTIVATED_PLANT;
+        }
     }
 
     HomieInternals::SendingPromise& setProperty(const String& property) const {

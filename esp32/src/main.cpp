@@ -441,28 +441,36 @@ int determineNextPump(){
   bool isLowLight =(solarValue > SOLAR_CHARGE_MIN_VOLTAGE || solarValue < SOLAR_CHARGE_MAX_VOLTAGE);
 
   //FIXME instead of for, use sorted by last activation index to ensure equal runtime?
+
+  int pumpToUse = -1;
   for(int i=0; i < MAX_PLANTS; i++) {
+    Plant plant = mPlants[i];
     long lastActivation = getLastActivationForPump(i);
     long sinceLastActivation = getCurrentTime()-lastActivation;
     //this pump is in cooldown skip it and disable low power mode trigger for it
-    if(mPlants[i].isInCooldown(sinceLastActivation) ){
+    if(plant.isInCooldown(sinceLastActivation) ){
       Serial.printf("%d Skipping due to cooldown\r\n", i);
       setMoistureTrigger(i, DEACTIVATED_PLANT);
       continue;
     }
     //skip as it is not low light
-    if(!isLowLight && mPlants[i].isAllowedOnlyAtLowLight()){
-      Serial.println("Skipping due to light");
+    if(!isLowLight && plant.isAllowedOnlyAtLowLight()){
+      Serial.printf("%d No pump required: due to light\r\n", i);
       continue;
     }
 
-    if(mPlants->isPumpRequired()){
+    if(plant.isPumpRequired()){
       Serial.printf("%d Requested pumping\r\n", i);
-      return i;
+      pumpToUse = i;
     }
-    Serial.printf("%d No pump required\r\n", i);
+    if(plant.isPumpTriggerActive()){
+      Serial.printf("%d No pump required: disabled trigger %f / %ld\r\n", i, plant.getCurrentMoisture(), plant.getSettingsMoisture());
+    }else {
+      Serial.printf("%d No pump required: disabled trigger\r\n", i);
+    }
+    
   }
-  return -1;
+  return pumpToUse;
 }
 
 /**
@@ -658,7 +666,7 @@ void setup() {
  * @brief Cyclic call
  * Executs the Homie base functionallity or triggers sleeping, if requested.
  */
-
+long nextBlink = 0;
 void loop() {
   if (!mDeepsleep || mode3Active) {
     Homie.loop();
@@ -675,7 +683,10 @@ void loop() {
   }
 
   /* Toggel Senor LED to visualize mode 3 */
-  if (mode3Active && (millis() % 100) == 0) {
+  if(mode3Active){
+    if (nextBlink < millis()) {
+      nextBlink = millis() + 500;
       digitalWrite(OUTPUT_SENSOR, ! digitalRead(OUTPUT_SENSOR));
+    }
   }
 }
