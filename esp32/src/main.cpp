@@ -266,9 +266,16 @@ void mode2MQTT()
   }
   if (lastPumpRunning != -1 && hasWater)
   {
-    digitalWrite(OUTPUT_PUMP, HIGH);
-    setLastActivationForPump(lastPumpRunning, getCurrentTime());
-    mPlants[lastPumpRunning].activatePump();
+    if (mode3Active)
+    {
+      Serial.println("Mode 3 active, ignoring pump request");
+    }
+    else
+    {
+      digitalWrite(OUTPUT_PUMP, HIGH);
+      setLastActivationForPump(lastPumpRunning, getCurrentTime());
+      mPlants[lastPumpRunning].activatePump();
+    }
   }
   if (lastPumpRunning == -1 || !hasWater)
   {
@@ -407,7 +414,7 @@ void readSensors()
   pinMode(OUTPUT_SENSOR, OUTPUT);
   digitalWrite(OUTPUT_SENSOR, HIGH);
 
-  delay(100);
+  delay(20);
   /* wait before reading something */
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
@@ -415,6 +422,7 @@ void readSensors()
     {
       mPlants[i].addSenseValue();
     }
+    delay(10);
   }
 
   Serial << "DS18B20" << endl;
