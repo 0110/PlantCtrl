@@ -11,7 +11,7 @@
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
 
-#define FIRMWARE_VERSION "1.0.7"
+#define FIRMWARE_VERSION "1.0.9"
 
 #define ADC_TO_VOLT(adc)                      ((adc) * 3.3 ) / 4095)
 #define ADC_TO_VOLT_WITH_MULTI(adc, multi) (((adc)*3.3 * (multi)) / 4095)
@@ -64,7 +64,7 @@
 #define PANIK_MODE_DEEPSLEEP_US (PANIK_MODE_DEEPSLEEP * 1000 * 1000)
 
 #define TEMPERATURE_DELTA_TRIGGER_IN_C 1
-#define MOIST_DELTA_TRIGGER_ADC 1337
+#define MOIST_DELTA_TRIGGER_ADC 10
 #define SOLAR_DELTA_VOLT_ADC 3
 #define LIPO_DELTA_VOLT_ADC 0.2
 

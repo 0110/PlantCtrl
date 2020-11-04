@@ -48,8 +48,6 @@ public:
      */
     void addSenseValue(void);
 
-    int getSensorValue() { return moistureRaw.getMedian(); }
-
     void deactivatePump(void);
 
     void activatePump(void);
@@ -73,7 +71,10 @@ public:
     }
 
     float getCurrentMoisture()
-    {
+    {   
+        if(moistureRaw.getCount()==0){
+            return MISSING_SENSOR;
+        }
         return this->moistureRaw.getMedian();
     }
     long getSettingsMoisture()
@@ -108,7 +109,11 @@ public:
             return false;
         }
 
-        return (this->mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600);
+        return (getCooldownInSeconds() > sinceLastActivation);
+    }
+
+    long getCooldownInSeconds(){
+        return this->mSetting->pPumpCooldownInHours->get()*60*60;
     }
 
     bool isAllowedOnlyAtLowLight(void)

@@ -14,6 +14,7 @@
 #include <Homie.h>
 
 #define DEACTIVATED_PLANT 5000
+#define MISSING_SENSOR 5001
 
 typedef struct PlantSettings_t
 {

@@ -33,18 +33,25 @@ RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR long rtcLastActive0 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger0 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture0 = 0;
 RTC_DATA_ATTR long rtcLastActive1 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger1 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture1 = 0;
 RTC_DATA_ATTR long rtcLastActive2 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger2 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture2 = 0;
 RTC_DATA_ATTR long rtcLastActive3 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger3 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture3 = 0;
 RTC_DATA_ATTR long rtcLastActive4 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger4 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture4 = 0;
 RTC_DATA_ATTR long rtcLastActive5 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger5 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture5 = 0;
 RTC_DATA_ATTR long rtcLastActive6 = 0;
 RTC_DATA_ATTR long rtcMoistureTrigger6 = 0; /**<Level for the moisture sensor */
+RTC_DATA_ATTR long rtcMoisture6 = 0;
 RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
 
@@ -120,6 +127,71 @@ void setMoistureTrigger(int plantId, long value)
   }
 }
 
+void setLastMoisture(int plantId, long value)
+{
+  if (plantId == 0)
+  {
+    rtcMoisture0 = value;
+  }
+  if (plantId == 1)
+  {
+    rtcMoisture1 = value;
+  }
+  if (plantId == 2)
+  {
+    rtcMoisture2 = value;
+  }
+  if (plantId == 3)
+  {
+    rtcMoisture3 = value;
+  }
+  if (plantId == 4)
+  {
+    rtcMoisture4 = value;
+  }
+  if (plantId == 5)
+  {
+    rtcMoisture5 = value;
+  }
+  if (plantId == 6)
+  {
+    rtcMoisture6 = value;
+  }
+}
+
+long getLastMoisture(int plantId)
+{
+  if (plantId == 0)
+  {
+    return rtcMoisture0;
+  }
+  if (plantId == 1)
+  {
+    return rtcMoisture1;
+  }
+  if (plantId == 2)
+  {
+    return rtcMoisture2;
+  }
+  if (plantId == 3)
+  {
+    return rtcMoisture3;
+  }
+  if (plantId == 4)
+  {
+    return rtcMoisture4;
+  }
+  if (plantId == 5)
+  {
+    return rtcMoisture5;
+  }
+  if (plantId == 6)
+  {
+    return rtcMoisture6;
+  }
+  return -1;
+}
+
 void readSystemSensors()
 {
   lipoRawSensor.add(analogRead(SENSOR_LIPO));
@@ -171,6 +243,7 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
     gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_PUMP, LOW);
+    digitalWrite(OUTPUT_SENSOR, LOW);
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].deactivatePump();
@@ -209,7 +282,12 @@ void mode2MQTT()
   }
   for (int i = 0; i < MAX_PLANTS; i++)
   {
-    long pct = 100 - map(mPlants[i].getSensorValue(), MOIST_SENSOR_MIN_ADC, MOIST_SENSOR_MAX_ADC, 0, 100);
+    long raw = mPlants[i].getCurrentMoisture();
+    long pct = 100 - map(raw, MOIST_SENSOR_MIN_ADC, MOIST_SENSOR_MAX_ADC, 0, 100);
+    if (raw == MISSING_SENSOR)
+    {
+      pct = 0;
+    }
     if (pct < 0)
     {
       pct = 0;
@@ -218,8 +296,9 @@ void mode2MQTT()
     {
       pct = 100;
     }
+
     mPlants[i].setProperty("moist").send(String(pct));
-    mPlants[i].setProperty("moistraw").send(String(mPlants[i].getSensorValue()));
+    mPlants[i].setProperty("moistraw").send(String(raw));
   }
   sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone));
   Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone) << "%)" << endl;
@@ -281,14 +360,14 @@ void mode2MQTT()
   {
     if (getSolarVoltage() < SOLAR_CHARGE_MIN_VOLTAGE)
     {
-      gotoMode2AfterThisTimestamp = getCurrentTime() + deepSleepNightTime.get();
+      gotoMode2AfterThisTimestamp = getCurrentTime() + maxTimeBetweenMQTTUpdates.get();
       Serial.println("No pumps to activate and low light, deepSleepNight");
       espDeepSleepFor(deepSleepNightTime.get());
       rtcDeepSleepTime = deepSleepNightTime.get();
     }
     else
     {
-      gotoMode2AfterThisTimestamp = getCurrentTime() + deepSleepTime.get();
+      gotoMode2AfterThisTimestamp = getCurrentTime() + maxTimeBetweenMQTTUpdates.get();
       Serial.println("No pumps to activate, deepSleep");
       espDeepSleepFor(deepSleepTime.get());
       rtcDeepSleepTime = deepSleepTime.get();
@@ -404,7 +483,7 @@ long getLastActivationForPump(int plantId)
  * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
-void readSensors()
+bool readSensors()
 {
   Serial << "Read Sensors" << endl;
 
@@ -423,6 +502,19 @@ void readSensors()
       mPlants[i].addSenseValue();
     }
     delay(10);
+  }
+  bool triggerMoistStart = false;
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    long current = mPlants[i].getCurrentMoisture();
+    long delta = abs(getLastMoisture(i) - current);
+    bool tmp = (delta > MOIST_DELTA_TRIGGER_ADC);
+    setLastMoisture(i, current);
+    if (tmp)
+    {
+      triggerMoistStart = true;
+      Serial.printf("Mode2 start due to moist delta in plant %d with %ld \r\n", i, delta);
+    }
   }
 
   Serial << "DS18B20" << endl;
@@ -456,6 +548,7 @@ void readSensors()
   waterRawSensor.add((duration * .343) / 2);
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
+  return triggerMoistStart;
 }
 
 //Homie.getMqttClient().disconnect();
@@ -523,7 +616,7 @@ int determineNextPump()
     //this pump is in cooldown skip it and disable low power mode trigger for it
     if (plant.isInCooldown(sinceLastActivation))
     {
-      Serial.printf("%d Skipping due to cooldown %ld \r\n", i, sinceLastActivation);
+      Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, sinceLastActivation, plant.getCooldownInSeconds());
       setMoistureTrigger(i, DEACTIVATED_PLANT);
       continue;
     }
@@ -533,7 +626,10 @@ int determineNextPump()
       Serial.printf("%d No pump required: due to light\r\n", i);
       continue;
     }
-
+    if(plant.getCurrentMoisture() == MISSING_SENSOR && plant.isPumpTriggerActive()){
+      Serial.printf("%d No pump possible: missing sensor \r\n", i);
+      continue;
+    }
     if (plant.isPumpRequired())
     {
       Serial.printf("%d Requested pumping\r\n", i);
@@ -541,11 +637,11 @@ int determineNextPump()
     }
     else if (plant.isPumpTriggerActive())
     {
-      Serial.printf("%d No pump required: disabled trigger %f / %ld\r\n", i, plant.getCurrentMoisture(), plant.getSettingsMoisture());
+      Serial.printf("%d No pump required: moisture acceptable %f / %ld\r\n", i, plant.getCurrentMoisture(), plant.getSettingsMoisture());
     }
     else
     {
-      Serial.printf("%d No pump required: disabled trigger\r\n", i);
+      Serial.printf("%d No pump required: disabled pump trigger \r\n", i);
     }
   }
   return pumpToUse;
@@ -588,6 +684,7 @@ void systemInit()
   // Set default values
 
   //in seconds
+  maxTimeBetweenMQTTUpdates.setDefaultValue(120);
   deepSleepTime.setDefaultValue(60);
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
@@ -646,9 +743,13 @@ bool mode1()
   Serial.println("==== Mode 1 ====");
   Serial << getCurrentTime() << " curtime" << endl;
 
-  readSensors();
+  bool deltaTrigger = readSensors();
   //queue sensor values for
 
+  if(deltaTrigger){
+    Serial.println("1 delta triggered, going to mode2");
+    return true;
+  }
   if (rtcDeepSleepTime == 0)
   {
     Serial.println("1 missing rtc value, going to mode2");
@@ -666,9 +767,14 @@ bool mode1()
     {
       continue;
     }
-    if (mPlants[i].getSensorValue() <= trigger)
+    long raw = mPlants[i].getCurrentMoisture();
+    if (raw == MISSING_SENSOR)
     {
-      Serial << "plant dry starting mode 2" << i << endl;
+      continue;
+    }
+    if (raw > trigger)
+    {
+      Serial << "plant " << i << " dry " << raw << " / " << trigger << " starting mode 2" << endl;
       return true;
     }
   }

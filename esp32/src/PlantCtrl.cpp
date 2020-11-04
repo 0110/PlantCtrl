@@ -11,6 +11,7 @@
  */
 
 #include "PlantCtrl.h"
+#include "ControllerConfiguration.h"
 
 Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
 {
@@ -48,8 +49,11 @@ void Plant::init(void)
 }
 
 void Plant::addSenseValue(void)
-{
-    this->moistureRaw.add(analogRead(this->mPinSensor));
+{   
+    int raw = analogRead(this->mPinSensor);
+    if(raw < MOIST_SENSOR_MAX_ADC && raw > MOIST_SENSOR_MIN_ADC){
+        this->moistureRaw.add(raw);
+    }
 }
 
 void Plant::postMQTTconnection(void)
