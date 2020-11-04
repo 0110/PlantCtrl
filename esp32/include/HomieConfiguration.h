@@ -45,18 +45,18 @@ HomieSetting<long> waterLevelMax("watermaxlevel", "distance (mm) at maximum wate
 HomieSetting<long> waterLevelMin("waterminlevel", "distance (mm) at minimum water level (pumps still covered)");
 HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn (mm) if below this water level %");
 HomieSetting<long> waterLevelVol("waterVolume", "(ml) between minimum and maximum");
-HomieSetting<const char *>ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
+HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
 
 /** Plant specific ones */
 
-#define GENERATE_PLANT(plant, strplant)   \
-        HomieSetting<long> mSensorDry##plant = HomieSetting<long>("moistdry" strplant, "Plant " strplant "- Moist sensor dry threshold"); \
-        HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("rangehourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)"); \
-        HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("rangehourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)"); \
+#define GENERATE_PLANT(plant, strplant)                                                                                                                                                                        \
+        HomieSetting<long> mSensorDry##plant = HomieSetting<long>("moistdry" strplant, "Plant " strplant "- Moist sensor dry threshold");                                                                      \
+        HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("rangehourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)");                                      \
+        HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("rangehourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("onlyWhenLowLightZ" strplant, "Plant" strplant " - Enable the Pump only, when there is light but not enought to charge battery"); \
-        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)"); \
-        PlantSettings_t mSetting##plant = { &mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant };
-        
+        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
+        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant};
+
 GENERATE_PLANT(0, "0");
 GENERATE_PLANT(1, "1");
 GENERATE_PLANT(2, "2");
@@ -64,7 +64,5 @@ GENERATE_PLANT(3, "3");
 GENERATE_PLANT(4, "4");
 GENERATE_PLANT(5, "5");
 GENERATE_PLANT(6, "6");
-
-
 
 #endif /* HOMIE_PLANT_CONFIG_H */

@@ -15,17 +15,18 @@
 #include "HomieTypes.h"
 #include "RunningMedian.h"
 
-class Plant {
+class Plant
+{
 
 private:
     RunningMedian moistureRaw = RunningMedian(5);
-    HomieNode* mPlant = NULL;
-    int mPinSensor=0;   /**< Pin of the moist sensor */
-    int mPinPump=0;     /**< Pin of the pump */
+    HomieNode *mPlant = NULL;
+    int mPinSensor = 0; /**< Pin of the moist sensor */
+    int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
 
 public:
-    PlantSettings_t* mSetting;
+    PlantSettings_t *mSetting;
     /**
      * @brief Construct a new Plant object
      * 
@@ -33,9 +34,9 @@ public:
      * @param pinPump   Pin of the Pump to use
      */
     Plant(int pinSensor, int pinPump,
-            int plantId, 
-            HomieNode* plant,
-            PlantSettings_t* setting);
+          int plantId,
+          HomieNode *plant,
+          PlantSettings_t *setting);
 
     void postMQTTconnection(void);
 
@@ -46,7 +47,7 @@ public:
      * 
      */
     void addSenseValue(void);
-    
+
     int getSensorValue() { return moistureRaw.getMedian(); }
 
     void deactivatePump(void);
@@ -59,31 +60,39 @@ public:
      * @return true 
      * @return false 
      */
-    bool isPumpRequired() {
+    bool isPumpRequired()
+    {
         bool isDry = getCurrentMoisture() > getSettingsMoisture();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
     }
 
-    bool isPumpTriggerActive(){
+    bool isPumpTriggerActive()
+    {
         return this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT;
     }
 
-    float getCurrentMoisture(){
+    float getCurrentMoisture()
+    {
         return this->moistureRaw.getMedian();
     }
-    long getSettingsMoisture(){
-        if(this->mSetting->pSensorDry != NULL){
+    long getSettingsMoisture()
+    {
+        if (this->mSetting->pSensorDry != NULL)
+        {
             return this->mSetting->pSensorDry->get();
-        } else {
+        }
+        else
+        {
             return DEACTIVATED_PLANT;
         }
     }
 
-    HomieInternals::SendingPromise& setProperty(const String& property) const {
+    HomieInternals::SendingPromise &setProperty(const String &property) const
+    {
         return mPlant->setProperty(property);
     }
-    bool switchHandler(const HomieRange& range, const String& value);
+    bool switchHandler(const HomieRange &range, const String &value);
 
     void init(void);
 
@@ -91,16 +100,19 @@ public:
      *  @brief determine, if the plant was recently casted
      *  @param sinceLastActivation timestamp of last time
      */
-    bool isInCooldown(long sinceLastActivation) {
+    bool isInCooldown(long sinceLastActivation)
+    {
         /* if the time difference is greater than one month, we know these are initial values */
-        if (sinceLastActivation > (60 * 60 * 24 * 30)) {
+        if (sinceLastActivation > (60 * 60 * 24 * 30))
+        {
             return false;
         }
 
         return (this->mSetting->pPumpCooldownInHours->get() > sinceLastActivation / 3600);
     }
 
-    bool isAllowedOnlyAtLowLight(void) {
+    bool isAllowedOnlyAtLowLight(void)
+    {
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
 };
