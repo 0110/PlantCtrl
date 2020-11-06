@@ -17,6 +17,7 @@
 #include "esp_sleep.h"
 #include "RunningMedian.h"
 #include <stdint.h>
+#include <math.h>
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -27,22 +28,24 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define TEMP_MAX_VALUE 85.0f
 #define HalfHour 60
 
-typedef struct {
-  long lastActive;    /**< Timestamp, a pump was activated */
-  long moistTrigger;  /**< Trigger value of the moist sensor */
-  long moisture;      /**< last measured moist value */
+typedef struct
+{
+  long lastActive;   /**< Timestamp, a pump was activated */
+  long moistTrigger; /**< Trigger value of the moist sensor */
+  long moisture;     /**< last measured moist value */
 
 } rtc_plant_t;
 
-
 /********************* non volatile enable after deepsleep *******************************/
 RTC_DATA_ATTR rtc_plant_t rtcPlant[7];
-RTC_DATA_ATTR long  gotoMode2AfterThisTimestamp = 0;
-RTC_DATA_ATTR long  rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
-RTC_DATA_ATTR int   lastPumpRunning = 0;
-RTC_DATA_ATTR long  lastWaterValue = 0;
-RTC_DATA_ATTR int   gBootCount = 0;
-RTC_DATA_ATTR int   gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
+RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
+RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
+RTC_DATA_ATTR int lastPumpRunning = 0;
+RTC_DATA_ATTR long lastWaterValue = 0;
+RTC_DATA_ATTR float rtcLastTemp1 = 0.0f;
+RTC_DATA_ATTR float rtcLastTemp2 = 0.0f;
+RTC_DATA_ATTR int gBootCount = 0;
+RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
 bool warmBoot = true;
 bool volatile mode3Active = false; /**< Controller must not sleep */
@@ -53,7 +56,6 @@ int plantSensor1 = 0;
 int mWaterGone = -1; /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 bool mConfigured = false;
-
 
 RunningMedian lipoRawSensor = RunningMedian(5);
 RunningMedian solarRawSensor = RunningMedian(5);
@@ -103,7 +105,9 @@ long getLastMoisture(int plantId)
   if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
     return rtcPlant[plantId].moisture;
-  } else {
+  }
+  else
+  {
     return -1;
   }
 }
@@ -302,7 +306,9 @@ long getMoistureTrigger(int plantId)
   if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
     return rtcPlant[plantId].moistTrigger;
-  } else {
+  }
+  else
+  {
     return -1;
   }
 }
@@ -320,7 +326,9 @@ long getLastActivationForPump(int plantId)
   if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
     return rtcPlant[plantId].lastActive;
-  } else {
+  }
+  else
+  {
     return -1;
   }
 }
@@ -331,6 +339,9 @@ long getLastActivationForPump(int plantId)
  */
 bool readSensors()
 {
+  float temp[2] = {TEMP_MAX_VALUE, TEMP_MAX_VALUE};
+  float *pFloat = temp;
+  bool leaveMode1 = false;
   Serial << "Read Sensors" << endl;
 
   readSystemSensors();
@@ -349,7 +360,6 @@ bool readSensors()
     }
     delay(10);
   }
-  bool triggerMoistStart = false;
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     long current = mPlants[i].getCurrentMoisture();
@@ -358,7 +368,7 @@ bool readSensors()
     setLastMoisture(i, current);
     if (tmp)
     {
-      triggerMoistStart = true;
+      leaveMode1 = true;
       Serial.printf("Mode2 start due to moist delta in plant %d with %ld \r\n", i, delta);
     }
   }
@@ -369,22 +379,35 @@ bool readSensors()
   delay(200);
 
   /* Required to read the temperature once */
-  float temp[2] = {TEMP_MAX_VALUE, TEMP_MAX_VALUE};
-  float *pFloat = temp;
-  int sensors = dallas.readAllTemperatures(pFloat, 2);
-  if (sensors > 0)
+  for (int i = 0; i < 5; i++)
   {
-    Serial << "t1: " << String(temp[0]) << endl;
-    temp1.add(temp[0]);
+    int sensors = dallas.readAllTemperatures(pFloat, 2);
+    if (sensors > 0)
+    {
+      Serial << "t1: " << String(temp[0]) << endl;
+      temp1.add(temp[0]);
+    }
+    if (sensors > 1)
+    {
+      Serial << "t2: " << String(temp[1]) << endl;
+      temp2.add(temp[1]);
+    }
+    delay(50);
   }
-  if (sensors > 1)
-  {
-    Serial << "t2: " << String(temp[1]) << endl;
-    temp2.add(temp[1]);
+
+  if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+    (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+    leaveMode1 = true;
   }
+  if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+    (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+    leaveMode1 = true;
+  }
+
+  rtcLastTemp1 = temp1.getAverage();
+  rtcLastTemp2 = temp2.getAverage();
 
   /* Use the Ultrasonic sensor to measure waterLevel */
-
   digitalWrite(SENSOR_SR04_TRIG, LOW);
   delayMicroseconds(2);
   digitalWrite(SENSOR_SR04_TRIG, HIGH);
@@ -394,7 +417,7 @@ bool readSensors()
   waterRawSensor.add((duration * .343) / 2);
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
-  return triggerMoistStart;
+  return leaveMode1;
 }
 
 //Homie.getMqttClient().disconnect();
@@ -472,7 +495,8 @@ int determineNextPump()
       Serial.printf("%d No pump required: due to light\r\n", i);
       continue;
     }
-    if(plant.getCurrentMoisture() == MISSING_SENSOR && plant.isPumpTriggerActive()){
+    if (plant.getCurrentMoisture() == MISSING_SENSOR && plant.isPumpTriggerActive())
+    {
       Serial.printf("%d No pump possible: missing sensor \r\n", i);
       continue;
     }
@@ -592,7 +616,8 @@ bool mode1()
   bool deltaTrigger = readSensors();
   //queue sensor values for
 
-  if(deltaTrigger){
+  if (deltaTrigger)
+  {
     Serial.println("1 delta triggered, going to mode2");
     return true;
   }

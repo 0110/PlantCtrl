@@ -63,7 +63,7 @@
 #define PANIK_MODE_DEEPSLEEP (60 * 60 * 5U) /**< 5 hours in usecond */
 #define PANIK_MODE_DEEPSLEEP_US (PANIK_MODE_DEEPSLEEP * 1000 * 1000)
 
-#define TEMPERATURE_DELTA_TRIGGER_IN_C  1
+#define TEMPERATURE_DELTA_TRIGGER_IN_C  1.0f
 #define MOIST_DELTA_TRIGGER_ADC         10
 #define SOLAR_DELTA_VOLT_ADC            3
 #define LIPO_DELTA_VOLT_ADC             0.2 /**< trigger for lipo voltage */
