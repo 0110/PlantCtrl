@@ -12,13 +12,18 @@ For further details have a look at the Readme.md one level above.
 
 # Remote Upload
 
-
 This script will allow you to send an OTA update to your device.
 
 ## Installation
 
 Requirements are:
 * paho-mqtt
+
+## Usage
+
+See ***upload-via-mqtt.sh***
+
+# Remote Upload - Backend
 
 ## Usage
 
