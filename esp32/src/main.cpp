@@ -27,33 +27,24 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define TEMP_MAX_VALUE 85.0f
 #define HalfHour 60
 
+typedef struct {
+  long lastActive;
+  long moistTrigger;
+  long moisture;
+
+} rtc_plant_t;
+
+
+RTC_DATA_ATTR rtc_plant_t rtcPlant[7];
+
 /********************* non volatile enable after deepsleep *******************************/
 
-RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
-RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
-RTC_DATA_ATTR long rtcLastActive0 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger0 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture0 = 0;
-RTC_DATA_ATTR long rtcLastActive1 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger1 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture1 = 0;
-RTC_DATA_ATTR long rtcLastActive2 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger2 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture2 = 0;
-RTC_DATA_ATTR long rtcLastActive3 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger3 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture3 = 0;
-RTC_DATA_ATTR long rtcLastActive4 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger4 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture4 = 0;
-RTC_DATA_ATTR long rtcLastActive5 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger5 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture5 = 0;
-RTC_DATA_ATTR long rtcLastActive6 = 0;
-RTC_DATA_ATTR long rtcMoistureTrigger6 = 0; /**<Level for the moisture sensor */
-RTC_DATA_ATTR long rtcMoisture6 = 0;
-RTC_DATA_ATTR int lastPumpRunning = 0;
-RTC_DATA_ATTR long lastWaterValue = 0;
+RTC_DATA_ATTR long  gotoMode2AfterThisTimestamp = 0;
+RTC_DATA_ATTR long  rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
+RTC_DATA_ATTR int   lastPumpRunning = 0;
+RTC_DATA_ATTR long  lastWaterValue = 0;
+RTC_DATA_ATTR int   gBootCount = 0;
+RTC_DATA_ATTR int   gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
 bool warmBoot = true;
 bool volatile mode3Active = false; /**< Controller must not sleep */
@@ -65,8 +56,6 @@ int mWaterGone = -1; /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 bool mConfigured = false;
 
-RTC_DATA_ATTR int gBootCount = 0;
-RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
 RunningMedian lipoRawSensor = RunningMedian(5);
 RunningMedian solarRawSensor = RunningMedian(5);
@@ -97,99 +86,28 @@ float getSolarVoltage()
 
 void setMoistureTrigger(int plantId, long value)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    rtcMoistureTrigger0 = value;
-  }
-  if (plantId == 1)
-  {
-    rtcMoistureTrigger1 = value;
-  }
-  if (plantId == 2)
-  {
-    rtcMoistureTrigger2 = value;
-  }
-  if (plantId == 3)
-  {
-    rtcMoistureTrigger3 = value;
-  }
-  if (plantId == 4)
-  {
-    rtcMoistureTrigger4 = value;
-  }
-  if (plantId == 5)
-  {
-    rtcMoistureTrigger5 = value;
-  }
-  if (plantId == 6)
-  {
-    rtcMoistureTrigger6 = value;
+    rtcPlant[plantId].moistTrigger = value;
   }
 }
 
 void setLastMoisture(int plantId, long value)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    rtcMoisture0 = value;
-  }
-  if (plantId == 1)
-  {
-    rtcMoisture1 = value;
-  }
-  if (plantId == 2)
-  {
-    rtcMoisture2 = value;
-  }
-  if (plantId == 3)
-  {
-    rtcMoisture3 = value;
-  }
-  if (plantId == 4)
-  {
-    rtcMoisture4 = value;
-  }
-  if (plantId == 5)
-  {
-    rtcMoisture5 = value;
-  }
-  if (plantId == 6)
-  {
-    rtcMoisture6 = value;
+    rtcPlant[plantId].moisture = value;
   }
 }
 
 long getLastMoisture(int plantId)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    return rtcMoisture0;
+    return rtcPlant[plantId].moisture;
+  } else {
+    return -1;
   }
-  if (plantId == 1)
-  {
-    return rtcMoisture1;
-  }
-  if (plantId == 2)
-  {
-    return rtcMoisture2;
-  }
-  if (plantId == 3)
-  {
-    return rtcMoisture3;
-  }
-  if (plantId == 4)
-  {
-    return rtcMoisture4;
-  }
-  if (plantId == 5)
-  {
-    return rtcMoisture5;
-  }
-  if (plantId == 6)
-  {
-    return rtcMoisture6;
-  }
-  return -1;
 }
 
 void readSystemSensors()
@@ -383,100 +301,30 @@ void mode2MQTT()
 
 long getMoistureTrigger(int plantId)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    return rtcMoistureTrigger0;
+    return rtcPlant[plantId].moistTrigger;
+  } else {
+    return -1;
   }
-  if (plantId == 1)
-  {
-    return rtcMoistureTrigger1;
-  }
-  if (plantId == 2)
-  {
-    return rtcMoistureTrigger2;
-  }
-  if (plantId == 3)
-  {
-    return rtcMoistureTrigger3;
-  }
-  if (plantId == 4)
-  {
-    return rtcMoistureTrigger4;
-  }
-  if (plantId == 5)
-  {
-    return rtcMoistureTrigger5;
-  }
-  if (plantId == 6)
-  {
-    return rtcMoistureTrigger6;
-  }
-  return -1;
 }
 
 void setLastActivationForPump(int plantId, long value)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    rtcLastActive0 = value;
-  }
-  if (plantId == 1)
-  {
-    rtcLastActive1 = value;
-  }
-  if (plantId == 2)
-  {
-    rtcLastActive2 = value;
-  }
-  if (plantId == 3)
-  {
-    rtcLastActive3 = value;
-  }
-  if (plantId == 4)
-  {
-    rtcLastActive4 = value;
-  }
-  if (plantId == 5)
-  {
-    rtcLastActive5 = value;
-  }
-  if (plantId == 6)
-  {
-    rtcLastActive6 = value;
+    rtcPlant[plantId].lastActive = value;
   }
 }
 
 long getLastActivationForPump(int plantId)
 {
-  if (plantId == 0)
+  if ((plantId >= 0) && (plantId < MAX_PLANTS))
   {
-    return rtcLastActive0;
+    return rtcPlant[plantId].lastActive;
+  } else {
+    return -1;
   }
-  if (plantId == 1)
-  {
-    return rtcLastActive1;
-  }
-  if (plantId == 2)
-  {
-    return rtcLastActive2;
-  }
-  if (plantId == 3)
-  {
-    return rtcLastActive3;
-  }
-  if (plantId == 4)
-  {
-    return rtcLastActive4;
-  }
-  if (plantId == 5)
-  {
-    return rtcLastActive5;
-  }
-  if (plantId == 6)
-  {
-    return rtcLastActive6;
-  }
-  return -1;
 }
 
 /**
