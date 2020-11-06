@@ -28,17 +28,15 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define HalfHour 60
 
 typedef struct {
-  long lastActive;
-  long moistTrigger;
-  long moisture;
+  long lastActive;    /**< Timestamp, a pump was activated */
+  long moistTrigger;  /**< Trigger value of the moist sensor */
+  long moisture;      /**< last measured moist value */
 
 } rtc_plant_t;
 
 
-RTC_DATA_ATTR rtc_plant_t rtcPlant[7];
-
 /********************* non volatile enable after deepsleep *******************************/
-
+RTC_DATA_ATTR rtc_plant_t rtcPlant[7];
 RTC_DATA_ATTR long  gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long  rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR int   lastPumpRunning = 0;
