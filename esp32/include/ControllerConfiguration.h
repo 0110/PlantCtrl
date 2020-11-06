@@ -54,18 +54,18 @@
 #define SOLAR_CHARGE_MIN_VOLTAGE 7
 #define SOLAR_CHARGE_MAX_VOLTAGE 9
 
-#define HC_SR04             /**< Ultrasonic distance sensor to measure water level */
-#define SENSOR_SR04_ECHO 17 /**< GPIO 17 - Echo */
-#define SENSOR_SR04_TRIG 23 /**< GPIO 23 - Trigger */
+#define HC_SR04                     /**< Ultrasonic distance sensor to measure water level */
+#define SENSOR_SR04_ECHO        17  /**< GPIO 17 - Echo */
+#define SENSOR_SR04_TRIG        23  /**< GPIO 23 - Trigger */
 
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 
 #define PANIK_MODE_DEEPSLEEP (60 * 60 * 5U) /**< 5 hours in usecond */
 #define PANIK_MODE_DEEPSLEEP_US (PANIK_MODE_DEEPSLEEP * 1000 * 1000)
 
-#define TEMPERATURE_DELTA_TRIGGER_IN_C 1
-#define MOIST_DELTA_TRIGGER_ADC 10
-#define SOLAR_DELTA_VOLT_ADC 3
-#define LIPO_DELTA_VOLT_ADC 0.2
+#define TEMPERATURE_DELTA_TRIGGER_IN_C  1
+#define MOIST_DELTA_TRIGGER_ADC         10
+#define SOLAR_DELTA_VOLT_ADC            3
+#define LIPO_DELTA_VOLT_ADC             0.2 /**< trigger for lipo voltage */
 
 #endif
