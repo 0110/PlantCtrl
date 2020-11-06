@@ -6,11 +6,24 @@
  * @date 2020-05-30
  * 
  * @copyright Copyright (c) 2020
- *  Describe the used PINs of the controller
+ * 
+ * \mainpage Configuration of the controller
+ * @{
+ * Describe the used PINs of the controller
+ *  
+ * @subpage Controller
+ * 
+ * @subpage Homie
+ * 
+ * @subpage Configuration
+ * 
+ * @}
  */
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
-
+/** \addtogroup Configuration
+ *  @{
+ */
 #define FIRMWARE_VERSION "1.0.9"
 
 #define ADC_TO_VOLT(adc)                      ((adc) * 3.3 ) / 4095)
@@ -68,4 +81,5 @@
 #define SOLAR_DELTA_VOLT_ADC            3
 #define LIPO_DELTA_VOLT_ADC             0.2 /**< trigger for lipo voltage */
 
+/* @} */
 #endif

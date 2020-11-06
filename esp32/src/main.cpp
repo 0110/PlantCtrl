@@ -1,4 +1,6 @@
-/**
+/** \addtogroup Controller
+ *  @{
+ * 
  * @file main.cpp
  * @author Ollo
  * @brief PlantControl
@@ -6,7 +8,6 @@
  * @date 2020-05-01
  * 
  * @copyright Copyright (c) 2020
- * 
  */
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
@@ -779,3 +780,5 @@ void loop()
     }
   }
 }
+
+/** @}*/

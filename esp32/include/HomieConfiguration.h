@@ -1,4 +1,6 @@
-/**
+/** \addtogroup Homie
+ *  @{
+ * 
  * @file HomieConfiguration.h
  * @author your name (you@domain.com)
  * @brief 
@@ -7,6 +9,7 @@
  * 
  * @copyright Copyright (c) 2020
  *  All Settings, configurable in Homie
+ * 
  */
 #ifndef HOMIE_PLANT_CONFIG_H
 #define HOMIE_PLANT_CONFIG_H
@@ -16,17 +19,18 @@
 #define MAX_PLANTS 7
 
 /**
- *********************************** Attributes *******************************
- */
+ * @name Attributes
+ * generated Information
+ * @{
+ **/
 
-HomieNode plant0("plant0", "Plant 0", "Plant");
-
-HomieNode plant1("plant1", "Plant 1", "Plant");
-HomieNode plant2("plant2", "Plant 2", "Plant");
-HomieNode plant3("plant3", "Plant 3", "Plant");
-HomieNode plant4("plant4", "Plant 4", "Plant");
-HomieNode plant5("plant5", "Plant 5", "Plant");
-HomieNode plant6("plant6", "Plant 6", "Plant");
+HomieNode plant0("plant0", "Plant 0", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant1("plant1", "Plant 1", "Plant"); /**< dynamic Homie information for second plant */
+HomieNode plant2("plant2", "Plant 2", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant3("plant3", "Plant 3", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant4("plant4", "Plant 4", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant5("plant5", "Plant 5", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant6("plant6", "Plant 6", "Plant"); /**< dynamic Homie information for first plant */
 
 HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
@@ -34,8 +38,12 @@ HomieNode sensorWater("water", "WaterSensor", "Water");
 HomieNode sensorTemp("temperature", "Temperature", "temperature");
 HomieNode stayAlive("stay", "alive", "alive");
 
+/* @} */
+
 /**
- *********************************** Settings *******************************
+ * @name Settings
+ * General settings for the controller
+ * @{
  */
 HomieSetting<long> maxTimeBetweenMQTTUpdates("mqttSleep", "time in seconds to start into mode2");
 HomieSetting<long> deepSleepTime("deepsleep", "time in seconds to sleep (0 deactivats it)");
@@ -48,7 +56,15 @@ HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn (mm) if below this wat
 HomieSetting<long> waterLevelVol("waterVolume", "(ml) between minimum and maximum");
 HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
 
-/** Plant specific ones */
+/**
+ *@}
+ */
+
+/** 
+ * @name Plant specific ones 
+ * Setting for one plant
+ * @{
+ **/
 
 #define GENERATE_PLANT(plant, strplant)                                                                                                                                                                        \
         HomieSetting<long> mSensorDry##plant = HomieSetting<long>("moistdry" strplant, "Plant " strplant "- Moist sensor dry threshold");                                                                      \
@@ -58,12 +74,16 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
         PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant};
 
-GENERATE_PLANT(0, "0");
-GENERATE_PLANT(1, "1");
-GENERATE_PLANT(2, "2");
-GENERATE_PLANT(3, "3");
-GENERATE_PLANT(4, "4");
-GENERATE_PLANT(5, "5");
-GENERATE_PLANT(6, "6");
+/**
+ * @}
+ */
 
-#endif /* HOMIE_PLANT_CONFIG_H */
+GENERATE_PLANT(0, "0"); /**< Homie settings for first plant */
+GENERATE_PLANT(1, "1"); /**< Homie settings for second Plant */
+GENERATE_PLANT(2, "2"); /**< Homie settings for third plant */
+GENERATE_PLANT(3, "3"); /**< Homie settings for fourth plant */
+GENERATE_PLANT(4, "4"); /**< Homie settings for fifth plant */
+GENERATE_PLANT(5, "5"); /**< Homie settings for sixth plant */
+GENERATE_PLANT(6, "6"); /**< Homie settings for seventh plant */
+
+#endif /* HOMIE_PLANT_CONFIG_H @} */
