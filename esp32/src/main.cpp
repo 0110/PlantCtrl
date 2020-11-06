@@ -115,8 +115,11 @@ long getLastMoisture(int plantId)
 
 void readSystemSensors()
 {
-  lipoRawSensor.add(analogRead(SENSOR_LIPO));
-  solarRawSensor.add(analogRead(SENSOR_SOLAR));
+  for (int i=0; i < 5; i++) {
+    lipoRawSensor.add(analogRead(SENSOR_LIPO));
+    solarRawSensor.add(analogRead(SENSOR_SOLAR));
+  }
+  Serial << "Lipo " << lipoRawSensor.getAverage() << " -> " << getBatteryVoltage() << endl;
 }
 
 int determineNextPump();
