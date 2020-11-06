@@ -38,7 +38,7 @@ typedef struct
 } rtc_plant_t;
 
 /********************* non volatile enable after deepsleep *******************************/
-RTC_DATA_ATTR rtc_plant_t rtcPlant[7];
+RTC_DATA_ATTR rtc_plant_t rtcPlant[MAX_PLANTS];
 RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR int lastPumpRunning = 0;
