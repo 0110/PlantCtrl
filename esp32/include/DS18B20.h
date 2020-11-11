@@ -21,32 +21,36 @@
 
 #include <OneWire.h>
 
-class Ds18B20 {
-    private:
-        OneWire* mDs;
-        int foundDevices;
-    public:
-        Ds18B20(int pin) {
-            this->mDs = new OneWire(pin);
-        }
+class Ds18B20
+{
+private:
+    OneWire *mDs;
+    int foundDevices;
 
-        ~Ds18B20() {
-            delete this->mDs;
-        }
-        /**
+public:
+    Ds18B20(int pin)
+    {
+        this->mDs = new OneWire(pin);
+    }
+
+    ~Ds18B20()
+    {
+        delete this->mDs;
+    }
+    /**
          * @brief read amount sensots
          * check for available of DS18B20 sensors
          * @return amount of sensors
          */
-        int readDevices(void);
+    int readDevices(void);
 
-        /**
+    /**
          * @brief Read all temperatures in celsius
          * 
          * @param pTemperatures     array of float valuies
          * @param maxTemperatures  size of the given array
          * @return int amount of read temperature values
          */
-        int readAllTemperatures(float* pTemperatures, int maxTemperatures);
+    int readAllTemperatures(float *pTemperatures, int maxTemperatures);
 };
 #endif

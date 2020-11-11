@@ -17,13 +17,11 @@
 // not tested ==> use at own risk :)
 // #define RUNNING_MEDIAN_USE_MALLOC
 
-
 // should at least be 5 to be practical,
 // odd sizes results in a 'real' middle element and will be a bit faster.
 // even sizes takes the average of the two middle elements as median
-#define MEDIAN_MIN_SIZE     5
-#define MEDIAN_MAX_SIZE     19
-
+#define MEDIAN_MIN_SIZE 5
+#define MEDIAN_MAX_SIZE 19
 
 class RunningMedian
 {
@@ -45,7 +43,7 @@ public:
   float getAverage(uint8_t nMedian);
 
   float getHighest() { return getSortedElement(_cnt - 1); };
-  float getLowest()  { return getSortedElement(0); };
+  float getLowest() { return getSortedElement(0); };
 
   // get n'th element from the values in time order
   float getElement(const uint8_t n);
@@ -58,7 +56,6 @@ public:
   // returns current used elements, getCount() <= getSize()
   uint8_t getCount() { return _cnt; };
 
-
 protected:
   boolean _sorted;
   uint8_t _size;
@@ -66,8 +63,8 @@ protected:
   uint8_t _idx;
 
 #ifdef RUNNING_MEDIAN_USE_MALLOC
-  float * _ar;
-  uint8_t * _p;
+  float *_ar;
+  uint8_t *_p;
 #else
   float _ar[MEDIAN_MAX_SIZE];
   uint8_t _p[MEDIAN_MAX_SIZE];
