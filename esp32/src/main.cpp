@@ -411,8 +411,7 @@ bool readSensors()
   rtcLastTemp2 = temp2.getAverage();
 
   /* Use the Ultrasonic sensor to measure waterLevel */
-  for (int i = 0; i < 5; i++)
-  {
+  
     digitalWrite(SENSOR_SR04_TRIG, LOW);
     delayMicroseconds(2);
     digitalWrite(SENSOR_SR04_TRIG, HIGH);
@@ -421,8 +420,7 @@ bool readSensors()
     float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
     waterRawSensor.add((duration * .343) / 2);
     Serial << "Distance sensor " << duration << " ms : " << waterRawSensor.getAverage() << " cm" << endl;
-    delay(20);
-  }
+    
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
   return leaveMode1;
