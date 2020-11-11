@@ -382,7 +382,8 @@ bool readSensors()
   delay(200);
 
   /* Required to read the temperature once */
-  for (int i = 0; i < 5; i++)
+  int readAgain = 5;
+  while (readAgain > 0)
   {
     int sensors = dallas.readAllTemperatures(pFloat, 2);
     if (sensors > 0)
@@ -395,17 +396,23 @@ bool readSensors()
       Serial << "t2: " << String(temp[1]) << endl;
       temp2.add(temp[1]);
     }
+    if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+      (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+      leaveMode1 = true;
+    }
+    if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+      (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+      leaveMode1 = true;
+    }
+    if(!leaveMode1){
+      readAgain = 0;
+    }
+    
+    readAgain--;
     delay(50);
   }
 
-  if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-    (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
-    leaveMode1 = true;
-  }
-  if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-    (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
-    leaveMode1 = true;
-  }
+
 
   rtcLastTemp1 = temp1.getAverage();
   rtcLastTemp2 = temp2.getAverage();
