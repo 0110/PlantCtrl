@@ -54,7 +54,6 @@ bool volatile mDeepsleep = false;
 
 int plantSensor1 = 0;
 
-int mWaterGone = -1; /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 bool mConfigured = false;
 
