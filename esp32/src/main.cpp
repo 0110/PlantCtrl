@@ -56,7 +56,6 @@ bool mDeepsleep = false;
 
 int plantSensor1 = 0;
 
-int mWaterGone = -1;  /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 bool mConfigured = false;
 
@@ -168,15 +167,15 @@ void mode2MQTT(){
   /* Publish default values */
 
   if(lastPumpRunning != -1){
-    long waterDiff = mWaterGone-lastWaterValue;
+    long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
     //TODO attribute used water in ml to plantid
   }
   for(int i=0; i < MAX_PLANTS; i++) {
     mPlants[i].setProperty("moist").send(String(100 * mPlants[i].getSensorValue() / 4095 ));
   }
-  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone ));
-  Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone ) << "%)" << endl;
-  lastWaterValue = mWaterGone;
+  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage() ));
+  Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage() ) << "%)" << endl;
+  lastWaterValue = waterRawSensor.getAverage();
 
   sensorLipo.setProperty("percent").send( String(100 * lipoRawSensor.getAverage() / 4095) );
   sensorLipo.setProperty("volt").send( String(getBatteryVoltage()) );
@@ -361,6 +360,7 @@ void readSensors() {
   digitalWrite(SENSOR_SR04_TRIG, LOW);
   float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
   waterRawSensor.add((duration*.343)/2);
+  Serial << "Distance sensor " << duration << " ms : " << waterRawSensor.getAverage() << " cm" << endl;
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
 }
