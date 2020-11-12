@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 doc/
+custom_platformio.ini
