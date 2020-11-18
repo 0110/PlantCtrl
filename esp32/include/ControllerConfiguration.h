@@ -89,10 +89,6 @@
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
 
-#define HC_SR04                     /**< Ultrasonic distance sensor to measure water level */
-#define SENSOR_SR04_ECHO        17  /**< GPIO 17 - Echo */
-#define SENSOR_SR04_TRIG        23  /**< GPIO 23 - Trigger */
-
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 
 #define PANIK_MODE_DEEPSLEEP (60 * 60 * 5U) /**< 5 hours in usecond */

@@ -112,6 +112,30 @@ long getLastMoisture(int plantId)
   }
 }
 
+long getDistance(){
+  unsigned int distance;
+  byte startByte, h_data, l_data, sum = 0;
+  byte buf[3];
+  
+  startByte = (byte)Serial.read();
+  if(startByte == 255){
+    Serial.readBytes(buf, 3);
+    h_data = buf[0];
+    l_data = buf[1];
+    sum = buf[2];
+    distance = (h_data<<8) + l_data;
+    if(((startByte + h_data + l_data)&0xFF) != sum){
+      return -1;
+    }
+    else{
+      return distance;
+    } 
+  } else {
+    return -2;
+  }
+
+}
+
 void readSystemSensors()
 {
   for (int i=0; i < 5; i++) {
@@ -420,16 +444,13 @@ bool readSensors()
   /* Use the Ultrasonic sensor to measure waterLevel */
   for (int i = 0; i < 5; i++)
   {
-    digitalWrite(SENSOR_SR04_TRIG, LOW);
-    delayMicroseconds(2);
-    digitalWrite(SENSOR_SR04_TRIG, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(SENSOR_SR04_TRIG, LOW);
-    float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
-    waterRawSensor.add((duration * .343) / 2);
-    Serial << "Distance sensor " << duration << " ms : " << waterRawSensor.getAverage() << " cm" << endl;
-    delay(20);
+    while(!Serial.available()){}
+    unsigned int distance = getDistance();
+    if(distance > 0){
+      waterRawSensor.add(distance);
+    }
   }
+  Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
   return leaveMode1;
@@ -705,7 +726,7 @@ void mode2()
  */
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.setTimeout(1000); // Set timeout of 1 second
   Serial << endl
          << endl;
