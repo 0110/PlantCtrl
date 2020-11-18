@@ -1,13 +1,3 @@
-; PlatformIO Project Configuration File
-;
-;   Build options: build flags, source filter
-;   Upload options: custom upload port, speed and extra flags
-;   Library options: dependencies, extra library storages
-;   Advanced options: extra scripting
-;
-; Please visit documentation for the other options and examples
-; https://docs.platformio.org/page/projectconf.html
-
 [env:esp32doit-devkit-v1]
 platform = espressif32
 board = esp32doit-devkit-v1
@@ -15,12 +5,13 @@ framework = arduino
 build_flags = -DPIO_FRAMEWORK_ARDUINO_LWIP2_LOW_MEMORY
 board_build.partitions = defaultWithSmallerSpiffs.csv
 
+extra_configs = custom_platformio.ini
+
 ; the latest development brankitchen-lightch (convention V3.0.x) 
 lib_deps = ArduinoJson@6.16.1
             https://github.com/homieiot/homie-esp8266.git#v3.0
             OneWire
             DallasTemperature
 
-[platformio]
-
-extra_configs = custom_platformio.ini
+; add additional parameter, like the upload port
+upload_port=/dev/ttyUSB1
