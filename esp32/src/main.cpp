@@ -17,6 +17,7 @@
 #include "time.h"
 #include "esp_sleep.h"
 #include "RunningMedian.h"
+#include "WakeReason.h"
 #include <stdint.h>
 #include <math.h>
 
@@ -45,12 +46,15 @@ RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
 RTC_DATA_ATTR float rtcLastTemp1 = 0.0f;
 RTC_DATA_ATTR float rtcLastTemp2 = 0.0f;
+RTC_DATA_ATTR float rtcLastBatteryVoltage = 0.0f;
+RTC_DATA_ATTR float rtcLastSolarVoltage = 0.0f;
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
 
-bool warmBoot = true;
+int wakeUpReason = WAKEUP_REASON_UNDEFINED;
 bool volatile mode3Active = false; /**< Controller must not sleep */
 bool volatile mDeepsleep = false;
+
 
 int plantSensor1 = 0;
 
@@ -232,6 +236,7 @@ void mode2MQTT()
   sensorLipo.setProperty("volt").send(String(getBatteryVoltage()));
   sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage()) / 4095));
   sensorSolar.setProperty("volt").send(String(getSolarVoltage()));
+  startupReason.setProperty("startupReason").send(String(wakeUpReason));
 
   float t1 = temp1.getMedian();
   if (t1 != NAN)
@@ -372,6 +377,7 @@ bool readSensors()
     setLastMoisture(i, current);
     if (tmp)
     {
+      wakeUpReason = WAKEUP_REASON_MOIST_CHANGE + i;
       leaveMode1 = true;
       Serial.printf("Mode2 start due to moist delta in plant %d with %ld \r\n", i, delta);
     }
@@ -399,17 +405,28 @@ bool readSensors()
     delay(50);
   }
 
-  if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-    (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+  if (abs(temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+    leaveMode1 = true;
+    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
+  }
+  if (abs(temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
     leaveMode1 = true;
   }
-  if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-    (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+
+  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage > LIPO_DELTA_VOLT_ADC)) {
+    wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
+    leaveMode1 = true;
+  }
+  if (abs(getSolarVoltage() - rtcLastSolarVoltage > SOLAR_DELTA_VOLT_ADC)) {
+    wakeUpReason = WAKEUP_REASON_SOLAR_CHANGE;
     leaveMode1 = true;
   }
 
   rtcLastTemp1 = temp1.getAverage();
   rtcLastTemp2 = temp2.getAverage();
+  rtcLastBatteryVoltage = getBatteryVoltage();
+  rtcLastSolarVoltage = getSolarVoltage();
 
   /* Use the Ultrasonic sensor to measure waterLevel */
   digitalWrite(SENSOR_SR04_TRIG, LOW);
@@ -608,6 +625,7 @@ void systemInit()
         .setDatatype("number")
         .setUnit("V");
     sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
+    startupReason.advertise("startupReason").setDatatype("number").setUnit("Enum");
   }
   stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
 }
@@ -627,6 +645,7 @@ bool mode1()
   }
   if (rtcDeepSleepTime == 0)
   {
+    wakeUpReason = WAKEUP_REASON_RTC_MISSING;
     Serial.println("1 missing rtc value, going to mode2");
     return true;
   }
@@ -635,6 +654,7 @@ bool mode1()
     long trigger = getMoistureTrigger(i);
     if (trigger == 0)
     {
+      wakeUpReason = WAKEUP_REASON_RTC_MISSING;
       Serial << "Missing rtc trigger " << i << endl;
       return true;
     }
@@ -650,6 +670,7 @@ bool mode1()
     if (raw > trigger)
     {
       Serial << "plant " << i << " dry " << raw << " / " << trigger << " starting mode 2" << endl;
+      wakeUpReason = WAKEUP_REASON_PLANT_DRY + i;
       return true;
     }
   }
@@ -661,10 +682,12 @@ bool mode1()
   {
     Serial.println("Starting mode 2 due to missing ntp");
     //missing ntp time boot to mode3
+    wakeUpReason = WAKEUP_REASON_TIME_UNSET;
     return true;
   }
   if (gotoMode2AfterThisTimestamp < cTime)
   {
+    wakeUpReason = WAKEUP_REASON_MODE2_WAKEUP_TIMER;
     Serial.println("Starting mode 2 after specified mode1 time");
     return true;
   }

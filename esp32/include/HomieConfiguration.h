@@ -36,6 +36,7 @@ HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
 HomieNode sensorWater("water", "WaterSensor", "Water");
 HomieNode sensorTemp("temperature", "Temperature", "temperature");
+HomieNode startupReason("startupReason", "startupReason", "startupReason");
 HomieNode stayAlive("stay", "alive", "alive");  /**< Necessary for Mqtt Active Command */
 
 /* @} */
