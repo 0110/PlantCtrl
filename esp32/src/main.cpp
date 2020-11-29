@@ -55,10 +55,8 @@ int wakeUpReason = WAKEUP_REASON_UNDEFINED;
 bool volatile mode3Active = false; /**< Controller must not sleep */
 bool volatile mDeepsleep = false;
 
-
 int plantSensor1 = 0;
 
-int mWaterGone = -1; /**< Amount of centimeter, where no water is seen */
 int readCounter = 0;
 bool mConfigured = false;
 
@@ -115,6 +113,30 @@ long getLastMoisture(int plantId)
   {
     return -1;
   }
+}
+
+long getDistance(){
+  unsigned int distance;
+  byte startByte, h_data, l_data, sum = 0;
+  byte buf[3];
+  
+  startByte = (byte)Serial.read();
+  if(startByte == 255){
+    Serial.readBytes(buf, 3);
+    h_data = buf[0];
+    l_data = buf[1];
+    sum = buf[2];
+    distance = (h_data<<8) + l_data;
+    if(((startByte + h_data + l_data)&0xFF) != sum){
+      return -1;
+    }
+    else{
+      return distance;
+    } 
+  } else {
+    return -2;
+  }
+
 }
 
 void readSystemSensors()
@@ -205,7 +227,7 @@ void mode2MQTT()
 
   if (lastPumpRunning != -1)
   {
-    long waterDiff = mWaterGone - lastWaterValue;
+    long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
     //TODO attribute used water in ml to plantid
   }
   for (int i = 0; i < MAX_PLANTS; i++)
@@ -228,9 +250,9 @@ void mode2MQTT()
     mPlants[i].setProperty("moist").send(String(pct));
     mPlants[i].setProperty("moistraw").send(String(raw));
   }
-  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - mWaterGone));
-  Serial << "W : " << mWaterGone << " cm (" << String(waterLevelMax.get() - mWaterGone) << "%)" << endl;
-  lastWaterValue = mWaterGone;
+  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
+  Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
+  lastWaterValue = waterRawSensor.getAverage();
 
   sensorLipo.setProperty("percent").send(String(100 * lipoRawSensor.getAverage() / 4095));
   sensorLipo.setProperty("volt").send(String(getBatteryVoltage()));
@@ -389,7 +411,8 @@ bool readSensors()
   delay(200);
 
   /* Required to read the temperature once */
-  for (int i = 0; i < 5; i++)
+  int readAgain = 5;
+  while (readAgain > 0)
   {
     int sensors = dallas.readAllTemperatures(pFloat, 2);
     if (sensors > 0)
@@ -402,6 +425,19 @@ bool readSensors()
       Serial << "t2: " << String(temp[1]) << endl;
       temp2.add(temp[1]);
     }
+    if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+      (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+      leaveMode1 = true;
+    }
+    if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+      (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+      leaveMode1 = true;
+    }
+    if(!leaveMode1){
+      readAgain = 0;
+    }
+    
+    readAgain--;
     delay(50);
   }
 
@@ -429,13 +465,15 @@ bool readSensors()
   rtcLastSolarVoltage = getSolarVoltage();
 
   /* Use the Ultrasonic sensor to measure waterLevel */
-  digitalWrite(SENSOR_SR04_TRIG, LOW);
-  delayMicroseconds(2);
-  digitalWrite(SENSOR_SR04_TRIG, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(SENSOR_SR04_TRIG, LOW);
-  float duration = pulseIn(SENSOR_SR04_ECHO, HIGH);
-  waterRawSensor.add((duration * .343) / 2);
+  for (int i = 0; i < 5; i++)
+  {
+    while(!Serial.available()){}
+    unsigned int distance = getDistance();
+    if(distance > 0){
+      waterRawSensor.add(distance);
+    }
+  }
+  Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
   return leaveMode1;
@@ -717,7 +755,7 @@ void mode2()
  */
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.setTimeout(1000); // Set timeout of 1 second
   Serial << endl
          << endl;

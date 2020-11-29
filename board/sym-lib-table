@@ -1,5 +1,6 @@
 (sym_lib_table
   (lib (name LP38690DT-3.3)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/LP38690DT-3.3.lib)(options "")(descr ""))
   (lib (name ESP32-DEVKITC-32D)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/ESP32/ESP32-DEVKITC-32D.lib)(options "")(descr ""))
-  (lib (name PlantCtrlESP32-rescue)(type Legacy)(uri ${KIPRJMOD}/PlantCtrlESP32-rescue.lib)(options "")(descr ""))
+  (lib (name DW01)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/DW01.lib)(options "")(descr ""))
+  (lib (name SX1308)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/SX1308.lib)(options "")(descr ""))
 )
