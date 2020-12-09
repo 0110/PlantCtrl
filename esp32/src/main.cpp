@@ -441,20 +441,20 @@ bool readSensors()
     delay(50);
   }
 
-  if (abs(temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+  if (abs(temp1.getAverage() - rtcLastTemp1) > TEMPERATURE_DELTA_TRIGGER_IN_C) {
     leaveMode1 = true;
     wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
   }
-  if (abs(temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
+  if (abs(temp2.getAverage() - rtcLastTemp2) > TEMPERATURE_DELTA_TRIGGER_IN_C) {
     wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
     leaveMode1 = true;
   }
 
-  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage > LIPO_DELTA_VOLT_ADC)) {
+  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC) {
     wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
     leaveMode1 = true;
   }
-  if (abs(getSolarVoltage() - rtcLastSolarVoltage > SOLAR_DELTA_VOLT_ADC)) {
+  if (abs(getSolarVoltage() - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC) {
     wakeUpReason = WAKEUP_REASON_SOLAR_CHANGE;
     leaveMode1 = true;
   }
