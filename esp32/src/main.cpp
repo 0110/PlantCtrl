@@ -115,13 +115,13 @@ long getLastMoisture(int plantId)
   }
 }
 
-long getDistance(){
-  unsigned int distance;
-  byte startByte, h_data, l_data, sum = 0;
+long getDistance() {
+  byte startByte, h_data, l_data, sum;
   byte buf[3];
   
   startByte = (byte)Serial.read();
-  if(startByte == 255){
+  if(startByte == 255) {
+    unsigned int distance;
     Serial.readBytes(buf, 3);
     h_data = buf[0];
     l_data = buf[1];
