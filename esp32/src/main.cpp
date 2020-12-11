@@ -115,33 +115,39 @@ long getLastMoisture(int plantId)
   }
 }
 
-long getDistance() {
+long getDistance()
+{
   byte startByte, h_data, l_data, sum;
   byte buf[3];
-  
+
   startByte = (byte)Serial.read();
-  if(startByte == 255) {
+  if (startByte == 255)
+  {
     unsigned int distance;
     Serial.readBytes(buf, 3);
     h_data = buf[0];
     l_data = buf[1];
     sum = buf[2];
-    distance = (h_data<<8) + l_data;
-    if(((startByte + h_data + l_data)&0xFF) != sum){
+    distance = (h_data << 8) + l_data;
+    if (((startByte + h_data + l_data) & 0xFF) != sum)
+    {
       return -1;
     }
-    else{
+    else
+    {
       return distance;
-    } 
-  } else {
+    }
+  }
+  else
+  {
     return -2;
   }
-
 }
 
 void readSystemSensors()
 {
-  for (int i=0; i < 5; i++) {
+  for (int i = 0; i < 5; i++)
+  {
     lipoRawSensor.add(analogRead(SENSOR_LIPO));
     solarRawSensor.add(analogRead(SENSOR_SOLAR));
   }
@@ -364,6 +370,27 @@ long getLastActivationForPump(int plantId)
   }
 }
 
+/* Use the Ultrasonic sensor to measure waterLevel */
+void readDistance()
+{
+  for (int i = 0; i < 5; i++)
+  {
+    long start = millis();
+    while (!Serial.available())
+    {
+      if (start + 200 < millis())
+      {
+        return;
+      }
+    }
+    unsigned int distance = getDistance();
+    if (distance > 0)
+    {
+      waterRawSensor.add(distance);
+    }
+  }
+}
+
 /**
  * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
  * These sensors (ADC2) can only be read when no Wifi is used.
@@ -409,52 +436,61 @@ bool readSensors()
   /* Read the temperature sensors once, as first time 85 degree is returned */
   Serial << "DS18B20" << String(dallas.readDevices()) << endl;
   delay(200);
-
-  /* Required to read the temperature once */
-  int readAgain = 5;
-  while (readAgain > 0)
+  if (dallas.readDevices() > 0)
   {
-    int sensors = dallas.readAllTemperatures(pFloat, 2);
-    if (sensors > 0)
+    /* Required to read the temperature once */
+    int readAgain = 5;
+    while (readAgain > 0)
     {
-      Serial << "t1: " << String(temp[0]) << endl;
-      temp1.add(temp[0]);
+      int sensors = dallas.readAllTemperatures(pFloat, 2);
+      if (sensors > 0)
+      {
+        Serial << "t1: " << String(temp[0]) << endl;
+        temp1.add(temp[0]);
+      }
+      if (sensors > 1)
+      {
+        Serial << "t2: " << String(temp[1]) << endl;
+        temp2.add(temp[1]);
+      }
+      if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+          (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
+      {
+        leaveMode1 = true;
+      }
+      if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+          (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
+      {
+        leaveMode1 = true;
+      }
+      if (!leaveMode1)
+      {
+        readAgain = 0;
+      }
+
+      readAgain--;
+      delay(50);
     }
-    if (sensors > 1)
-    {
-      Serial << "t2: " << String(temp[1]) << endl;
-      temp2.add(temp[1]);
-    }
-    if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-      (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
-      leaveMode1 = true;
-    }
-    if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-      (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C)) {
-      leaveMode1 = true;
-    }
-    if(!leaveMode1){
-      readAgain = 0;
-    }
-    
-    readAgain--;
-    delay(50);
   }
 
-  if (abs(temp1.getAverage() - rtcLastTemp1) > TEMPERATURE_DELTA_TRIGGER_IN_C) {
+  if (abs(temp1.getAverage() - rtcLastTemp1) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  {
     leaveMode1 = true;
     wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
   }
-  if (abs(temp2.getAverage() - rtcLastTemp2) > TEMPERATURE_DELTA_TRIGGER_IN_C) {
+  if (abs(temp2.getAverage() - rtcLastTemp2) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  {
     wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
     leaveMode1 = true;
   }
 
-  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC) {
+  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC)
+  {
     wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
     leaveMode1 = true;
   }
-  if (abs(getSolarVoltage() - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC) {
+  if (abs(getSolarVoltage() - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC)
+  {
     wakeUpReason = WAKEUP_REASON_SOLAR_CHANGE;
     leaveMode1 = true;
   }
@@ -464,15 +500,7 @@ bool readSensors()
   rtcLastBatteryVoltage = getBatteryVoltage();
   rtcLastSolarVoltage = getSolarVoltage();
 
-  /* Use the Ultrasonic sensor to measure waterLevel */
-  for (int i = 0; i < 5; i++)
-  {
-    while(!Serial.available()){}
-    unsigned int distance = getDistance();
-    if(distance > 0){
-      waterRawSensor.add(distance);
-    }
-  }
+  readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
