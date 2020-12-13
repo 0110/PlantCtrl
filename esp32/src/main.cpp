@@ -12,7 +12,7 @@
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "HomieConfiguration.h"
-#include "DS18B20.h"
+#include "DallasTemperature.h"
 #include <Homie.h>
 #include "time.h"
 #include "esp_sleep.h"
@@ -20,6 +20,7 @@
 #include "WakeReason.h"
 #include <stdint.h>
 #include <math.h>
+#include <OneWire.h>
 
 const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
 
@@ -44,12 +45,14 @@ RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
 RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
-RTC_DATA_ATTR float rtcLastTemp1 = 0.0f;
-RTC_DATA_ATTR float rtcLastTemp2 = 0.0f;
+RTC_DATA_ATTR float rtcLastLipoTemp = 0.0f;
+RTC_DATA_ATTR float rtcLastWaterTemp = 0.0f;
 RTC_DATA_ATTR float rtcLastBatteryVoltage = 0.0f;
 RTC_DATA_ATTR float rtcLastSolarVoltage = 0.0f;
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
+RTC_DATA_ATTR int rtcLipoTempIndex = -1;
+RTC_DATA_ATTR int rtcWaterTempIndex = -1;
 
 int wakeUpReason = WAKEUP_REASON_UNDEFINED;
 bool volatile mode3Active = false; /**< Controller must not sleep */
@@ -63,10 +66,11 @@ bool mConfigured = false;
 RunningMedian lipoRawSensor = RunningMedian(5);
 RunningMedian solarRawSensor = RunningMedian(5);
 RunningMedian waterRawSensor = RunningMedian(5);
-RunningMedian temp1 = RunningMedian(5);
-RunningMedian temp2 = RunningMedian(5);
+RunningMedian lipoTempSensor = RunningMedian(5);
+RunningMedian waterTempSensor = RunningMedian(5);
 
-Ds18B20 dallas(SENSOR_DS18B20);
+OneWire oneWire(SENSOR_DS18B20);
+DallasTemperature sensors(&oneWire);
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -266,21 +270,24 @@ void mode2MQTT()
   sensorSolar.setProperty("volt").send(String(getSolarVoltage()));
   startupReason.setProperty("startupReason").send(String(wakeUpReason));
 
-  float t1 = temp1.getMedian();
-  if (t1 != NAN)
+  rtcLipoTempIndex = lipoSensorIndex.get();
+  rtcWaterTempIndex = waterSensorIndex.get();
+
+  float lipoTempCurrent = lipoTempSensor.getMedian();
+  if (lipoTempCurrent != NAN)
   {
-    sensorTemp.setProperty("control").send(String(t1));
+    sensorTemp.setProperty("lipo").send(String(lipoTempCurrent));
   }
-  float t2 = temp2.getMedian();
+  float t2 = waterTempSensor.getMedian();
   if (t2 != NAN)
   {
-    sensorTemp.setProperty("temp").send(String(t2));
+    sensorTemp.setProperty("water").send(String(t2));
   }
 
   //give mqtt time, use via publish callback instead?
   delay(100);
 
-  bool lipoTempWarning = t1 != 85 && t2 != 85 && abs(t1 - t2) > 10;
+  bool lipoTempWarning = lipoTempCurrent != 85 && abs(lipoTempCurrent - t2) > 10;
   if (lipoTempWarning)
   {
     Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
@@ -378,8 +385,10 @@ void readDistance()
     long start = millis();
     while (!Serial.available())
     {
-      if (start + 200 < millis())
+      if ((start + 500) < millis())
       {
+        Serial << "Abort reading hall sensor, not measurement after 200ms" << endl;
+        waterRawSensor.add(0);
         return;
       }
     }
@@ -397,8 +406,6 @@ void readDistance()
  */
 bool readSensors()
 {
-  float temp[2] = {TEMP_MAX_VALUE, TEMP_MAX_VALUE};
-  float *pFloat = temp;
   bool leaveMode1 = false;
   Serial << "Read Sensors" << endl;
 
@@ -409,6 +416,7 @@ bool readSensors()
   digitalWrite(OUTPUT_SENSOR, HIGH);
 
   delay(20);
+  sensors.begin();
   /* wait before reading something */
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
@@ -432,58 +440,6 @@ bool readSensors()
     }
   }
 
-  Serial << "DS18B20" << endl;
-  /* Read the temperature sensors once, as first time 85 degree is returned */
-  Serial << "DS18B20" << String(dallas.readDevices()) << endl;
-  delay(200);
-  if (dallas.readDevices() > 0)
-  {
-    /* Required to read the temperature once */
-    int readAgain = 5;
-    while (readAgain > 0)
-    {
-      int sensors = dallas.readAllTemperatures(pFloat, 2);
-      if (sensors > 0)
-      {
-        Serial << "t1: " << String(temp[0]) << endl;
-        temp1.add(temp[0]);
-      }
-      if (sensors > 1)
-      {
-        Serial << "t2: " << String(temp[1]) << endl;
-        temp2.add(temp[1]);
-      }
-      if ((temp1.getAverage() - rtcLastTemp1 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-          (rtcLastTemp1 - temp1.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
-      {
-        leaveMode1 = true;
-      }
-      if ((temp2.getAverage() - rtcLastTemp2 > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-          (rtcLastTemp2 - temp2.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
-      {
-        leaveMode1 = true;
-      }
-      if (!leaveMode1)
-      {
-        readAgain = 0;
-      }
-
-      readAgain--;
-      delay(50);
-    }
-  }
-
-  if (abs(temp1.getAverage() - rtcLastTemp1) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-  {
-    leaveMode1 = true;
-    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
-  }
-  if (abs(temp2.getAverage() - rtcLastTemp2) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-  {
-    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
-    leaveMode1 = true;
-  }
-
   if (abs(getBatteryVoltage() - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC)
   {
     wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
@@ -495,13 +451,87 @@ bool readSensors()
     leaveMode1 = true;
   }
 
-  rtcLastTemp1 = temp1.getAverage();
-  rtcLastTemp2 = temp2.getAverage();
+  rtcLastLipoTemp = lipoTempSensor.getAverage();
+  rtcLastWaterTemp = waterTempSensor.getAverage();
   rtcLastBatteryVoltage = getBatteryVoltage();
   rtcLastSolarVoltage = getSolarVoltage();
-
+  
   readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
+  int sensorCount = 0;
+  int timeoutTemp = millis() + 2000;
+  while (sensorCount == 0 && millis() < timeoutTemp)
+  {
+    sensors.begin();
+    sensorCount = sensors.getDeviceCount();
+    Serial << "Waitloop: One wire count: " << sensorCount << endl;
+    delay(200);
+  }
+  Serial << "One wire count: " << sensorCount << endl;
+  if (sensorCount > 0)
+  {
+    /* Required to read the temperature once */
+    int readAgain = 5;
+    while (readAgain > 0)
+    {
+      sensors.requestTemperatures();
+      if (sensorCount > 0)
+      {
+        if (rtcLipoTempIndex != -1)
+        {
+          float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
+          Serial << "lipoTempCurrent: " << temp1Raw << endl;
+          lipoTempSensor.add(temp1Raw);
+        }
+        else
+        {
+          Serial << "missing lipotemp, proceed to mode2: " << endl;
+          leaveMode1 = 1;
+          readAgain = 0;
+          wakeUpReason = WAKEUP_REASON_RTC_MISSING;
+        }
+      }
+      if (sensorCount > 1 && rtcWaterTempIndex != -1)
+      {
+        float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
+        Serial << "waterTempCurrent: " << temp2Raw << endl;
+        waterTempSensor.add(temp2Raw);
+      }
+      if ((lipoTempSensor.getAverage() - rtcLastLipoTemp > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+          (rtcLastLipoTemp - lipoTempSensor.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
+      {
+        leaveMode1 = true;
+      }
+      if ((waterTempSensor.getAverage() - rtcLastWaterTemp > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
+          (rtcLastWaterTemp - waterTempSensor.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
+      {
+        leaveMode1 = true;
+      }
+      if (!leaveMode1)
+      {
+        readAgain = 0;
+      }
+
+      readAgain--;
+      delay(50);
+    }
+    for (int i = 0; i < sensorCount; i++)
+    {
+      Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
+    }
+  }
+
+  if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  {
+    leaveMode1 = true;
+    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
+  }
+  if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  {
+    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
+    leaveMode1 = true;
+  }
+
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
   return leaveMode1;
@@ -641,6 +671,7 @@ void systemInit()
   // Set default values
 
   //in seconds
+
   maxTimeBetweenMQTTUpdates.setDefaultValue(120);
   deepSleepTime.setDefaultValue(60);
   deepSleepNightTime.setDefaultValue(600);
@@ -651,7 +682,8 @@ void systemInit()
   waterLevelMin.setDefaultValue(50);   /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500); /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
-
+  lipoSensorIndex.setDefaultValue(0);
+  waterSensorIndex.setDefaultValue(-1);
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
@@ -664,11 +696,11 @@ void systemInit()
     {
       mPlants[i].advertise();
     }
-    sensorTemp.advertise("control")
+    sensorTemp.advertise("lipo")
         .setName("Temperature")
         .setDatatype("number")
         .setUnit("°C");
-    sensorTemp.advertise("temp")
+    sensorTemp.advertise("water")
         .setName("Temperature")
         .setDatatype("number")
         .setUnit("°C");
