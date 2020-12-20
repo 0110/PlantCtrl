@@ -24,6 +24,7 @@ private:
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
+    int mPlantId = -1;
 
 public:
     PlantSettings_t *mSetting;
