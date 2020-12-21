@@ -303,12 +303,12 @@ void mode2MQTT()
   float lipoTempCurrent = lipoTempSensor.getMedian();
   if (lipoTempCurrent != NAN)
   {
-    sensorTemp.setProperty("lipo").send(String(lipoTempCurrent));
+    sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
   }
   float t2 = waterTempSensor.getMedian();
   if (t2 != NAN)
   {
-    sensorTemp.setProperty("water").send(String(t2));
+    sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
   }
 
   //give mqtt time, use via publish callback instead?
@@ -724,36 +724,36 @@ void systemInit()
     {
       mPlants[i].advertise();
     }
-    sensorTemp.advertise("lipo")
-        .setName("Temperature")
-        .setDatatype("number")
-        .setUnit("°C");
-    sensorTemp.advertise("water")
-        .setName("Temperature")
-        .setDatatype("number")
-        .setUnit("°C");
+    sensorTemp.advertise(TEMPERATUR_SENSOR_LIPO)
+        .setName(TEMPERATURE_NAME)
+        .setDatatype(NUMBER_TYPE)
+        .setUnit(TEMPERATURE_UNIT);
+    sensorTemp.advertise(TEMPERATUR_SENSOR_WATER)
+        .setName(TEMPERATURE_NAME)
+        .setDatatype(NUMBER_TYPE)
+        .setUnit(TEMPERATURE_UNIT);
 
     sensorLipo.advertise("percent")
         .setName("Percent")
-        .setDatatype("number")
+        .setDatatype(NUMBER_TYPE)
         .setUnit("%");
     sensorLipo.advertise("volt")
         .setName("Volt")
-        .setDatatype("number")
+        .setDatatype(NUMBER_TYPE)
         .setUnit("V");
 
     sensorSolar.advertise("percent")
         .setName("Percent")
-        .setDatatype("number")
+        .setDatatype(NUMBER_TYPE)
         .setUnit("%");
     sensorSolar.advertise("volt")
         .setName("Volt")
-        .setDatatype("number")
+        .setDatatype(NUMBER_TYPE)
         .setUnit("V");
-    sensorWater.advertise("remaining").setDatatype("number").setUnit("%");
-    startupReason.advertise("startupReason").setDatatype("number").setUnit("Enum");
+    sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
+    startupReason.advertise("startupReason").setDatatype(NUMBER_TYPE).setUnit("Enum");
   }
-  stayAlive.advertise("alive").setName("Alive").setDatatype("number").settable(aliveHandler);
+  stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
 }
 
 bool mode1()

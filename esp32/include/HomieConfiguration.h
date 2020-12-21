@@ -24,6 +24,13 @@
  * @{
  **/
 
+#define NUMBER_TYPE                     "number"
+#define TEMPERATUR_SENSOR_LIPO          "lipo"
+#define TEMPERATUR_SENSOR_WATER         "water"
+#define TEMPERATUR_SENSOR_OUTSIDE       "temp"
+#define TEMPERATURE_NAME                "Temperature"
+#define TEMPERATURE_UNIT                "°C"
+
 HomieNode plant0("plant0", "Plant 0", "Plant"); /**< dynamic Homie information for first plant */
 HomieNode plant1("plant1", "Plant 1", "Plant"); /**< dynamic Homie information for second plant */
 HomieNode plant2("plant2", "Plant 2", "Plant"); /**< dynamic Homie information for first plant */
