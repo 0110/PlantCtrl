@@ -9,6 +9,10 @@
  * 
  * @copyright Copyright (c) 2020
  */
+
+/******************************************************************************
+ *                                     INCLUDES
+******************************************************************************/
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "HomieConfiguration.h"
@@ -22,8 +26,9 @@
 #include <math.h>
 #include <OneWire.h>
 
-const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
-
+/******************************************************************************
+ *                                     DEFINES
+******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
 #define SENSOR_QUERY_SHIFTS 3
 #define SOLAR4SENSORS 6.0f
@@ -31,6 +36,9 @@ const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minut
 #define TEMP_MAX_VALUE 85.0f
 #define HalfHour 60
 
+/******************************************************************************
+ *                                     TYPE DEFS
+******************************************************************************/
 typedef struct
 {
   long lastActive;   /**< Timestamp, a pump was activated */
@@ -39,7 +47,17 @@ typedef struct
 
 } rtc_plant_t;
 
-/********************* non volatile enable after deepsleep *******************************/
+/******************************************************************************
+ *                            FUNCTION PROTOTYPES
+******************************************************************************/
+
+int determineNextPump();
+void setLastActivationForPump(int pumpId, long time);
+
+/******************************************************************************
+ *                       NON VOLATILE VARIABLES in DEEP SLEEP
+******************************************************************************/
+
 RTC_DATA_ATTR rtc_plant_t rtcPlant[MAX_PLANTS];
 RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
 RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
@@ -54,14 +72,18 @@ RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant need
 RTC_DATA_ATTR int rtcLipoTempIndex = -1;
 RTC_DATA_ATTR int rtcWaterTempIndex = -1;
 
+/******************************************************************************
+ *                            LOCAL VARIABLES
+******************************************************************************/
+const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
+
 int wakeUpReason = WAKEUP_REASON_UNDEFINED;
 bool volatile mode3Active = false; /**< Controller must not sleep */
 bool volatile mDeepsleep = false;
 
-int plantSensor1 = 0;
-
 int readCounter = 0;
 bool mConfigured = false;
+long nextBlink = 0;         /**< Time needed in main loop to support expected blink code */
 
 RunningMedian lipoRawSensor = RunningMedian(5);
 RunningMedian solarRawSensor = RunningMedian(5);
@@ -80,6 +102,10 @@ Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4),
     Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5),
     Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6)};
+
+/******************************************************************************
+ *                            LOCAL FUNCTIONS
+******************************************************************************/
 
 float getBatteryVoltage()
 {
@@ -148,6 +174,10 @@ long getDistance()
   }
 }
 
+/**
+ * @brief Read Voltage
+ * Read the battery voltage and the current voltage, provided by the solar panel
+ */
 void readSystemSensors()
 {
   for (int i = 0; i < 5; i++)
@@ -157,9 +187,6 @@ void readSystemSensors()
   }
   Serial << "Lipo " << lipoRawSensor.getAverage() << " -> " << getBatteryVoltage() << endl;
 }
-
-int determineNextPump();
-void setLastActivationForPump(int pumpId, long time);
 
 long getCurrentTime()
 {
@@ -537,8 +564,6 @@ bool readSensors()
   return leaveMode1;
 }
 
-//Homie.getMqttClient().disconnect();
-
 void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
@@ -873,7 +898,6 @@ void setup()
  * @brief Cyclic call
  * Executs the Homie base functionallity or triggers sleeping, if requested.
  */
-long nextBlink = 0;
 void loop()
 {
   if (!mDeepsleep || mode3Active)
