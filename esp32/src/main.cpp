@@ -437,6 +437,9 @@ void readDistance()
 bool readSensors()
 {
   bool leaveMode1 = false;
+  int sensorCount = 0;
+  int timeoutTemp = millis() + 2000;
+
   Serial << "Read Sensors" << endl;
 
   readSystemSensors();
@@ -456,6 +459,7 @@ bool readSensors()
     }
     delay(10);
   }
+
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     long current = mPlants[i].getCurrentMoisture();
@@ -486,10 +490,6 @@ bool readSensors()
   rtcLastBatteryVoltage = getBatteryVoltage();
   rtcLastSolarVoltage = getSolarVoltage();
   
-  readDistance();
-  Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
-  int sensorCount = 0;
-  int timeoutTemp = millis() + 2000;
   while (sensorCount == 0 && millis() < timeoutTemp)
   {
     sensors.begin();
@@ -498,57 +498,50 @@ bool readSensors()
     delay(200);
   }
   Serial << "One wire count: " << sensorCount << endl;
+  /* Measure temperature */
   if (sensorCount > 0)
   {
-    /* Required to read the temperature once */
-    int readAgain = 5;
-    while (readAgain > 0)
-    {
       sensors.requestTemperatures();
-      if (sensorCount > 0)
-      {
-        if (rtcLipoTempIndex != -1)
-        {
-          float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
-          Serial << "lipoTempCurrent: " << temp1Raw << endl;
-          lipoTempSensor.add(temp1Raw);
-        }
-        else
-        {
-          Serial << "missing lipotemp, proceed to mode2: " << endl;
-          leaveMode1 = 1;
-          readAgain = 0;
-          wakeUpReason = WAKEUP_REASON_RTC_MISSING;
-        }
-      }
-      if (sensorCount > 1 && rtcWaterTempIndex != -1)
-      {
-        float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
-        Serial << "waterTempCurrent: " << temp2Raw << endl;
-        waterTempSensor.add(temp2Raw);
-      }
-      if ((lipoTempSensor.getAverage() - rtcLastLipoTemp > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-          (rtcLastLipoTemp - lipoTempSensor.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
-      {
-        leaveMode1 = true;
-      }
-      if ((waterTempSensor.getAverage() - rtcLastWaterTemp > TEMPERATURE_DELTA_TRIGGER_IN_C) ||
-          (rtcLastWaterTemp - waterTempSensor.getAverage() > TEMPERATURE_DELTA_TRIGGER_IN_C))
-      {
-        leaveMode1 = true;
-      }
-      if (!leaveMode1)
-      {
-        readAgain = 0;
-      }
+  }
 
-      readAgain--;
-      delay(50);
-    }
-    for (int i = 0; i < sensorCount; i++)
+  /* Read the distance and give the temperature sensors some time */
+  readDistance();
+  Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
+
+  /* Required to read the temperature once */
+  int readAgain = 5;
+  while (readAgain > 0)
+  {
+    sensors.requestTemperatures();
+    if (sensorCount > 0)
     {
-      Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
+      if (rtcLipoTempIndex != -1)
+      {
+        float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
+        Serial << "lipoTempCurrent: " << temp1Raw << endl;
+        lipoTempSensor.add(temp1Raw);
+      }
+      else
+      {
+        Serial << "missing lipotemp, proceed to mode2: " << endl;
+        leaveMode1 = 1;
+        readAgain = 0;
+        wakeUpReason = WAKEUP_REASON_RTC_MISSING;
+      }
     }
+    if (sensorCount > 1 && rtcWaterTempIndex != -1)
+    {
+      float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
+      Serial << "waterTempCurrent: " << temp2Raw << endl;
+      waterTempSensor.add(temp2Raw);
+    }
+    
+    readAgain--;
+    delay(50);
+  }
+  for (int i = 0; i < sensorCount; i++)
+  {
+    Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
   }
 
   if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
