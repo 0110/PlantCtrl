@@ -76,9 +76,9 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("onlyWhenLowLightZ" strplant, "Plant" strplant " - Enable the Pump only, when there is light but not enought to charge battery"); \
         HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("cooldownpump" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
         PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant}; \
-        /**< Generate all settings for one plant
-         * 
-         * Feature to start pumping only at morning: @link{SOLAR_CHARGE_MIN_VOLTAGE} and @link{SOLAR_CHARGE_MAX_VOLTAGE}
+        /**< Generate all settings for one plant \
+         * \
+         * Feature to start pumping only at morning: @link{SOLAR_CHARGE_MIN_VOLTAGE} and @link{SOLAR_CHARGE_MAX_VOLTAGE} \
          */
 
 /**
