@@ -404,7 +404,10 @@ long getLastActivationForPump(int plantId)
   }
 }
 
-/* Use the Ultrasonic sensor to measure waterLevel */
+/**
+ * @brief Read ultra sensor JSN-SR04T-2.0
+ * Read the distance of the water level.
+ */
 void readDistance()
 {
   for (int i = 0; i < 5; i++)

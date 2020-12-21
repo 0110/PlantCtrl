@@ -18,6 +18,7 @@ Uses ESP32MiniKit
   * Solar powered (voltage)
   * Lipo-Powered (voltage)
   * Temperature
+  * Distance sensor [JSN-SR04T-2.0] (for waterlevel)
  * Custom GPIO
 
 ## Documentation of Power-Modes
