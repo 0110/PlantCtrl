@@ -495,7 +495,7 @@ int readTemp() {
       if (rtcLipoTempIndex != -1)
       {
         float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
-        Serial << "lipoTempCurrent: " << temp1Raw << endl;
+        //Serial << "lipoTempCurrent: " << temp1Raw << endl;
         lipoTempSensor.add(temp1Raw);
       }
       else
@@ -513,7 +513,7 @@ int readTemp() {
     if (sensorCount > 1 && rtcWaterTempIndex != -1)
     {
       float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
-      Serial << "waterTempCurrent: " << temp2Raw << endl;
+      //Serial << "waterTempCurrent: " << temp2Raw << endl;
       waterTempSensor.add(temp2Raw);
     }
     
