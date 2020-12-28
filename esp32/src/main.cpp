@@ -85,8 +85,8 @@ int readCounter = 0;
 bool mConfigured = false;
 long nextBlink = 0;         /**< Time needed in main loop to support expected blink code */
 
-RunningMedian lipoRawSensor = RunningMedian(5);
-RunningMedian solarRawSensor = RunningMedian(5);
+RunningMedian lipoRawSensor = RunningMedian(VOLT_SENSOR_MEASURE_SERIES);
+RunningMedian solarRawSensor = RunningMedian(VOLT_SENSOR_MEASURE_SERIES);
 RunningMedian waterRawSensor = RunningMedian(5);
 RunningMedian lipoTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
 RunningMedian waterTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
@@ -180,7 +180,7 @@ long getDistance()
  */
 void readSystemSensors()
 {
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < VOLT_SENSOR_MEASURE_SERIES; i++)
   {
     lipoRawSensor.add(analogRead(SENSOR_LIPO));
     solarRawSensor.add(analogRead(SENSOR_SOLAR));

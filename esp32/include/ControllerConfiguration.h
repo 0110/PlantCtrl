@@ -101,6 +101,7 @@
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
 #define TEMP_SENSOR_MEASURE_SERIES      5
+#define VOLT_SENSOR_MEASURE_SERIES      5
 
 /* @} */
 #endif
