@@ -99,5 +99,8 @@
 #define SOLAR_DELTA_VOLT_ADC            3
 #define LIPO_DELTA_VOLT_ADC             0.2 /**< trigger for lipo voltage */
 
+#define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
+#define TEMP_SENSOR_MEASURE_SERIES      5
+
 /* @} */
 #endif

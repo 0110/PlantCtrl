@@ -88,8 +88,8 @@ long nextBlink = 0;         /**< Time needed in main loop to support expected bl
 RunningMedian lipoRawSensor = RunningMedian(5);
 RunningMedian solarRawSensor = RunningMedian(5);
 RunningMedian waterRawSensor = RunningMedian(5);
-RunningMedian lipoTempSensor = RunningMedian(5);
-RunningMedian waterTempSensor = RunningMedian(5);
+RunningMedian lipoTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
+RunningMedian waterTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
 
 OneWire oneWire(SENSOR_DS18B20);
 DallasTemperature sensors(&oneWire);
@@ -301,14 +301,18 @@ void mode2MQTT()
   rtcWaterTempIndex = waterSensorIndex.get();
 
   float lipoTempCurrent = lipoTempSensor.getMedian();
-  if (lipoTempCurrent != NAN)
+  
+  if (! isnan(lipoTempCurrent))
   {
     sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
+    Serial << "Lipo Temperatur " << lipoTempCurrent << " °C " << endl;
   }
+
   float t2 = waterTempSensor.getMedian();
-  if (t2 != NAN)
+  if (! isnan(t2))
   {
     sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
+    Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
   }
 
   //give mqtt time, use via publish callback instead?
@@ -431,15 +435,58 @@ void readDistance()
 }
 
 /**
+ * @brief read all temperatur sensors
+ * 
+ * @return int 
+ * <code>0</code> device can sleep, no change in the temperatures
+ * <code>1</code> something changed and the temperatures shall be published via MQTT
+ */
+int readTemp() {
+  int readAgain = TEMP_SENSOR_MEASURE_SERIES;
+  int sensorCount = 0;
+  int leaveMode1 = 0;
+  while (readAgain > 0)
+  {
+    sensors.requestTemperatures();
+    if (sensorCount > 0)
+    {
+      if (rtcLipoTempIndex != -1)
+      {
+        float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
+        Serial << "lipoTempCurrent: " << temp1Raw << endl;
+        lipoTempSensor.add(temp1Raw);
+      }
+      else
+      {
+        Serial << "missing lipotemp, proceed to mode2: " << endl;
+        leaveMode1 = 1;
+        readAgain = 0;
+        wakeUpReason = WAKEUP_REASON_RTC_MISSING;
+      }
+    }
+    if (sensorCount > 1 && rtcWaterTempIndex != -1)
+    {
+      float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
+      Serial << "waterTempCurrent: " << temp2Raw << endl;
+      waterTempSensor.add(temp2Raw);
+    }
+    
+    readAgain--;
+    delay(50);
+  }
+  return leaveMode1;
+}
+
+/**
  * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
 bool readSensors()
 {
   bool leaveMode1 = false;
+  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
   int sensorCount = 0;
-  int timeoutTemp = millis() + 2000;
-
+  
   Serial << "Read Sensors" << endl;
 
   readSystemSensors();
@@ -490,6 +537,7 @@ bool readSensors()
   rtcLastBatteryVoltage = getBatteryVoltage();
   rtcLastSolarVoltage = getSolarVoltage();
   
+  /* Required to read the temperature at least once */
   while (sensorCount == 0 && millis() < timeoutTemp)
   {
     sensors.begin();
@@ -507,38 +555,8 @@ bool readSensors()
   /* Read the distance and give the temperature sensors some time */
   readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
-
-  /* Required to read the temperature once */
-  int readAgain = 5;
-  while (readAgain > 0)
-  {
-    sensors.requestTemperatures();
-    if (sensorCount > 0)
-    {
-      if (rtcLipoTempIndex != -1)
-      {
-        float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
-        Serial << "lipoTempCurrent: " << temp1Raw << endl;
-        lipoTempSensor.add(temp1Raw);
-      }
-      else
-      {
-        Serial << "missing lipotemp, proceed to mode2: " << endl;
-        leaveMode1 = 1;
-        readAgain = 0;
-        wakeUpReason = WAKEUP_REASON_RTC_MISSING;
-      }
-    }
-    if (sensorCount > 1 && rtcWaterTempIndex != -1)
-    {
-      float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
-      Serial << "waterTempCurrent: " << temp2Raw << endl;
-      waterTempSensor.add(temp2Raw);
-    }
-    
-    readAgain--;
-    delay(50);
-  }
+  leaveMode1 |= readTemp();
+ 
   for (int i = 0; i < sensorCount; i++)
   {
     Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
