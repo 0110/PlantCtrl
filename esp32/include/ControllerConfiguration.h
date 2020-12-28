@@ -93,6 +93,8 @@
 
 #define PANIK_MODE_DEEPSLEEP (60 * 60 * 5U) /**< 5 hours in usecond */
 #define PANIK_MODE_DEEPSLEEP_US (PANIK_MODE_DEEPSLEEP * 1000 * 1000)
+#define LIPO_MAX_TEMPERATUR             85
+#define LIPO_MAX_TEMPERATUR_DIFF        10
 
 #define TEMPERATURE_DELTA_TRIGGER_IN_C  1.0f
 #define MOIST_DELTA_TRIGGER_ADC         10

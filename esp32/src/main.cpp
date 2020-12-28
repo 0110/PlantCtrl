@@ -53,6 +53,7 @@ typedef struct
 
 int determineNextPump();
 void setLastActivationForPump(int pumpId, long time);
+int readTemp();
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
@@ -301,29 +302,69 @@ void mode2MQTT()
   rtcWaterTempIndex = waterSensorIndex.get();
 
   float lipoTempCurrent = lipoTempSensor.getMedian();
-  
+  float t2 = NAN;
   if (! isnan(lipoTempCurrent))
   {
     sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
     Serial << "Lipo Temperatur " << lipoTempCurrent << " °C " << endl;
+
+    t2 = waterTempSensor.getMedian();
+    if (! isnan(t2))
+    {
+      sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
+      Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
+    }
+    //give mqtt time, use via publish callback instead?
+    delay(100);
+  } else {
+    int j=0;
+    /* Activate the Sensors and measure the temperature again */
+    /* activate all sensors */
+    pinMode(OUTPUT_SENSOR, OUTPUT);
+    digitalWrite(OUTPUT_SENSOR, HIGH);
+
+    delay(100);
+    sensors.begin();
+
+    for(j=0; j < TEMP_SENSOR_MEASURE_SERIES && sensors.getDeviceCount() == 0; j++) {
+      delay(100);
+      sensors.begin();
+      Serial << "Reset 1-Wire Bus" << endl;
+    }
+
+    for(j=0; j < TEMP_SENSOR_MEASURE_SERIES && isnan(lipoTempCurrent); j++) {
+      delay(200);
+      readTemp();
+      lipoTempCurrent = lipoTempSensor.getMedian();
+      t2 = waterTempSensor.getMedian();
+      Serial << "Temperatur Lipo:" << lipoTempCurrent << " °C Water : " << t2 << " °C" << endl;
+    }
+
+    if (! isnan(lipoTempCurrent))
+    {
+      sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
+      Serial << "Lipo Temperatur " << lipoTempCurrent << " °C " << endl;
+
+      t2 = waterTempSensor.getMedian();
+      if (! isnan(t2))
+      {
+        sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
+        Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
+      }
+    }
+
+    /* deactivate the sensors */
+    digitalWrite(OUTPUT_SENSOR, LOW);
   }
 
-  float t2 = waterTempSensor.getMedian();
-  if (! isnan(t2))
-  {
-    sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
-    Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
-  }
-
-  //give mqtt time, use via publish callback instead?
-  delay(100);
-
-  bool lipoTempWarning = lipoTempCurrent != 85 && abs(lipoTempCurrent - t2) > 10;
-  if (lipoTempWarning)
-  {
-    Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
-    //espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
-    //return;
+  if (! isnan(lipoTempCurrent) && ! isnan(t2)) {
+    bool lipoTempWarning = (lipoTempCurrent != LIPO_MAX_TEMPERATUR) && abs(lipoTempCurrent - t2) > LIPO_MAX_TEMPERATUR_DIFF;
+    if (lipoTempWarning)
+    {
+      Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
+      //espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
+      //return;
+    }
   }
 
   for (int i = 0; i < MAX_PLANTS; i++)
@@ -443,8 +484,9 @@ void readDistance()
  */
 int readTemp() {
   int readAgain = TEMP_SENSOR_MEASURE_SERIES;
-  int sensorCount = 0;
+  int sensorCount = sensors.getDeviceCount();
   int leaveMode1 = 0;
+  
   while (readAgain > 0)
   {
     sensors.requestTemperatures();
@@ -463,7 +505,11 @@ int readTemp() {
         readAgain = 0;
         wakeUpReason = WAKEUP_REASON_RTC_MISSING;
       }
+    } else {
+      Serial << "No Sensors detected" << endl;
+      return 1;
     }
+
     if (sensorCount > 1 && rtcWaterTempIndex != -1)
     {
       float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
@@ -545,6 +591,7 @@ bool readSensors()
     Serial << "Waitloop: One wire count: " << sensorCount << endl;
     delay(200);
   }
+
   Serial << "One wire count: " << sensorCount << endl;
   /* Measure temperature */
   if (sensorCount > 0)
@@ -555,22 +602,27 @@ bool readSensors()
   /* Read the distance and give the temperature sensors some time */
   readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
-  leaveMode1 |= readTemp();
- 
-  for (int i = 0; i < sensorCount; i++)
-  {
-    Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
-  }
 
-  if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  /* Retreive temperatures */
+  if (sensorCount > 0)
   {
-    leaveMode1 = true;
-    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
-  }
-  if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-  {
-    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
-    leaveMode1 = true;
+    leaveMode1 |= readTemp();
+
+    for (int i = 0; i < sensorCount; i++)
+    {
+      Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
+    }
+
+    if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+    {
+      leaveMode1 = true;
+      wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
+    }
+    if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+    {
+      wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
+      leaveMode1 = true;
+    }
   }
 
   /* deactivate the sensors */

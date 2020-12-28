@@ -14,7 +14,8 @@
 			"streambuf": "cpp",
 			"functional": "cpp",
 			"string": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"cmath": "cpp"
 		}
 	}
 }

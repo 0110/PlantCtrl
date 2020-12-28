@@ -24,5 +24,4 @@
 #define WAKEUP_REASON_MOIST_CHANGE 20   /**< <code>20-26</code> for plant0 to plant9  */
 #define WAKEUP_REASON_PLANT_DRY 30      /**< <code>30-36</code> for plant0 to plant9  */
 
-
 #endif
