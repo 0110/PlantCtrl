@@ -392,7 +392,6 @@ Text GLabel 20550 7200 2    50   Input ~ 0
 3_3V
 Text GLabel 4150 5700 0    50   Input ~ 0
 3_3V
-NoConn ~ 4200 7500
 Text GLabel 19250 7200 0    50   Input ~ 0
 LIPO+
 Wire Wire Line
@@ -2734,10 +2733,10 @@ F 3 "~" H 1500 5800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:D D?
+L Device:D D26
 U 1 1 5FE69CB9
 P 17250 4000
-F 0 "D?" H 17250 3783 50  0000 C CNN
+F 0 "D26" H 17250 3783 50  0000 C CNN
 F 1 "40V >2A" H 17250 3874 50  0000 C CNN
 F 2 "Diode_SMD:D_SOD-123F" H 17250 4000 50  0001 C CNN
 F 3 "~" H 17250 4000 50  0001 C CNN
@@ -2747,4 +2746,23 @@ F 4 "C496544" H 17250 4000 50  0000 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Text Notes 7600 1100 0    105  ~ 0
 Custom extension connector
+$Comp
+L Connector_Generic:Conn_01x02 J8
+U 1 1 5FEEAFF2
+P 1350 9050
+F 0 "J8" H 1268 8725 50  0000 C CNN
+F 1 "Conn_01x02" H 1268 8816 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x01_P2.54mm_Vertical" H 1350 9050 50  0001 C CNN
+F 3 "~" H 1350 9050 50  0001 C CNN
+	1    1350 9050
+	-1   0    0    1   
+$EndComp
+Text GLabel 4200 7500 0    50   Input ~ 0
+EXT_5V
+Text GLabel 1550 8950 2    50   Input ~ 0
+EXT_5V
+Text GLabel 1550 9050 2    50   Input ~ 0
+LIPO+
+Text Notes 1200 8700 0    102  ~ 0
+Jumper for USB flashing without AMS1117
 $EndSCHEMATC
