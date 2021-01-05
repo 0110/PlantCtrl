@@ -431,8 +431,6 @@ $EndComp
 Text GLabel 9500 1650 1    50   Input ~ 0
 VCC
 Wire Wire Line
-	9200 1850 8900 1850
-Wire Wire Line
 	8900 1850 8900 2000
 Text GLabel 7850 1750 0    50   Input ~ 0
 CUSTOM_GPIO
@@ -523,23 +521,6 @@ Wire Wire Line
 Wire Wire Line
 	8400 2200 8500 2200
 Connection ~ 8500 2200
-$Comp
-L Device:R R48
-U 1 1 5F9D1DC9
-P 8900 1700
-F 0 "R48" H 8970 1746 50  0000 L CNN
-F 1 "10k" H 8970 1655 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8830 1700 50  0001 C CNN
-F 3 "~" H 8900 1700 50  0001 C CNN
-F 4 "C17414" H 8900 1700 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    8900 1700
-	-1   0    0    1   
-$EndComp
-Connection ~ 8900 1850
-Text GLabel 8900 1450 1    50   Input ~ 0
-3_3V
-Wire Wire Line
-	8900 1450 8900 1550
 Text Notes 17850 1850 0    105  ~ 0
 External Fix Power\n5V to 9V
 $Comp
@@ -724,17 +705,6 @@ F 1 "SolderJumper_2_Open" H 8450 1864 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 8450 1750 50  0001 C CNN
 F 3 "~" H 8450 1750 50  0001 C CNN
 	1    8450 1750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Jumper:SolderJumper_2_Open JP3
-U 1 1 601782AD
-P 9350 1850
-F 0 "JP3" H 9350 2055 50  0000 C CNN
-F 1 "SolderJumper_2_Open" H 9350 1964 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 9350 1850 50  0001 C CNN
-F 3 "~" H 9350 1850 50  0001 C CNN
-	1    9350 1850
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -3177,10 +3147,10 @@ $EndComp
 Text Notes 21350 9300 0    50   ~ 0
 LIPO mount
 $Comp
-L Device:C C?
+L Device:C C22
 U 1 1 6015DF8C
 P 2900 6900
-F 0 "C?" H 2785 6854 50  0000 R CNN
+F 0 "C22" H 2785 6854 50  0000 R CNN
 F 1 "100n" H 2785 6945 50  0000 R CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 2938 6750 50  0001 C CNN
 F 3 "~" H 2900 6900 50  0001 C CNN
@@ -3192,10 +3162,10 @@ Connection ~ 2900 6750
 Wire Wire Line
 	2900 6750 2750 6750
 $Comp
-L Device:C C?
+L Device:C C23
 U 1 1 6016C333
 P 3100 6200
-F 0 "C?" H 2985 6154 50  0000 R CNN
+F 0 "C23" H 2985 6154 50  0000 R CNN
 F 1 "100n" H 2985 6245 50  0000 R CNN
 F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 3138 6050 50  0001 C CNN
 F 3 "~" H 3100 6200 50  0001 C CNN
@@ -3213,4 +3183,6 @@ Text GLabel 18250 2600 0    50   Input ~ 0
 PUMP_PWR
 Text Notes 17150 4650 0    1012 ~ 202
 XOR
+Wire Wire Line
+	8900 1850 9500 1850
 $EndSCHEMATC
