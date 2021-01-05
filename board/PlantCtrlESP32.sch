@@ -2423,23 +2423,6 @@ $EndComp
 Text Notes 7600 1100 0    105  ~ 0
 Custom extension connector
 $Comp
-L Connector_Generic:Conn_01x02 J8
-U 1 1 5FEEAFF2
-P 1350 9050
-F 0 "J8" H 1268 8725 50  0000 C CNN
-F 1 "Conn_01x02" H 1268 8816 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x01_P2.54mm_Vertical" H 1350 9050 50  0001 C CNN
-F 3 "~" H 1350 9050 50  0001 C CNN
-	1    1350 9050
-	-1   0    0    1   
-$EndComp
-Text GLabel 1550 8950 2    50   Input ~ 0
-EXT_5V
-Text GLabel 1550 9050 2    50   Input ~ 0
-VCC
-Text Notes 1200 8700 0    102  ~ 0
-Jumper for USB flashing without AMS1117
-$Comp
 L Transistor_FET:BSS84 Q_PWR3
 U 1 1 5FFD58C5
 P 19350 5700
