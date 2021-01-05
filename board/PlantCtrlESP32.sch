@@ -757,18 +757,18 @@ L Jumper:SolderJumper_2_Bridged JP4
 U 1 1 6017FFC5
 P 16650 10000
 F 0 "JP4" V 16604 10068 50  0000 L CNN
-F 1 "SolderJumper_2_Open" V 16695 10068 50  0000 L CNN
+F 1 "NC" V 16695 10068 50  0000 L CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 16650 10000 50  0001 C CNN
 F 3 "~" H 16650 10000 50  0001 C CNN
 	1    16650 10000
 	0    1    1    0   
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP5
+L Jumper:SolderJumper_2_Bridged JP5
 U 1 1 6023651A
 P 6500 5700
-F 0 "JP5" H 6500 5905 50  0000 C CNN
-F 1 "Open" H 6500 5600 50  0000 C CNN
+F 0 "JP5" H 6500 5600 50  0000 C CNN
+F 1 "NC" H 6500 5500 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 6500 5700 50  0001 C CNN
 F 3 "~" H 6500 5700 50  0001 C CNN
 	1    6500 5700
