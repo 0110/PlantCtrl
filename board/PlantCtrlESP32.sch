@@ -724,7 +724,7 @@ U 1 1 6023651A
 P 6500 5700
 F 0 "JP5" H 6500 5600 50  0000 C CNN
 F 1 "NC" H 6500 5500 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 6500 5700 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 6500 5700 50  0001 C CNN
 F 3 "~" H 6500 5700 50  0001 C CNN
 	1    6500 5700
 	1    0    0    -1  
