@@ -13,71 +13,6 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 5950 7100 2    50   Input ~ 0
-Temp
-$Comp
-L Device:R R1
-U 1 1 5EDC87BD
-P 2450 6050
-F 0 "R1" H 2380 6004 50  0000 R CNN
-F 1 "100k" H 2380 6095 50  0000 R CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 2380 6050 50  0001 C CNN
-F 3 "~" H 2450 6050 50  0001 C CNN
-F 4 "C17407" H 2450 6050 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    2450 6050
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R2
-U 1 1 5EDC9260
-P 2450 6350
-F 0 "R2" H 2520 6396 50  0000 L CNN
-F 1 "33k" H 2520 6305 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 2380 6350 50  0001 C CNN
-F 3 "~" H 2450 6350 50  0001 C CNN
-F 4 "C17633" H 2450 6350 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    2450 6350
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R4
-U 1 1 5EDD7349
-P 3200 5750
-F 0 "R4" H 3270 5796 50  0000 L CNN
-F 1 "47k" H 3270 5705 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 3130 5750 50  0001 C CNN
-F 3 "~" H 3200 5750 50  0001 C CNN
-F 4 "C17713" H 3200 5750 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    3200 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R3
-U 1 1 5EDD7688
-P 3200 5450
-F 0 "R3" H 3270 5496 50  0000 L CNN
-F 1 "33k" H 3270 5405 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 3130 5450 50  0001 C CNN
-F 3 "~" H 3200 5450 50  0001 C CNN
-F 4 "C17633" H 3200 5450 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    3200 5450
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	3650 5600 3200 5600
-Connection ~ 3200 5600
-NoConn ~ 4200 7400
-NoConn ~ 4200 5800
-NoConn ~ 4200 5900
-NoConn ~ 4200 6000
-NoConn ~ 5800 7500
-NoConn ~ 5800 7400
-NoConn ~ 5800 7300
-NoConn ~ 4200 7300
-NoConn ~ 4200 7200
-NoConn ~ 5800 7000
-Text Notes 4350 5450 0    105  ~ 0
-ESP32 DISCOVERY \nBOARD
 Text GLabel 1150 1050 0    50   Input ~ 0
 PLANT1_PUMP
 Text GLabel 1150 1250 0    50   Input ~ 0
@@ -107,81 +42,6 @@ F 3 "~" H 4800 1150 50  0001 C CNN
 $EndComp
 Text GLabel 5000 1150 2    50   Input ~ 0
 Temp
-$Comp
-L ESP32-DEVKITC-32D:ESP32-DEVKITC-32D U2
-U 1 1 5F5A25C2
-P 5000 6600
-F 0 "U2" H 5000 7767 50  0000 C CNN
-F 1 "ESP32-DEVKITC-32D" H 5000 7676 50  0000 C CNN
-F 2 "ESP32:MODULE_ESP32-DEVKITC-32D" H 5000 6600 50  0001 L BNN
-F 3 "4" H 5000 6600 50  0001 L BNN
-F 4 "Espressif Systems" H 5000 6600 50  0001 L BNN "Field4"
-	1    5000 6600
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5950 7100 5800 7100
-Connection ~ 2450 6200
-Text GLabel 5900 5800 2    50   Input ~ 0
-PLANT_CTRL_PUMP_6
-Text GLabel 5900 5900 2    50   Input ~ 0
-PLANT_CTRL_PUMP_5
-Text GLabel 5900 6200 2    50   Input ~ 0
-PLANT_CTRL_PUMP_4
-Text GLabel 5900 6400 2    50   Input ~ 0
-PLANT_CTRL_PUMP_3
-Text GLabel 5900 6500 2    50   Input ~ 0
-PLANT_CTRL_PUMP_2
-Text GLabel 5900 6600 2    50   Input ~ 0
-PLANT_CTRL_PUMP_1
-Wire Wire Line
-	5800 5900 5900 5900
-Wire Wire Line
-	5900 6400 5800 6400
-Wire Wire Line
-	5800 6200 5900 6200
-Wire Wire Line
-	5900 6500 5800 6500
-Wire Wire Line
-	5800 6600 5900 6600
-Text GLabel 5900 7200 2    50   Input ~ 0
-PLANT_CTRL_PUMP_0
-Wire Wire Line
-	5800 7200 5900 7200
-Wire Wire Line
-	5800 6900 5900 6900
-Wire Wire Line
-	5800 6800 5900 6800
-Wire Wire Line
-	4200 6400 4000 6400
-Wire Wire Line
-	4000 6300 4200 6300
-Text GLabel 4000 6900 0    50   Input ~ 0
-PLANT0_MOIST
-Wire Wire Line
-	4000 6600 4200 6600
-Wire Wire Line
-	4200 6800 4000 6800
-Wire Wire Line
-	4000 6700 4200 6700
-Wire Wire Line
-	4000 6500 4200 6500
-Text GLabel 4000 6800 0    50   Input ~ 0
-PLANT1_MOIST
-Text GLabel 4000 6700 0    50   Input ~ 0
-PLANT2_MOIST
-Text GLabel 4000 6600 0    50   Input ~ 0
-PLANT3_MOIST
-Text GLabel 4000 6500 0    50   Input ~ 0
-PLANT4_MOIST
-Text GLabel 4000 6400 0    50   Input ~ 0
-PLANT5_MOIST
-Wire Wire Line
-	4000 6900 4200 6900
-Text GLabel 4000 7100 0    50   Input ~ 0
-PUMP_ENABLE
-Wire Wire Line
-	4200 7100 4000 7100
 $Comp
 L Transistor_FET:BSS84 Q_PWR1
 U 1 1 5F765B13
@@ -258,12 +118,6 @@ Connection ~ 16150 7350
 Wire Wire Line
 	15350 7550 15450 7550
 Connection ~ 15450 7550
-Text GLabel 3200 5250 1    50   Input ~ 0
-VCC
-Wire Wire Line
-	3200 5250 3200 5300
-Text GLabel 2450 5900 1    50   Input ~ 0
-SOLAR_IN
 Text GLabel 1150 850  0    50   Input ~ 0
 PLANT0_PUMP
 Text GLabel 1150 750  0    50   Input ~ 0
@@ -389,8 +243,6 @@ $EndComp
 Text GLabel 20900 8950 2    50   Input ~ 0
 GND
 Text GLabel 20900 8750 2    50   Input ~ 0
-3_3V
-Text GLabel 4150 5700 0    50   Input ~ 0
 3_3V
 Text GLabel 19600 8750 0    50   Input ~ 0
 VCC
@@ -561,8 +413,6 @@ F 4 "C17414" H 8500 2350 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	8500 2500 8800 2500
-Text GLabel 5900 6900 2    50   Input ~ 0
-CUSTOM_GPIO
 Text GLabel 8000 2200 0    50   Input ~ 0
 CUSTOM_GPIO
 Wire Wire Line
@@ -602,21 +452,6 @@ Protection for Lipo
 Wire Wire Line
 	16650 10150 16650 10200
 $Comp
-L Connector_Generic:Conn_01x04 Hall1
-U 1 1 5F9D6D22
-P 7150 5900
-F 0 "Hall1" H 7230 5892 50  0000 L CNN
-F 1 "Conn_01x04" H 6950 5600 50  0000 L CNN
-F 2 "ESP32:SR04M-2PinHeader_1x04_P2.54mm_Vertical" H 7150 5900 50  0001 C CNN
-F 3 "~" H 7150 5900 50  0001 C CNN
-	1    7150 5900
-	1    0    0    -1  
-$EndComp
-Text GLabel 6950 6300 2    50   Input ~ 0
-PWR_SENSORS
-Text GLabel 5900 6800 2    50   Input ~ 0
-SENSORS_ENABLE
-$Comp
 L Device:LED Pumps1
 U 1 1 5F834AFA
 P 16800 7550
@@ -628,36 +463,6 @@ F 4 "C84256" H 16800 7550 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    16800 7550
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	4200 5700 4150 5700
-$Comp
-L Device:C C2
-U 1 1 5FB4725B
-P 3000 5750
-F 0 "C2" H 2885 5704 50  0000 R CNN
-F 1 "1u" H 2885 5795 50  0000 R CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 3038 5600 50  0001 C CNN
-F 3 "~" H 3000 5750 50  0001 C CNN
-F 4 "C28323" H 3000 5750 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    3000 5750
-	-1   0    0    1   
-$EndComp
-$Comp
-L Device:C C1
-U 1 1 5FB48503
-P 2250 6350
-F 0 "C1" H 2135 6304 50  0000 R CNN
-F 1 "1u" H 2135 6395 50  0000 R CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 2288 6200 50  0001 C CNN
-F 3 "~" H 2250 6350 50  0001 C CNN
-F 4 "C28323" H 2250 6350 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    2250 6350
-	-1   0    0    1   
-$EndComp
-Wire Wire Line
-	2250 6200 2450 6200
-Wire Wire Line
-	3200 5600 3000 5600
 $Comp
 L Device:R R50
 U 1 1 5FBA9B4B
@@ -900,26 +705,18 @@ $EndComp
 Wire Wire Line
 	19800 7400 19800 7450
 NoConn ~ 20700 6950
-Wire Wire Line
-	5800 5800 5900 5800
 $Comp
 L Device:R R20
 U 1 1 5FC4784F
-P 5950 6100
-F 0 "R20" V 5743 6100 50  0000 C CNN
-F 1 "10k" V 5834 6100 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 5880 6100 50  0001 C CNN
-F 3 "~" H 5950 6100 50  0001 C CNN
-F 4 "C17414" H 5950 6100 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    5950 6100
+P 6550 5600
+F 0 "R20" V 6343 5600 50  0000 C CNN
+F 1 "10k" V 6434 5600 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6480 5600 50  0001 C CNN
+F 3 "~" H 6550 5600 50  0001 C CNN
+F 4 "C17414" H 6550 5600 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6550 5600
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	6950 6100 6950 6300
-Wire Wire Line
-	6950 5900 6800 5900
-Wire Wire Line
-	6950 5700 6950 5800
 $Comp
 L Jumper:SolderJumper_2_Open JP1
 U 1 1 6011090E
@@ -969,41 +766,14 @@ $EndComp
 $Comp
 L Jumper:SolderJumper_2_Open JP5
 U 1 1 6023651A
-P 6450 6000
-F 0 "JP5" H 6450 6205 50  0000 C CNN
-F 1 "SolderJumper_2_Open" H 6450 6114 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 6450 6000 50  0001 C CNN
-F 3 "~" H 6450 6000 50  0001 C CNN
-	1    6450 6000
+P 6500 5700
+F 0 "JP5" H 6500 5905 50  0000 C CNN
+F 1 "Open" H 6500 5600 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 6500 5700 50  0001 C CNN
+F 3 "~" H 6500 5700 50  0001 C CNN
+	1    6500 5700
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6100 6100 6800 6100
-Wire Wire Line
-	6800 5900 6800 6100
-Wire Wire Line
-	6600 6000 6950 6000
-Wire Wire Line
-	6300 6000 5800 6000
-$Comp
-L Connector:Conn_01x03_Female J1
-U 1 1 6029884B
-P 8150 6700
-F 0 "J1" H 8178 6726 50  0000 L CNN
-F 1 "Conn_01x03_Female" H 8178 6635 50  0000 L CNN
-F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 8150 6700 50  0001 C CNN
-F 3 "~" H 8150 6700 50  0001 C CNN
-	1    8150 6700
-	1    0    0    -1  
-$EndComp
-Text GLabel 7350 7000 0    50   Input ~ 0
-3_3V
-Text GLabel 7750 6600 0    50   Input ~ 0
-PWR_SENSORS
-Wire Wire Line
-	7650 6700 7650 6800
-Wire Wire Line
-	5800 6700 7650 6700
 $Comp
 L Device:C_Small C13
 U 1 1 603684C2
@@ -1030,10 +800,6 @@ Text GLabel 5050 1250 2    50   Input ~ 0
 GND
 Wire Wire Line
 	5050 1250 5000 1250
-Wire Wire Line
-	5800 5700 5850 5700
-Text GLabel 5850 5650 1    50   Input ~ 0
-GND
 Text GLabel 8900 2400 3    50   Input ~ 0
 GND
 Text GLabel 9500 1950 3    50   Input ~ 0
@@ -1046,43 +812,8 @@ Text GLabel 16650 10200 3    50   Input ~ 0
 GND
 Text GLabel 15600 10200 3    50   Input ~ 0
 GND
-Text GLabel 8050 7000 2    50   Input ~ 0
-GND
 Text GLabel 18300 2250 2    50   Input ~ 0
 GND
-Text GLabel 2450 6500 3    50   Input ~ 0
-GND
-Text GLabel 2250 6500 3    50   Input ~ 0
-GND
-Text GLabel 3000 5900 3    50   Input ~ 0
-GND
-Text GLabel 3200 5900 3    50   Input ~ 0
-GND
-Text GLabel 5900 6300 2    50   Input ~ 0
-GND
-Wire Wire Line
-	5900 6300 5800 6300
-Wire Wire Line
-	5850 5650 5850 5700
-Connection ~ 5850 5700
-Text GLabel 4000 7000 0    50   Input ~ 0
-GND
-Wire Wire Line
-	5850 5700 6950 5700
-Wire Wire Line
-	4200 7000 4000 7000
-$Comp
-L Diode:BAS40-04 D18
-U 1 1 6058D950
-P 7650 6900
-F 0 "D18" H 7650 7133 50  0000 C CNN
-F 1 "BAS40-04" H 7650 7224 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 7400 7200 50  0001 L CNN
-F 3 "http://www.vishay.com/docs/85701/bas40v.pdf" H 7530 7000 50  0001 C CNN
-F 4 "C79199" H 7650 6900 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    7650 6900
-	-1   0    0    1   
-$EndComp
 $Comp
 L Jumper:SolderJumper_2_Open JP6
 U 1 1 6076B93D
@@ -1094,16 +825,6 @@ F 3 "~" H 18400 2600 50  0001 C CNN
 	1    18400 2600
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	7950 7000 8050 7000
-Connection ~ 7950 7000
-Connection ~ 7650 6700
-Wire Wire Line
-	7750 6600 7950 6600
-Wire Wire Line
-	7650 6700 7950 6700
-Wire Wire Line
-	7950 6800 7950 7000
 $Comp
 L SX1308:SX1308 U4
 U 1 1 5FE4C408
@@ -2617,14 +2338,6 @@ F 4 "C79199" H 1900 11550 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    1900 11550
 	0    1    1    0   
 $EndComp
-Text GLabel 4000 6300 0    50   Input ~ 0
-PLANT6_MOIST
-Wire Wire Line
-	2450 6200 4200 6200
-Wire Wire Line
-	4200 6100 3650 6100
-Wire Wire Line
-	3650 6100 3650 5600
 Wire Wire Line
 	8600 1750 9500 1750
 Connection ~ 8250 1750
@@ -2696,17 +2409,6 @@ Text GLabel 1500 5650 1    50   Input ~ 0
 Text GLabel 1500 5950 3    50   Input ~ 0
 GND
 $Comp
-L Device:CP C14
-U 1 1 6014F76F
-P 1500 5800
-F 0 "C14" H 1618 5846 50  0000 L CNN
-F 1 "100u" H 1618 5755 50  0000 L CNN
-F 2 "Capacitor_THT:CP_Radial_D12.5mm_P5.00mm" H 1538 5650 50  0001 C CNN
-F 3 "~" H 1500 5800 50  0001 C CNN
-	1    1500 5800
-	1    0    0    -1  
-$EndComp
-$Comp
 L Device:D D26
 U 1 1 5FE69CB9
 P 17250 4000
@@ -2731,8 +2433,6 @@ F 3 "~" H 1350 9050 50  0001 C CNN
 	1    1350 9050
 	-1   0    0    1   
 $EndComp
-Text GLabel 4200 7500 0    50   Input ~ 0
-EXT_5V
 Text GLabel 1550 8950 2    50   Input ~ 0
 EXT_5V
 Text GLabel 1550 9050 2    50   Input ~ 0
@@ -2740,10 +2440,10 @@ VCC
 Text Notes 1200 8700 0    102  ~ 0
 Jumper for USB flashing without AMS1117
 $Comp
-L Transistor_FET:BSS84 Q_PWR?
+L Transistor_FET:BSS84 Q_PWR3
 U 1 1 5FFD58C5
 P 19350 5700
-F 0 "Q_PWR?" H 19554 5746 50  0000 L CNN
+F 0 "Q_PWR3" H 19554 5746 50  0000 L CNN
 F 1 "P-channel 50v 4A" H 19554 5655 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-23_Handsoldering" H 19550 5625 50  0001 L CIN
 F 3 "" H 19350 5700 50  0001 L CNN
@@ -2752,10 +2452,10 @@ F 4 "C344010" H 19350 5700 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R?
+L Device:R R58
 U 1 1 5FFD69D9
 P 18900 5700
-F 0 "R?" V 18693 5700 50  0000 C CNN
+F 0 "R58" V 18693 5700 50  0000 C CNN
 F 1 "10k" V 18784 5700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 18830 5700 50  0001 C CNN
 F 3 "~" H 18900 5700 50  0001 C CNN
@@ -2764,10 +2464,10 @@ F 4 "C17414" H 18900 5700 50  0001 C CNN "LCSC_PART_NUMBER"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R?
+L Device:R R59
 U 1 1 5FFD6F58
 P 19100 5850
-F 0 "R?" H 19170 5896 50  0000 L CNN
+F 0 "R59" H 19170 5896 50  0000 L CNN
 F 1 "10k" H 19170 5805 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 19030 5850 50  0001 C CNN
 F 3 "~" H 19100 5850 50  0001 C CNN
@@ -2828,10 +2528,10 @@ Wire Wire Line
 Text Notes 22050 3800 2    207  ~ 0
 Solar Charger\nLipo Protection
 $Comp
-L Transistor_FET:BSS84 Q_PWR?
+L Transistor_FET:BSS84 Q_PWR4
 U 1 1 6020D93D
 P 22100 4300
-F 0 "Q_PWR?" H 22304 4346 50  0000 L CNN
+F 0 "Q_PWR4" H 22304 4346 50  0000 L CNN
 F 1 "P-channel 50v 4A" V 22700 4000 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-23_Handsoldering" H 22300 4225 50  0001 L CIN
 F 3 "" H 22100 4300 50  0001 L CNN
@@ -2840,10 +2540,10 @@ F 4 "C344010" H 22100 4300 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R?
+L Device:R R60
 U 1 1 6020D944
 P 21650 4300
-F 0 "R?" V 21443 4300 50  0000 C CNN
+F 0 "R60" V 21443 4300 50  0000 C CNN
 F 1 "10k" V 21534 4300 50  0000 C CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 21580 4300 50  0001 C CNN
 F 3 "~" H 21650 4300 50  0001 C CNN
@@ -2852,10 +2552,10 @@ F 4 "C17414" H 21650 4300 50  0001 C CNN "LCSC_PART_NUMBER"
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R?
+L Device:R R61
 U 1 1 6020D94B
 P 21850 4450
-F 0 "R?" H 21920 4496 50  0000 L CNN
+F 0 "R61" H 21920 4496 50  0000 L CNN
 F 1 "10k" H 21920 4405 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 21780 4450 50  0001 C CNN
 F 3 "~" H 21850 4450 50  0001 C CNN
@@ -2891,4 +2591,527 @@ Wire Wire Line
 	21900 4600 22200 4600
 Wire Wire Line
 	22200 4500 22200 4600
+Text GLabel 750  2700 1    50   Input ~ 0
+PUMP_PWR
+Text GLabel 750  3000 3    50   Input ~ 0
+GND
+$Comp
+L Device:C C14
+U 1 1 60378F84
+P 750 2850
+F 0 "C14" H 865 2896 50  0000 L CNN
+F 1 "22uf" H 865 2805 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 788 2700 50  0001 C CNN
+F 3 "~" H 750 2850 50  0001 C CNN
+F 4 "C45783" H 750 2850 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    750  2850
+	1    0    0    -1  
+$EndComp
+Text GLabel 1150 2700 1    50   Input ~ 0
+PUMP_PWR
+Text GLabel 1150 3000 3    50   Input ~ 0
+GND
+$Comp
+L Device:C C16
+U 1 1 60397250
+P 1150 2850
+F 0 "C16" H 1265 2896 50  0000 L CNN
+F 1 "22uf" H 1265 2805 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1188 2700 50  0001 C CNN
+F 3 "~" H 1150 2850 50  0001 C CNN
+F 4 "C45783" H 1150 2850 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    1150 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C15
+U 1 1 603B01EC
+P 1000 5800
+F 0 "C15" H 1115 5846 50  0000 L CNN
+F 1 "22uf" H 1115 5755 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1038 5650 50  0001 C CNN
+F 3 "~" H 1000 5800 50  0001 C CNN
+F 4 "C45783" H 1000 5800 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    1000 5800
+	1    0    0    -1  
+$EndComp
+Text GLabel 1000 5650 1    50   Input ~ 0
+3_3V
+Text GLabel 1000 5950 3    50   Input ~ 0
+GND
+$Comp
+L Device:C C17
+U 1 1 603D3402
+P 1500 5800
+F 0 "C17" H 1385 5754 50  0000 R CNN
+F 1 "100n" H 1385 5845 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 1538 5650 50  0001 C CNN
+F 3 "~" H 1500 5800 50  0001 C CNN
+F 4 "C49678" H 1500 5800 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    1500 5800
+	-1   0    0    1   
+$EndComp
+$Comp
+L RF_Module:ESP32-WROOM-32D U5
+U 1 1 603DC366
+P 4700 6500
+F 0 "U5" H 4700 8081 50  0000 C CNN
+F 1 "ESP32-WROOM-32D" H 4700 7990 50  0000 C CNN
+F 2 "RF_Module:ESP32-WROOM-32" H 4700 5000 50  0001 C CNN
+F 3 "https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32d_esp32-wroom-32u_datasheet_en.pdf" H 4400 6550 50  0001 C CNN
+	1    4700 6500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push SW1
+U 1 1 603DF238
+P 2950 5300
+F 0 "SW1" H 2950 5585 50  0000 C CNN
+F 1 "SW_Push" H 2950 5494 50  0000 C CNN
+F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_CK_KMR2" H 2950 5500 50  0001 C CNN
+F 3 "~" H 2950 5500 50  0001 C CNN
+F 4 "C72443" H 2950 5300 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    2950 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R32
+U 1 1 603DFA42
+P 3600 5300
+F 0 "R32" V 3393 5300 50  0000 C CNN
+F 1 "10k" V 3484 5300 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 3530 5300 50  0001 C CNN
+F 3 "~" H 3600 5300 50  0001 C CNN
+F 4 "C17414" H 3600 5300 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    3600 5300
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:C C18
+U 1 1 603E007D
+P 2950 5450
+F 0 "C18" H 2835 5404 50  0000 R CNN
+F 1 "100n" H 2835 5495 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 2988 5300 50  0001 C CNN
+F 3 "~" H 2950 5450 50  0001 C CNN
+F 4 "C49678" H 2950 5450 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    2950 5450
+	0    -1   -1   0   
+$EndComp
+Text GLabel 2550 5300 0    50   Input ~ 0
+GND
+NoConn ~ 4100 5500
+NoConn ~ 4100 5600
+Wire Wire Line
+	4700 5100 4700 4950
+Wire Wire Line
+	3150 5300 3250 5300
+Wire Wire Line
+	3100 5450 3250 5450
+Wire Wire Line
+	3250 5450 3250 5300
+Connection ~ 3250 5300
+Wire Wire Line
+	3250 5300 3450 5300
+Wire Wire Line
+	2550 5300 2700 5300
+Wire Wire Line
+	2800 5450 2700 5450
+Wire Wire Line
+	2700 5450 2700 5300
+Connection ~ 2700 5300
+Wire Wire Line
+	2700 5300 2750 5300
+Text GLabel 4700 8000 3    50   Input ~ 0
+GND
+Wire Wire Line
+	4700 8000 4700 7900
+$Comp
+L Device:C C19
+U 1 1 6053DAD5
+P 3800 5450
+F 0 "C19" H 3915 5496 50  0000 L CNN
+F 1 "22uf" H 3915 5405 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 3838 5300 50  0001 C CNN
+F 3 "~" H 3800 5450 50  0001 C CNN
+F 4 "C45783" H 3800 5450 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    3800 5450
+	-1   0    0    1   
+$EndComp
+Text GLabel 3800 5600 3    50   Input ~ 0
+GND
+Wire Wire Line
+	6750 5400 6750 5500
+Wire Wire Line
+	6750 5800 6750 6000
+Text GLabel 6750 6000 2    50   Input ~ 0
+PWR_SENSORS
+$Comp
+L Connector_Generic:Conn_01x04 Hall1
+U 1 1 5F9D6D22
+P 6950 5600
+F 0 "Hall1" H 7030 5592 50  0000 L CNN
+F 1 "Conn_01x04" H 6750 5300 50  0000 L CNN
+F 2 "ESP32:SR04M-2PinHeader_1x04_P2.54mm_Vertical" H 6950 5600 50  0001 C CNN
+F 3 "~" H 6950 5600 50  0001 C CNN
+	1    6950 5600
+	1    0    0    -1  
+$EndComp
+Text GLabel 6750 5400 1    50   Input ~ 0
+GND
+Wire Wire Line
+	5300 5600 6400 5600
+Wire Wire Line
+	6700 5600 6750 5600
+Wire Wire Line
+	6650 5700 6750 5700
+Wire Wire Line
+	5300 5400 6300 5400
+Wire Wire Line
+	6300 5400 6300 5700
+Wire Wire Line
+	6300 5700 6350 5700
+Text Notes 6900 5350 0    102  ~ 0
+or Flashing
+$Comp
+L Device:R R33
+U 1 1 606EF146
+P 3800 5150
+F 0 "R33" V 3593 5150 50  0000 C CNN
+F 1 "10k" V 3684 5150 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 3730 5150 50  0001 C CNN
+F 3 "~" H 3800 5150 50  0001 C CNN
+F 4 "C17414" H 3800 5150 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    3800 5150
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	3750 5300 3800 5300
+Connection ~ 3800 5300
+Wire Wire Line
+	3800 5300 4100 5300
+Wire Wire Line
+	3800 5000 3800 4900
+Text GLabel 5400 5500 2    50   Input ~ 0
+Temp
+Text GLabel 5400 5700 2    50   Input ~ 0
+CUSTOM_GPIO
+Text GLabel 5400 5800 2    50   Input ~ 0
+PLANT_CTRL_PUMP_1
+Text GLabel 5400 5900 2    50   Input ~ 0
+PLANT0_MOIST
+Text GLabel 5400 6000 2    50   Input ~ 0
+PUMP_ENABLE
+Text GLabel 5400 6100 2    50   Input ~ 0
+PLANT1_MOIST
+Text GLabel 5400 6200 2    50   Input ~ 0
+PLANT_CTRL_PUMP_0
+Text GLabel 5400 6300 2    50   Input ~ 0
+SENSORS_ENABLE
+Wire Wire Line
+	7450 6500 7450 6700
+Wire Wire Line
+	7150 6400 7450 6400
+Wire Wire Line
+	7250 6300 7450 6300
+Connection ~ 7150 6400
+Connection ~ 7450 6700
+Wire Wire Line
+	7450 6700 7550 6700
+$Comp
+L Diode:BAS40-04 D27
+U 1 1 6079FFCC
+P 7150 6600
+F 0 "D27" H 7150 6833 50  0000 C CNN
+F 1 "BAS40-04" H 7150 6924 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 6900 6900 50  0001 L CNN
+F 3 "http://www.vishay.com/docs/85701/bas40v.pdf" H 7030 6700 50  0001 C CNN
+F 4 "C79199" H 7150 6600 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    7150 6600
+	-1   0    0    1   
+$EndComp
+Text GLabel 7550 6700 2    50   Input ~ 0
+GND
+Wire Wire Line
+	5300 6400 7150 6400
+Wire Wire Line
+	7150 6400 7150 6500
+Text GLabel 7250 6300 0    50   Input ~ 0
+PWR_SENSORS
+Text GLabel 6850 6700 0    50   Input ~ 0
+3_3V
+$Comp
+L Connector:Conn_01x03_Female J9
+U 1 1 6079FFD7
+P 7650 6400
+F 0 "J9" H 7678 6426 50  0000 L CNN
+F 1 "Conn_01x03_Female" H 7678 6335 50  0000 L CNN
+F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 7650 6400 50  0001 C CNN
+F 3 "~" H 7650 6400 50  0001 C CNN
+	1    7650 6400
+	1    0    0    -1  
+$EndComp
+Text GLabel 5400 6500 2    50   Input ~ 0
+PLANT_CTRL_PUMP_2
+Text GLabel 5400 6600 2    50   Input ~ 0
+PLANT_CTRL_PUMP_3
+Text GLabel 5400 6700 2    50   Input ~ 0
+PLANT_CTRL_PUMP_4
+Text GLabel 5400 6800 2    50   Input ~ 0
+PLANT_CTRL_PUMP_5
+Text GLabel 5400 6900 2    50   Input ~ 0
+PLANT_CTRL_PUMP_6
+Text GLabel 5400 7000 2    50   Input ~ 0
+PLANT4_MOIST
+Text GLabel 5400 7100 2    50   Input ~ 0
+PLANT3_MOIST
+Text GLabel 5400 7200 2    50   Input ~ 0
+PLANT2_MOIST
+Text GLabel 5400 7300 2    50   Input ~ 0
+PLANT6_MOIST
+Text GLabel 5400 7400 2    50   Input ~ 0
+PLANT5_MOIST
+$Comp
+L Device:R R55
+U 1 1 607EB985
+P 6100 8200
+F 0 "R55" H 6030 8154 50  0000 R CNN
+F 1 "100k" H 6030 8245 50  0000 R CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6030 8200 50  0001 C CNN
+F 3 "~" H 6100 8200 50  0001 C CNN
+F 4 "C17407" H 6100 8200 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6100 8200
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R54
+U 1 1 607EB98C
+P 6100 7900
+F 0 "R54" H 6170 7946 50  0000 L CNN
+F 1 "33k" H 6170 7855 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6030 7900 50  0001 C CNN
+F 3 "~" H 6100 7900 50  0001 C CNN
+F 4 "C17633" H 6100 7900 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6100 7900
+	-1   0    0    1   
+$EndComp
+Connection ~ 6100 8050
+Text GLabel 6100 8350 3    50   Input ~ 0
+SOLAR_IN
+Wire Wire Line
+	6300 8050 6100 8050
+Text GLabel 6100 7750 1    50   Input ~ 0
+GND
+Text GLabel 6300 7750 1    50   Input ~ 0
+GND
+$Comp
+L Device:C C20
+U 1 1 607EB995
+P 6300 7900
+F 0 "C20" H 6185 7854 50  0000 R CNN
+F 1 "1u" H 6185 7945 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 6338 7750 50  0001 C CNN
+F 3 "~" H 6300 7900 50  0001 C CNN
+F 4 "C28323" H 6300 7900 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6300 7900
+	1    0    0    -1  
+$EndComp
+Text GLabel 7000 7200 1    50   Input ~ 0
+GND
+Text GLabel 7200 7200 1    50   Input ~ 0
+GND
+Wire Wire Line
+	7000 7500 7200 7500
+$Comp
+L Device:C C21
+U 1 1 607C76C7
+P 7200 7350
+F 0 "C21" H 7085 7304 50  0000 R CNN
+F 1 "1u" H 7085 7395 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 7238 7200 50  0001 C CNN
+F 3 "~" H 7200 7350 50  0001 C CNN
+F 4 "C28323" H 7200 7350 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    7200 7350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7000 7850 7000 7800
+Text GLabel 7000 7850 3    50   Input ~ 0
+VCC
+Connection ~ 7000 7500
+$Comp
+L Device:R R57
+U 1 1 607C76BC
+P 7000 7650
+F 0 "R57" H 7070 7696 50  0000 L CNN
+F 1 "33k" H 7070 7605 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6930 7650 50  0001 C CNN
+F 3 "~" H 7000 7650 50  0001 C CNN
+F 4 "C17633" H 7000 7650 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    7000 7650
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R56
+U 1 1 607C76B5
+P 7000 7350
+F 0 "R56" H 7070 7396 50  0000 L CNN
+F 1 "47k" H 7070 7305 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6930 7350 50  0001 C CNN
+F 3 "~" H 7000 7350 50  0001 C CNN
+F 4 "C17713" H 7000 7350 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    7000 7350
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5300 7500 7000 7500
+Wire Wire Line
+	5300 7600 5800 7600
+Wire Wire Line
+	5800 7600 5800 8050
+Wire Wire Line
+	5800 8050 6100 8050
+Text GLabel 4700 4950 1    50   Input ~ 0
+3_3V
+Text GLabel 3800 4900 1    50   Input ~ 0
+3_3V
+Text GLabel 5450 5300 2    50   Input ~ 0
+IO0
+$Comp
+L Switch:SW_Push SW2
+U 1 1 60983DAC
+P 6050 4500
+F 0 "SW2" H 6050 4785 50  0000 C CNN
+F 1 "SW_Push" H 6050 4694 50  0000 C CNN
+F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_CK_KMR2" H 6050 4700 50  0001 C CNN
+F 3 "~" H 6050 4700 50  0001 C CNN
+F 4 "C72443" H 6050 4500 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6050 4500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R1
+U 1 1 60983DB3
+P 6700 4500
+F 0 "R1" V 6493 4500 50  0000 C CNN
+F 1 "10k" V 6584 4500 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6630 4500 50  0001 C CNN
+F 3 "~" H 6700 4500 50  0001 C CNN
+F 4 "C17414" H 6700 4500 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6700 4500
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:C C1
+U 1 1 60983DBA
+P 6050 4650
+F 0 "C1" H 5935 4604 50  0000 R CNN
+F 1 "100n" H 5935 4695 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" H 6088 4500 50  0001 C CNN
+F 3 "~" H 6050 4650 50  0001 C CNN
+F 4 "C49678" H 6050 4650 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6050 4650
+	0    -1   -1   0   
+$EndComp
+Text GLabel 5650 4500 0    50   Input ~ 0
+GND
+Wire Wire Line
+	6250 4500 6350 4500
+Wire Wire Line
+	6200 4650 6350 4650
+Wire Wire Line
+	6350 4650 6350 4500
+Connection ~ 6350 4500
+Wire Wire Line
+	6350 4500 6550 4500
+Wire Wire Line
+	5650 4500 5800 4500
+Wire Wire Line
+	5900 4650 5800 4650
+Wire Wire Line
+	5800 4650 5800 4500
+Connection ~ 5800 4500
+Wire Wire Line
+	5800 4500 5850 4500
+$Comp
+L Device:C C2
+U 1 1 60983DCC
+P 6900 4650
+F 0 "C2" H 7015 4696 50  0000 L CNN
+F 1 "22uf" H 7015 4605 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 6938 4500 50  0001 C CNN
+F 3 "~" H 6900 4650 50  0001 C CNN
+F 4 "C45783" H 6900 4650 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6900 4650
+	-1   0    0    1   
+$EndComp
+Text GLabel 6900 4800 3    50   Input ~ 0
+GND
+$Comp
+L Device:R R2
+U 1 1 60983DD4
+P 6900 4350
+F 0 "R2" V 6693 4350 50  0000 C CNN
+F 1 "10k" V 6784 4350 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 6830 4350 50  0001 C CNN
+F 3 "~" H 6900 4350 50  0001 C CNN
+F 4 "C17414" H 6900 4350 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    6900 4350
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	6850 4500 6900 4500
+Connection ~ 6900 4500
+Wire Wire Line
+	6900 4500 7200 4500
+Wire Wire Line
+	6900 4200 6900 4100
+Text GLabel 6900 4100 1    50   Input ~ 0
+3_3V
+Text GLabel 7200 4500 2    50   Input ~ 0
+IO0
+Wire Wire Line
+	5300 5300 5450 5300
+NoConn ~ 4100 6700
+NoConn ~ 4100 6800
+NoConn ~ 4100 7000
+NoConn ~ 4100 6600
+NoConn ~ 4100 6500
+NoConn ~ 4100 6900
+Wire Wire Line
+	5300 5500 5400 5500
+Wire Wire Line
+	5300 5700 5400 5700
+Wire Wire Line
+	5300 5800 5400 5800
+Wire Wire Line
+	5300 5900 5400 5900
+Wire Wire Line
+	5300 6000 5400 6000
+Wire Wire Line
+	5300 6100 5400 6100
+Wire Wire Line
+	5300 6200 5400 6200
+Wire Wire Line
+	5300 6300 5400 6300
+Wire Wire Line
+	5300 6500 5400 6500
+Wire Wire Line
+	5300 6600 5400 6600
+Wire Wire Line
+	5300 6700 5400 6700
+Wire Wire Line
+	5300 6800 5400 6800
+Wire Wire Line
+	5300 6900 5400 6900
+Wire Wire Line
+	5300 7000 5400 7000
+Wire Wire Line
+	5300 7100 5400 7100
+Wire Wire Line
+	5300 7200 5400 7200
+Wire Wire Line
+	5300 7300 5400 7300
+Wire Wire Line
+	5300 7400 5400 7400
 $EndSCHEMATC
