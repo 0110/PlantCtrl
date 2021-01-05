@@ -393,7 +393,7 @@ Text GLabel 20550 7200 2    50   Input ~ 0
 Text GLabel 4150 5700 0    50   Input ~ 0
 3_3V
 Text GLabel 19250 7200 0    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	16150 10000 16300 10000
 Wire Wire Line
@@ -579,7 +579,7 @@ F 3 "~" H 9700 1750 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 9500 1650 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	9200 1850 8900 1850
 Wire Wire Line
@@ -711,7 +711,7 @@ F 3 "~" H 19500 3800 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text GLabel 19600 3950 0    50   Input ~ 0
-LIPO+
+VCC
 $Comp
 L Device:R R46
 U 1 1 5FC58F54
@@ -760,13 +760,13 @@ F 3 "~" H 18100 2250 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Text GLabel 18550 2600 2    50   Input ~ 0
-LIPO+
+VCC
 Text GLabel 18250 2600 0    50   Input ~ 0
 3_3V
 Wire Wire Line
 	16450 7600 16450 7550
 Text GLabel 16450 7600 3    50   Input ~ 0
-LIPO+
+VCC
 Text GLabel 18300 2150 2    50   Input ~ 0
 PUMP_PWR
 Text Notes 18000 2750 0    50   ~ 0
@@ -1986,7 +1986,7 @@ Wire Wire Line
 Wire Wire Line
 	5300 10950 5300 10900
 Text GLabel 5300 10900 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	5300 11300 5300 11250
 $Comp
@@ -2016,7 +2016,7 @@ $EndComp
 Wire Wire Line
 	4050 10900 4050 10850
 Text GLabel 4050 10850 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	4050 11250 4050 11200
 $Comp
@@ -2046,7 +2046,7 @@ $EndComp
 Wire Wire Line
 	2900 10900 2900 10850
 Text GLabel 2900 10850 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	2900 11250 2900 11200
 $Comp
@@ -2076,7 +2076,7 @@ $EndComp
 Wire Wire Line
 	1700 10900 1700 10850
 Text GLabel 1700 10850 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	1700 11250 1700 11200
 $Comp
@@ -2106,7 +2106,7 @@ $EndComp
 Wire Wire Line
 	9500 10950 9500 10900
 Text GLabel 9500 10900 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	9500 11300 9500 11250
 $Comp
@@ -2124,7 +2124,7 @@ $EndComp
 Wire Wire Line
 	6600 10950 6600 10900
 Text GLabel 6600 10900 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	6600 11300 6600 11250
 $Comp
@@ -2154,7 +2154,7 @@ $EndComp
 Wire Wire Line
 	7900 10950 7900 10900
 Text GLabel 7900 10900 1    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	7900 11300 7900 11250
 $Comp
@@ -2697,7 +2697,7 @@ GND
 Wire Wire Line
 	16300 9200 16300 9300
 Text GLabel 17250 8950 3    50   Input ~ 0
-LIPO+
+VCC
 Wire Wire Line
 	16950 9150 16650 9150
 Wire Wire Line
@@ -2762,7 +2762,7 @@ EXT_5V
 Text GLabel 1550 8950 2    50   Input ~ 0
 EXT_5V
 Text GLabel 1550 9050 2    50   Input ~ 0
-LIPO+
+VCC
 Text Notes 1200 8700 0    102  ~ 0
 Jumper for USB flashing without AMS1117
 $EndSCHEMATC
