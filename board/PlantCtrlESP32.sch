@@ -2785,7 +2785,7 @@ Text GLabel 5400 6000 2    50   Input ~ 0
 PUMP_ENABLE
 Text GLabel 5400 6100 2    50   Input ~ 0
 PLANT5_MOIST
-Text GLabel 5400 6200 2    50   Input ~ 0
+Text GLabel 5400 6400 2    50   Input ~ 0
 PLANT_CTRL_PUMP_0
 Text GLabel 5400 6300 2    50   Input ~ 0
 SENSORS_ENABLE
@@ -2795,7 +2795,6 @@ Wire Wire Line
 	7150 6400 7450 6400
 Wire Wire Line
 	7250 6300 7450 6300
-Connection ~ 7150 6400
 Connection ~ 7450 6700
 Wire Wire Line
 	7450 6700 7550 6700
@@ -2813,8 +2812,6 @@ F 4 "C79199" H 7150 6600 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Text GLabel 7550 6700 2    50   Input ~ 0
 GND
-Wire Wire Line
-	5300 6400 7150 6400
 Wire Wire Line
 	7150 6400 7150 6500
 Text GLabel 7250 6300 0    50   Input ~ 0
@@ -3072,8 +3069,6 @@ Wire Wire Line
 Wire Wire Line
 	5300 6100 5400 6100
 Wire Wire Line
-	5300 6200 5400 6200
-Wire Wire Line
 	5300 6300 5400 6300
 Wire Wire Line
 	5300 6500 5400 6500
@@ -3167,4 +3162,13 @@ Wire Wire Line
 Wire Wire Line
 	3550 6750 2750 6750
 Connection ~ 2750 6750
+Wire Wire Line
+	5300 6400 5400 6400
+Wire Wire Line
+	6450 6200 6450 6400
+Wire Wire Line
+	6450 6400 7150 6400
+Wire Wire Line
+	5300 6200 6450 6200
+Connection ~ 7150 6400
 $EndSCHEMATC
