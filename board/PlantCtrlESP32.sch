@@ -436,17 +436,6 @@ Wire Wire Line
 	8900 1850 8900 2000
 Text GLabel 7850 1750 0    50   Input ~ 0
 CUSTOM_GPIO
-$Comp
-L Connector:Conn_01x02_Female J4
-U 1 1 5F8D742C
-P 21650 6850
-F 0 "J4" H 21678 6826 50  0000 L CNN
-F 1 "Conn_01x02_Female" H 21050 6650 50  0000 L CNN
-F 2 "misc_footprints:BatteryHolder_Keystone_1042_1x18650" H 21650 6850 50  0001 C CNN
-F 3 "~" H 21650 6850 50  0001 C CNN
-	1    21650 6850
-	1    0    0    -1  
-$EndComp
 Text Notes 19900 6400 0    50   ~ 0
 Protection for Lipo
 Wire Wire Line
@@ -643,7 +632,7 @@ F 4 "C49678" H 20850 6700 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    20850 6700
 	1    0    0    -1  
 $EndComp
-Text GLabel 21300 6950 0    50   Input ~ 0
+Text GLabel 21500 7750 0    50   Input ~ 0
 GND_BATT
 Text GLabel 19500 7750 0    50   Input ~ 0
 GND_BATT
@@ -664,10 +653,8 @@ Wire Wire Line
 	20850 6550 20900 6550
 Connection ~ 20850 6550
 Wire Wire Line
-	21300 6850 21450 6850
-Wire Wire Line
-	21300 6950 21450 6950
-Text GLabel 21400 6850 1    50   Input ~ 0
+	21500 7750 21650 7750
+Text GLabel 21600 7650 0    50   Input ~ 0
 VCC_BATT
 Text GLabel 19750 4850 0    50   Input ~ 0
 VCC_BATT
@@ -2478,10 +2465,8 @@ Text GLabel 18550 5700 0    50   Input ~ 0
 enable_all
 Wire Wire Line
 	18550 5700 18750 5700
-Text GLabel 20050 7800 3    50   Input ~ 0
+Text GLabel 20050 7750 2    50   Input ~ 0
 enable_all
-Wire Wire Line
-	20050 7800 20050 7750
 Wire Wire Line
 	20050 7750 20000 7750
 Wire Wire Line
@@ -3171,4 +3156,26 @@ Wire Wire Line
 Wire Wire Line
 	5300 6200 6450 6200
 Connection ~ 7150 6400
+Wire Wire Line
+	20100 5900 21400 5900
+Wire Wire Line
+	21400 5900 21400 6850
+Wire Wire Line
+	21400 6850 21300 6850
+Connection ~ 20100 5900
+Wire Wire Line
+	21600 7650 21650 7650
+$Comp
+L Connector:Conn_01x02_Female J4
+U 1 1 5F8D742C
+P 21850 7650
+F 0 "J4" H 21878 7626 50  0000 L CNN
+F 1 "Conn_01x02_Female" H 21250 7450 50  0000 L CNN
+F 2 "misc_footprints:BatteryHolder_Keystone_1042_1x18650" H 21850 7650 50  0001 C CNN
+F 3 "~" H 21850 7650 50  0001 C CNN
+	1    21850 7650
+	1    0    0    -1  
+$EndComp
+Text Notes 21400 7550 0    50   ~ 0
+LIPO mount
 $EndSCHEMATC
