@@ -2768,17 +2768,15 @@ Wire Wire Line
 	5300 6200 6450 6200
 Wire Wire Line
 	21150 9300 21050 9300
-Wire Wire Line
-	21700 7600 21750 7600
 $Comp
 L Connector:Conn_01x02_Female J4
 U 1 1 5F8D742C
-P 21950 7600
-F 0 "J4" H 21978 7576 50  0000 L CNN
-F 1 "Conn_01x02_Female" H 21350 7400 50  0000 L CNN
-F 2 "misc_footprints:BatteryHolder_Keystone_1042_1x18650" H 21950 7600 50  0001 C CNN
-F 3 "~" H 21950 7600 50  0001 C CNN
-	1    21950 7600
+P 22050 7600
+F 0 "J4" H 22078 7576 50  0000 L CNN
+F 1 "Conn_01x02_Female" H 21450 7400 50  0000 L CNN
+F 2 "misc_footprints:BatteryHolder_Keystone_1042_1x18650" H 22050 7600 50  0001 C CNN
+F 3 "~" H 22050 7600 50  0001 C CNN
+	1    22050 7600
 	1    0    0    -1  
 $EndComp
 Text Notes 21500 7500 0    50   ~ 0
@@ -2906,8 +2904,6 @@ Text GLabel 19150 9300 0    50   Input ~ 0
 SOLAR_GND
 Text GLabel 20550 6600 2    50   Input ~ 0
 SOLAR_GND
-Wire Wire Line
-	21300 7700 21750 7700
 Text GLabel 19450 10300 0    50   Input ~ 0
 Rsense-
 Wire Wire Line
@@ -3123,4 +3119,29 @@ F 3 "~" H 17650 6200 50  0001 C CNN
 	1    17650 6200
 	0    1    1    0   
 $EndComp
+$Comp
+L Connector:Conn_01x02_Female J1
+U 1 1 60014214
+P 22100 7250
+F 0 "J1" H 22128 7226 50  0000 L CNN
+F 1 "Conn_01x02_Female" H 22128 7135 50  0000 L CNN
+F 2 "Connector_Wire:SolderWirePad_1x02_P5.08mm_Drill1.5mm" H 22100 7250 50  0001 C CNN
+F 3 "~" H 22100 7250 50  0001 C CNN
+	1    22100 7250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	21700 7600 21850 7600
+Wire Wire Line
+	21300 7700 21850 7700
+Wire Wire Line
+	21850 7600 21850 7250
+Wire Wire Line
+	21850 7250 21900 7250
+Connection ~ 21850 7600
+Wire Wire Line
+	21900 7350 21900 7700
+Wire Wire Line
+	21900 7700 21850 7700
+Connection ~ 21850 7700
 $EndSCHEMATC
