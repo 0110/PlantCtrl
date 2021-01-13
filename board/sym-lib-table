@@ -3,4 +3,5 @@
   (lib (name ESP32-DEVKITC-32D)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/ESP32/ESP32-DEVKITC-32D.lib)(options "")(descr ""))
   (lib (name DW01)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/DW01.lib)(options "")(descr ""))
   (lib (name SX1308)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/SX1308.lib)(options "")(descr ""))
+  (lib (name ds2438)(type Legacy)(uri ${KIPRJMOD}/kicad-stuff/ds2438.lib)(options "")(descr ""))
 )

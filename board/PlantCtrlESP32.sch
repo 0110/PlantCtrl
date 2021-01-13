@@ -30,10 +30,10 @@ Pump Control
 Text Notes 3900 9100 0    50   ~ 0
 Lipo
 $Comp
-L Connector_Generic:Conn_01x03 J6
+L Connector_Generic:Conn_01x03 1WIRE1
 U 1 1 5F109CD6
 P 4800 1150
-F 0 "J6" H 4718 825 50  0000 C CNN
+F 0 "1WIRE1" H 4718 825 50  0000 C CNN
 F 1 "Conn_01x03" H 4718 916 50  0000 C CNN
 F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 4800 1150 50  0001 C CNN
 F 3 "~" H 4800 1150 50  0001 C CNN
@@ -406,10 +406,10 @@ CUSTOM_GPIO
 Wire Wire Line
 	8500 2200 8600 2200
 $Comp
-L Connector_Generic:Conn_01x04 J5
+L Connector_Generic:Conn_01x04 CUSTOM1
 U 1 1 5F8A6800
 P 9700 1750
-F 0 "J5" H 9780 1742 50  0000 L CNN
+F 0 "CUSTOM1" H 9780 1742 50  0000 L CNN
 F 1 "Conn_01x04" H 9780 1651 50  0000 L CNN
 F 2 "Connector_JST:JST_EH_B4B-EH-A_1x04_P2.50mm_Vertical" H 9700 1750 50  0001 C CNN
 F 3 "~" H 9700 1750 50  0001 C CNN
@@ -469,10 +469,10 @@ Wire Wire Line
 Text GLabel 20650 6400 2    50   Input ~ 0
 SOLAR_IN
 $Comp
-L Connector_Generic:Conn_01x04 J2
+L Connector_Generic:Conn_01x04 SOLAR1
 U 1 1 5F7E5709
 P 20450 5950
-F 0 "J2" H 20530 5942 50  0000 L CNN
+F 0 "SOLAR1" H 20530 5942 50  0000 L CNN
 F 1 "Conn_01x04" V 20600 5400 50  0000 L CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical" H 20450 5950 50  0001 C CNN
 F 3 "~" H 20450 5950 50  0001 C CNN
@@ -512,10 +512,10 @@ Connection ~ 8500 2200
 Text Notes 17850 1850 0    105  ~ 0
 External Fix Power\n5V to 9V
 $Comp
-L Connector_Generic:Conn_01x02 J7
+L Connector_Generic:Conn_01x02 EXT_PWR1
 U 1 1 5FAFCD50
 P 18100 2250
-F 0 "J7" H 18018 1925 50  0000 C CNN
+F 0 "EXT_PWR1" H 18018 1925 50  0000 C CNN
 F 1 "Conn_01x02" H 18018 2016 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 18100 2250 50  0001 C CNN
 F 3 "~" H 18100 2250 50  0001 C CNN
@@ -653,10 +653,10 @@ F 4 "C17414" H 6550 5600 50  0001 C CNN "LCSC_PART_NUMBER"
 	0    1    1    0   
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP1
+L Jumper:SolderJumper_2_Open OCP1
 U 1 1 6011090E
 P 21800 6900
-F 0 "JP1" H 21800 7105 50  0000 C CNN
+F 0 "OCP1" H 21800 7105 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 21800 7014 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 21800 6900 50  0001 C CNN
 F 3 "~" H 21800 6900 50  0001 C CNN
@@ -675,10 +675,10 @@ F 3 "~" H 8450 1750 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Bridged JP4
+L Jumper:SolderJumper_2_Bridged LED_SENS1
 U 1 1 6017FFC5
 P 10650 14950
-F 0 "JP4" V 10604 15018 50  0000 L CNN
+F 0 "LED_SENS1" V 10604 15018 50  0000 L CNN
 F 1 "NC" V 10695 15018 50  0000 L CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 10650 14950 50  0001 C CNN
 F 3 "~" H 10650 14950 50  0001 C CNN
@@ -735,10 +735,10 @@ GND
 Text GLabel 18300 2250 2    50   Input ~ 0
 GND
 $Comp
-L Jumper:SolderJumper_2_Open JP6
+L Jumper:SolderJumper_2_Open EXT_PWR2
 U 1 1 6076B93D
 P 18400 2600
-F 0 "JP6" H 18400 2805 50  0000 C CNN
+F 0 "EXT_PWR2" H 18400 2805 50  0000 C CNN
 F 1 "SolderJumper_2_Open" H 18400 2714 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 18400 2600 50  0001 C CNN
 F 3 "~" H 18400 2600 50  0001 C CNN
@@ -889,10 +889,10 @@ GND
 Text GLabel 14700 6100 0    50   Input ~ 0
 PWR_PUMP_CONVERTER
 $Comp
-L Connector_Generic:Conn_01x04 J3
+L Connector_Generic:Conn_01x04 DCDC1
 U 1 1 5F837F50
 P 16000 7400
-F 0 "J3" H 16080 7392 50  0000 L CNN
+F 0 "DCDC1" H 16080 7392 50  0000 L CNN
 F 1 "Conn_01x04" H 16080 7301 50  0000 L CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical" H 16000 7400 50  0001 C CNN
 F 3 "~" H 16000 7400 50  0001 C CNN
@@ -2599,10 +2599,10 @@ SENSORS_ENABLE
 Text GLabel 7700 6200 0    50   Input ~ 0
 PWR_SENSORS
 $Comp
-L Connector:Conn_01x05_Female J9
+L Connector:Conn_01x05_Female GPIO1
 U 1 1 6079FFD7
 P 7900 6400
-F 0 "J9" H 7928 6426 50  0000 L CNN
+F 0 "GPIO1" H 7928 6426 50  0000 L CNN
 F 1 "Conn_01x05_Female" H 7928 6335 50  0000 L CNN
 F 2 "Connector_JST:JST_EH_B5B-EH-A_1x05_P2.50mm_Vertical" H 7900 6400 50  0001 C CNN
 F 3 "~" H 7900 6400 50  0001 C CNN
@@ -2769,10 +2769,10 @@ Wire Wire Line
 Wire Wire Line
 	21150 9300 21050 9300
 $Comp
-L Connector:Conn_01x02_Female J4
+L Connector:Conn_01x02_Female LIPO1
 U 1 1 5F8D742C
 P 22050 7600
-F 0 "J4" H 22078 7576 50  0000 L CNN
+F 0 "LIPO1" H 22078 7576 50  0000 L CNN
 F 1 "Conn_01x02_Female" H 21450 7400 50  0000 L CNN
 F 2 "misc_footprints:BatteryHolder_Keystone_1042_1x18650" H 22050 7600 50  0001 C CNN
 F 3 "~" H 22050 7600 50  0001 C CNN
@@ -3109,10 +3109,10 @@ Connection ~ 19600 11150
 Text GLabel 19900 11150 2    50   Input ~ 0
 Rsense-
 $Comp
-L Jumper:SolderJumper_2_Bridged JP3
+L Jumper:SolderJumper_2_Bridged SOLAR_PWR1
 U 1 1 60C8802B
 P 17650 6200
-F 0 "JP3" H 17650 6100 50  0000 C CNN
+F 0 "SOLAR_PWR1" H 17650 6350 50  0000 C CNN
 F 1 "NC" H 17650 6000 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 17650 6200 50  0001 C CNN
 F 3 "~" H 17650 6200 50  0001 C CNN
@@ -3120,10 +3120,10 @@ F 3 "~" H 17650 6200 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector:Conn_01x02_Female J1
+L Connector:Conn_01x02_Female LIPO2
 U 1 1 60014214
 P 22100 7250
-F 0 "J1" H 22128 7226 50  0000 L CNN
+F 0 "LIPO2" H 22128 7226 50  0000 L CNN
 F 1 "Conn_01x02_Female" H 22128 7135 50  0000 L CNN
 F 2 "Connector_Wire:SolderWirePad_1x02_P5.08mm_Drill1.5mm" H 22100 7250 50  0001 C CNN
 F 3 "~" H 22100 7250 50  0001 C CNN
