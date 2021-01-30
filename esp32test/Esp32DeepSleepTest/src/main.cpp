@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "esp_sleep.h"
-#include <DS18B20.h>
 #include "DallasTemperature.h"
+#include "DS2438.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
@@ -34,9 +34,9 @@ RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int pumpActive = 0;
 int secondBootCount = 0;
 
-Ds18B20 ds(SENSOR_DS18B20);
 OneWire oneWire(SENSOR_DS18B20);
-DallasTemperature sensors(&oneWire);
+DallasTemperature temp(&oneWire);
+DS2438 battery(&oneWire);
 
 
 void print_wakeup_reason(){
@@ -95,24 +95,33 @@ void setup() {
   /* activate power pump and pump 0 */
   digitalWrite(OUTPUT_PUMP, HIGH);
   digitalWrite(OUTPUT_SENSOR, HIGH);
+
+  delay(1);
+  
+  temp.begin();
+  battery.begin();
 }
 
-
-
 void loop() {  
-  Serial.println("test");
   delay(200);
   digitalWrite(OUTPUT_PUMP0, HIGH);
 
-  sensors.begin();
-
-  for(int j=0; j < 5 && sensors.getDeviceCount() == 0; j++) {
-    delay(100);
-    sensors.begin();
-    Serial.println("Reset 1wire");
+  for(int j=0; j < 5 && temp.getDeviceCount() == 0; j++) {
+    delay(10);
+    Serial.println("Reset 1wire temp");
+    temp.begin();
   }
-
-  Serial.println(sensors.getDeviceCount());
   
-
+  for(int j=0; j < 5 && (0 == battery.isFound()); j++) {
+    delay(10);
+    Serial.println("Reset 1wire bat");
+    battery.begin();
+    battery.update();
+  }
+  battery.update();
+  Serial.print(battery.getVoltage(0));
+  Serial.print("\t");
+  Serial.print(battery.getVoltage(1));
+  Serial.print("\t");
+  Serial.println(battery.getTemperature());
 }
