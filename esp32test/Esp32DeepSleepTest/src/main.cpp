@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "esp_sleep.h"
 #include <DS18B20.h>
+#include "DallasTemperature.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
@@ -34,6 +35,9 @@ RTC_DATA_ATTR int pumpActive = 0;
 int secondBootCount = 0;
 
 Ds18B20 ds(SENSOR_DS18B20);
+OneWire oneWire(SENSOR_DS18B20);
+DallasTemperature sensors(&oneWire);
+
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -98,5 +102,17 @@ void setup() {
 void loop() {  
   Serial.println("test");
   delay(200);
- 
+  digitalWrite(OUTPUT_PUMP0, HIGH);
+
+  sensors.begin();
+
+  for(int j=0; j < 5 && sensors.getDeviceCount() == 0; j++) {
+    delay(100);
+    sensors.begin();
+    Serial.println("Reset 1wire");
+  }
+
+  Serial.println(sensors.getDeviceCount());
+  
+
 }
