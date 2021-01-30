@@ -93,37 +93,9 @@ void setup() {
   //Print the wakeup reason for ESP32
   print_wakeup_reason();
 
-  /*
-  First we configure the wake up source
-  We set our ESP32 to wake up every 5 seconds
-  */
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
-  " Seconds");
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL,ESP_PD_OPTION_ON);
-
-
-
-  pinMode(GPIO_NUM_32, ANALOG);
-  digitalWrite(GPIO_NUM_32, HIGH);
-  pinMode(GPIO_NUM_33, INPUT_PULLUP);
-  digitalWrite(GPIO_NUM_33, HIGH);
-  pinMode(GPIO_NUM_25, INPUT_PULLUP);
-  digitalWrite(GPIO_NUM_25, HIGH);
-  pinMode(GPIO_NUM_26, INPUT_PULLUP);
-  pinMode(GPIO_NUM_27, INPUT_PULLUP);
-  pinMode(GPIO_NUM_14, INPUT_PULLUP);
-  pinMode(GPIO_NUM_12, INPUT_PULLUP);
-
-
-  /* Sensor activieren */
-  digitalWrite(OUTPUT_SENSOR, HIGH);
-
   /* activate power pump and pump 0 */
   digitalWrite(OUTPUT_PUMP, HIGH);
+  digitalWrite(OUTPUT_SENSOR, HIGH);
 }
 
 
@@ -132,43 +104,6 @@ void loop() {
   double value = analogRead(SENSOR_LIPO);
   
   Serial.println(value);
-
-  float temp[2] = {0, 0};
-  float* pFloat = temp;
-  
-  Serial.print("DS18B20 sensors: ");
-  Serial.println(ds.readDevices());
   delay(200);
-  if (ds.readAllTemperatures(pFloat, 2) > 0) {
-      Serial.println(temp[0]);
-      Serial.println(temp[1]);
-  }
-
-  
-  double volt = ADC_5V_TO_3V3(value);
-  Serial.print("Lipo: ");
-  Serial.println(volt);
-
-  pumpActive = (pumpActive + 1) % 2;
-  if (pumpActive) {
-    digitalWrite(OUTPUT_PUMP0, HIGH);
-  } else {
-    digitalWrite(OUTPUT_PUMP0, LOW);
-  }
-
-   double solarVal = analogRead(SENSOR_SOLAR);
-  
-  Serial.println(solarVal);
-  
-  double solarVolt = SOLAR_VOLT(solarVal);
-  Serial.print("Solar: ");
-  Serial.println(solarVolt);
-
-  Serial.print("Moist0: ");
-  Serial.println(analogRead(SENSOR_PLANT0));
-
-  delay(1000);
-  gpio_deep_sleep_hold_en();
-  gpio_hold_en(GPIO_NUM_13);
-  esp_deep_sleep_start();
+ 
 }

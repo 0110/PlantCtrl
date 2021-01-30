@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.tcc": "cpp",
+			"bitset": "cpp",
+			"algorithm": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"streambuf": "cpp",
+			"functional": "cpp",
+			"string": "cpp",
+			"typeinfo": "cpp",
+			"cmath": "cpp"
+		}
+	}
+}
