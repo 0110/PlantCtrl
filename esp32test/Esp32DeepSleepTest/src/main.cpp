@@ -36,7 +36,7 @@ int secondBootCount = 0;
 
 OneWire oneWire(SENSOR_DS18B20);
 DallasTemperature temp(&oneWire);
-DS2438 battery(&oneWire);
+DS2438 battery(&oneWire,0.1f);
 
 
 void print_wakeup_reason(){
@@ -100,21 +100,28 @@ void setup() {
   
   temp.begin();
   battery.begin();
+
+  Serial.print("Battery");
+  Serial.print("\t");
+  Serial.print("Solar");
+  Serial.print("\t");
+  Serial.print("Bat I");
+  Serial.print("\t");
+  Serial.println("Temp/10");
 }
 
 void loop() {  
-  delay(200);
   digitalWrite(OUTPUT_PUMP0, HIGH);
 
   for(int j=0; j < 5 && temp.getDeviceCount() == 0; j++) {
     delay(10);
-    Serial.println("Reset 1wire temp");
+   // Serial.println("Reset 1wire temp");
     temp.begin();
   }
   
   for(int j=0; j < 5 && (0 == battery.isFound()); j++) {
     delay(10);
-    Serial.println("Reset 1wire bat");
+   // Serial.println("Reset 1wire bat");
     battery.begin();
     battery.update();
   }
@@ -123,5 +130,7 @@ void loop() {
   Serial.print("\t");
   Serial.print(battery.getVoltage(1));
   Serial.print("\t");
-  Serial.println(battery.getTemperature());
+  Serial.print(battery.getCurrent());
+  Serial.print("\t");
+  Serial.println(battery.getTemperature()/10);
 }

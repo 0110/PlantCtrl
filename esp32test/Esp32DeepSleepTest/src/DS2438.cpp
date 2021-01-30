@@ -24,8 +24,9 @@
 
 #define DS2438MODEL     0x26
 
-DS2438::DS2438(OneWire *ow) {
+DS2438::DS2438(OneWire *ow, float currentShunt = 1.0f) {
     _ow = ow;
+    _currentShunt = currentShunt;
 };
 
 void DS2438::begin(){
@@ -112,6 +113,11 @@ void DS2438::update() {
         }
         _voltageB = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
     }
+    
+    int16_t upperByte = ((int16_t)data[6]) << 8;
+    int16_t lowerByte = data[5];
+    int16_t fullByte = (upperByte | lowerByte);
+    _current = ((float)fullByte) / (4096.0f * _currentShunt);
     _error = false;
 }
 
@@ -127,6 +133,10 @@ float DS2438::getVoltage(int channel) {
     } else {
         return 0.0;
     }
+}
+
+float DS2438::getCurrent() {
+    return _current;
 }
 
 boolean DS2438::isError() {

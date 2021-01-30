@@ -44,13 +44,14 @@ typedef uint8_t DeviceAddress[8];
 
 class DS2438 {
     public:
-        DS2438(OneWire *ow);
+        DS2438(OneWire *ow, float currentShunt);
         DS2438(OneWire *ow, uint8_t *address);
 
         void begin();
         void update();
         double getTemperature();
         float getVoltage(int channel=DS2438_CHA);
+        float getCurrent();
         boolean isError();
         boolean isFound();
     private:
@@ -64,6 +65,8 @@ class DS2438 {
         double _temperature;
         float _voltageA;
         float _voltageB;
+        float _current;
+        float _currentShunt;
         boolean _error;
         boolean startConversion(int channel, boolean doTemperature);
         boolean selectChannel(int channel);
