@@ -5,19 +5,16 @@
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
 
-#define SENSOR_LIPO         34  /**< GPIO 34 (ADC1) */
-#define SENSOR_SOLAR        35  /**< GPIO 35 (ADC1) */
-
 #define SENSOR_DS18B20      2 /**< GPIO 2 */
 
 
-#define OUTPUT_PUMP0        23  /**< GPIO 23  */
-#define OUTPUT_PUMP1        22  /**< GPIO 22  */
-#define OUTPUT_PUMP2        21  /**< GPIO 21 */
+#define OUTPUT_PUMP0        17  /**< GPIO 23  */
+#define OUTPUT_PUMP1        05  /**< GPIO 22  */
+#define OUTPUT_PUMP2        18  /**< GPIO 21 */
 #define OUTPUT_PUMP3        19  /**< GPIO 19 */
-#define OUTPUT_PUMP4        18  /**< GPIO 18 */
-#define OUTPUT_PUMP5        5   /**< GPIO 5  */
-#define OUTPUT_PUMP6        15  /**< GPIO 15 */
+#define OUTPUT_PUMP4        21  /**< GPIO 18 */
+#define OUTPUT_PUMP5        22  /**< GPIO 5  */
+#define OUTPUT_PUMP6        23  /**< GPIO 15 */
 
 #define OUTPUT_SENSOR       16  /**< GPIO 16 - Enable Sensors  */
 #define OUTPUT_PUMP         13  /**< GPIO 13 - Enable Pumps  */
@@ -77,8 +74,6 @@ void setup() {
   pinMode(OUTPUT_SENSOR, OUTPUT);
   pinMode(OUTPUT_PUMP, OUTPUT);
 
-  pinMode(SENSOR_LIPO, ANALOG);
-  pinMode(SENSOR_SOLAR, ANALOG);
   pinMode(SENSOR_PLANT0, ANALOG);
 
   setAll2Off();
@@ -101,9 +96,7 @@ void setup() {
 
 
 void loop() {  
-  double value = analogRead(SENSOR_LIPO);
-  
-  Serial.println(value);
+  Serial.println("test");
   delay(200);
  
 }
