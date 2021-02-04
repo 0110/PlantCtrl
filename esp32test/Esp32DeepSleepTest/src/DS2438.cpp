@@ -46,6 +46,8 @@ void DS2438::begin(){
 		if (validAddress(searchDeviceAddress)) {
 			if (validFamily(searchDeviceAddress)) {
                 memcpy(_address,searchDeviceAddress,8);
+                //DEFAULT_PAGE0(defaultConfig);
+                //writePage(0, defaultConfig);
                 deviceFound = true;
 			}
 		}
@@ -84,9 +86,26 @@ void DS2438::update() {
             return;
         }
         if (!readPage(0, data)){
+            
             Serial.println("Error reading zero page ds2438 channel a");
             return;
         }
+        Serial.print(data[0],16);
+        Serial.print(" ");
+        Serial.print(data[1],16);
+        Serial.print(" ");
+        Serial.print(data[2],16);
+        Serial.print(" ");
+        Serial.print(data[3],16);
+        Serial.print(" ");
+        Serial.print(data[4],16);
+        Serial.print(" ");
+        Serial.print(data[5],16);
+        Serial.print(" ");
+        Serial.print(data[6],16);
+        Serial.print(" ");
+        Serial.println(data[7],16);
+
             
         if (doTemperature) {
             _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
@@ -116,15 +135,61 @@ void DS2438::update() {
     
     int16_t upperByte = ((int16_t)data[6]) << 8;
     int16_t lowerByte = data[5];
-    int16_t fullByte = (upperByte | lowerByte);
-    _current = ((float)fullByte) / (4096.0f * _currentShunt);
+    int16_t fullByte = (int16_t)(upperByte | lowerByte);
+    float fullByteb = fullByte;
+    _current = (fullByteb) / ((4096.0f * _currentShunt));
     _error = false;
+        Serial.print(data[0],16);
+        Serial.print(" ");
+        Serial.print(data[1],16);
+        Serial.print(" ");
+        Serial.print(data[2],16);
+        Serial.print(" ");
+        Serial.print(data[3],16);
+        Serial.print(" ");
+        Serial.print(data[4],16);
+        Serial.print(" ");
+        Serial.print(data[5],16);
+        Serial.print(" ");
+        Serial.print(data[6],16);
+        Serial.print(" ");
+        Serial.println(data[7],16);
+        Serial.println("-");
 
-    if (!readPage(7, data)){
+    if (readPage(7, data)){
         PageSeven_t *pSeven = (PageSeven_t *) data;
         int16_t CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
         int16_t DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
+        
+        
         Serial.printf("DCA: %d. CCA: %d\n", DCA, CCA);
+    }
+
+    if (readPage(1, data)){
+        PageOne_t *pSeven = (PageOne_t *) data;
+        Serial.print(data[0],16);
+        Serial.print(" ");
+        Serial.print(data[1],16);
+        Serial.print(" ");
+        Serial.print(data[2],16);
+        Serial.print(" ");
+        Serial.print(data[3],16);
+        Serial.print(" ");
+        Serial.print(data[4],16);
+        Serial.print(" ");
+        Serial.print(data[5],16);
+        Serial.print(" ");
+        Serial.print(data[6],16);
+        Serial.print(" ");
+        Serial.println(data[7],16);
+        Serial.println(pSeven->ICA);
+        float Ah = pSeven->ICA / (2048.0f * _currentShunt);
+        Serial.println(Ah);
+        Serial.println("=");
+        
+
+        
+
     }
 
 }

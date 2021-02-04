@@ -54,6 +54,8 @@ void print_wakeup_reason(){
   }
 }
 
+bool whatever = true;
+
 void setAll2Off() {
   digitalWrite(OUTPUT_PUMP0, LOW);
   digitalWrite(OUTPUT_PUMP1, LOW);
@@ -82,7 +84,7 @@ void setup() {
 
   setAll2Off();
   
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   //Increment boot number and print it every reboot
   ++bootCount;
@@ -93,7 +95,7 @@ void setup() {
   print_wakeup_reason();
 
   /* activate power pump and pump 0 */
-  digitalWrite(OUTPUT_PUMP, HIGH);
+
   digitalWrite(OUTPUT_SENSOR, HIGH);
 
   delay(1);
@@ -110,7 +112,10 @@ void setup() {
   Serial.println("Temp/10");
 }
 
-void loop() {  
+void loop() { 
+  whatever = !whatever;
+  digitalWrite(OUTPUT_PUMP, whatever?HIGH:LOW);
+  delay(2000);
   digitalWrite(OUTPUT_PUMP0, HIGH);
 
   for(int j=0; j < 5 && temp.getDeviceCount() == 0; j++) {
@@ -121,7 +126,7 @@ void loop() {
   
   for(int j=0; j < 5 && (0 == battery.isFound()); j++) {
     delay(10);
-   // Serial.println("Reset 1wire bat");
+    Serial.println("Reset 1wire bat");
     battery.begin();
     battery.update();
   }

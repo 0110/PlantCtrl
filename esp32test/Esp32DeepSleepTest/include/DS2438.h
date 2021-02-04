@@ -42,7 +42,7 @@
 #define DS2438_TEMPERATURE_DELAY 10
 #define DS2438_VOLTAGE_CONVERSION_DELAY 8
 
-#define DEFAULT_PAGE0 uint8_t[8] { \
+#define DEFAULT_PAGE0(var) uint8_t var[8] { \
     0b00001011 /* X, ADB=0, NVB=0, TB=0, AD=1, EE=0, CA=1, IAD=1 */, \
     0, /* Temperatur */ \
     0, /* Temperatur */ \

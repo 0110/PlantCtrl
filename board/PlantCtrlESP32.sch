@@ -902,11 +902,8 @@ F 3 "~" H 16000 7400 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	15050 6500 15050 6100
-Wire Wire Line
-	3700 900  4150 900 
 Text Notes 5050 750  0    105  ~ 0
 One Wire
-Connection ~ 3700 900 
 Wire Wire Line
 	4150 900  4150 1050
 Wire Wire Line
@@ -1595,8 +1592,6 @@ Wire Wire Line
 	1550 11500 1550 11550
 Wire Wire Line
 	5300 10950 5300 10900
-Text GLabel 5300 10900 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	5300 11300 5300 11250
 $Comp
@@ -1625,8 +1620,6 @@ F 4 "C375452" H 5300 11450 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	4050 10900 4050 10850
-Text GLabel 4050 10850 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	4050 11250 4050 11200
 $Comp
@@ -1655,8 +1648,6 @@ F 4 "C205441" H 4050 11400 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	2900 10900 2900 10850
-Text GLabel 2900 10850 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	2900 11250 2900 11200
 $Comp
@@ -1685,8 +1676,6 @@ F 4 "C375452" H 2900 11400 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	9500 10950 9500 10900
-Text GLabel 9500 10900 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	9500 11300 9500 11250
 $Comp
@@ -1703,8 +1692,6 @@ F 4 "C205441" H 9500 11450 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	6600 10950 6600 10900
-Text GLabel 6600 10900 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	6600 11300 6600 11250
 $Comp
@@ -1733,8 +1720,6 @@ F 4 "C205441" H 6600 11450 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	7900 10950 7900 10900
-Text GLabel 7900 10900 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	7900 11300 7900 11250
 $Comp
@@ -2835,8 +2820,6 @@ F 4 "C17590" H 1700 11050 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Wire Wire Line
 	1700 11250 1700 11200
-Text GLabel 1700 10850 1    50   Input ~ 0
-VCC
 Wire Wire Line
 	1700 10900 1700 10850
 Wire Wire Line
@@ -2882,9 +2865,9 @@ F 4 "C163067" H 21150 7700 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    21150 7700
 	0    1    1    0   
 $EndComp
-Text GLabel 21000 7750 3    50   Input ~ 0
-Rsense+
 Text GLabel 21300 7750 3    50   Input ~ 0
+Rsense+
+Text GLabel 21000 7750 3    50   Input ~ 0
 Rsense-
 Text GLabel 19000 10500 0    50   Input ~ 0
 Rsense+
@@ -3148,10 +3131,10 @@ Wire Wire Line
 Wire Wire Line
 	5300 5500 6250 5500
 $Comp
-L Device:R R?
+L Device:R R55
 U 1 1 60231A96
 P 7300 6450
-F 0 "R?" V 7093 6450 50  0000 C CNN
+F 0 "R55" V 7093 6450 50  0000 C CNN
 F 1 "10k" V 7184 6450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 7230 6450 50  0001 C CNN
 F 3 "~" H 7300 6450 50  0001 C CNN
@@ -3167,4 +3150,21 @@ Wire Wire Line
 Connection ~ 7300 6600
 Wire Wire Line
 	7300 6600 7700 6600
+Connection ~ 3700 900 
+Wire Wire Line
+	3700 900  4150 900 
+Text GLabel 1700 10850 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 2900 10850 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 4050 10850 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 5300 10900 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 6600 10900 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 7900 10900 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Text GLabel 9500 10900 1    50   Input ~ 0
+PWR_PUMP_CONVERTER
 $EndSCHEMATC
