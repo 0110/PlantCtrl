@@ -53,6 +53,28 @@
     0 /* Threashold */ \
 }
 
+typedef struct PageOne {
+    uint8_t eleapsedTimerByte0; /**< LSB of timestamp */
+    uint8_t eleapsedTimerByte1;
+    uint8_t eleapsedTimerByte2;
+    uint8_t eleapsedTimerByte3; /**< MSB of timestamp */
+    uint8_t ICA; /**< Integrated Current Accumulator (current flowing into and out of the battery) */
+    uint8_t offsetRegisterByte0; /**< Offset for ADC calibdation */
+    uint8_t offsetRegisterByte1; /**< Offset for ADC calibdation */
+    uint8_t reserved;
+} PageOne_t;
+
+typedef struct PageSeven {
+    uint8_t userByte0;
+    uint8_t userByte1;
+    uint8_t userByte2;
+    uint8_t userByte3;
+    uint8_t CCA0;   /**< Charging Current Accumulator (CCA) */
+    uint8_t CCA1;   /**< Charging Current Accumulator (CCA) */
+    uint8_t DCA0;   /**< Discharge Current Accumulator (DCA) */
+    uint8_t DCA1;   /**< Discharge Current Accumulator (DCA) */
+} PageSeven_t;
+
 typedef uint8_t DeviceAddress[8];
 
 class DS2438 {
