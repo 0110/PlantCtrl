@@ -119,6 +119,14 @@ void DS2438::update() {
     int16_t fullByte = (upperByte | lowerByte);
     _current = ((float)fullByte) / (4096.0f * _currentShunt);
     _error = false;
+
+    if (!readPage(7, data)){
+        PageSeven_t *pSeven = (PageSeven_t *) data;
+        int16_t CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
+        int16_t DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
+        Serial.printf("DCA: %d. CCA: %d\n", DCA, CCA);
+    }
+
 }
 
 double DS2438::getTemperature() {
