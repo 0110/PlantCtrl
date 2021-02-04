@@ -42,6 +42,17 @@
 #define DS2438_TEMPERATURE_DELAY 10
 #define DS2438_VOLTAGE_CONVERSION_DELAY 8
 
+#define DEFAULT_PAGE0 uint8_t[8] { \
+    0b00001011 /* X, ADB=0, NVB=0, TB=0, AD=1, EE=0, CA=1, IAD=1 */, \
+    0, /* Temperatur */ \
+    0, /* Temperatur */ \
+    0, /* Voltage */ \
+    0, /* Voltage */ \
+    0, /* Current */ \
+    0, /* Current */ \
+    0 /* Threashold */ \
+}
+
 typedef uint8_t DeviceAddress[8];
 
 class DS2438 {
