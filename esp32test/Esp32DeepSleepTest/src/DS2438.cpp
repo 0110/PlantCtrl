@@ -83,7 +83,7 @@ void DS2438::update() {
             Serial.println("Error starting temp conversion ds2438 channel a");
             return;
         }
-        if (!readPageZero(data)){
+        if (!readPage(0, data)){
             Serial.println("Error reading zero page ds2438 channel a");
             return;
         }
@@ -101,7 +101,7 @@ void DS2438::update() {
             Serial.println("Error starting temp conversion channel b ds2438");
             return;
         }
-        if (!readPageZero(data)){
+        if (!readPage(0, data)){
             Serial.println("Error reading zero page ds2438 channel b");
             return;
         }
@@ -168,43 +168,51 @@ boolean DS2438::selectChannel(int channel) {
         return false;
     }
     uint8_t data[9];
-    if (readPageZero(data)) {
+    if (readPage(0, data)) {
         if (channel == DS2438_CHB){
             data[0] = data[0] | 0x08;
         }
         else {
             data[0] = data[0] & 0xf7;
         }
-        writePageZero(data);
+        writePage(0, data);
         return true;
     }
     Serial.println("Could not read page zero data");
     return false;
 }
 
-void DS2438::writePageZero(uint8_t *data) {
+void DS2438::writePage(int page, uint8_t *data) {
     _ow->reset();
     _ow->select(_address);
     _ow->write(DS2438_WRITE_SCRATCHPAD_COMMAND, 0);
-    _ow->write(DS2438_PAGE_0, 0);
+    if ((page >= PAGE_MIN) && (page <= PAGE_MAX)) {
+        _ow->write(page, 0);
+    } else {
+        return;
+    }
     for (int i = 0; i < 8; i++){
         _ow->write(data[i], 0);
     }
     _ow->reset();
     _ow->select(_address);
     _ow->write(DS2438_COPY_SCRATCHPAD_COMMAND, 0);
-    _ow->write(DS2438_PAGE_0, 0);
+    _ow->write(page, 0);
 }
 
-boolean DS2438::readPageZero(uint8_t *data) {
+boolean DS2438::readPage(int page, uint8_t *data) {
     _ow->reset();
     _ow->select(_address);
     _ow->write(DS2438_RECALL_MEMORY_COMMAND, 0);
-    _ow->write(DS2438_PAGE_0, 0);
+    if ((page >= PAGE_MIN) && (page <= PAGE_MAX)) {
+        _ow->write(page, 0);
+    } else {
+        return false;
+    }
     _ow->reset();
     _ow->select(_address);
     _ow->write(DS2438_READ_SCRATCHPAD_COMMAND, 0);
-    _ow->write(DS2438_PAGE_0, 0);
+    _ow->write(page, 0);
     for (int i = 0; i < 9; i++){
         data[i] = _ow->read();
     }

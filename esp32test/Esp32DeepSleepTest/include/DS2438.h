@@ -28,7 +28,9 @@
 #define DS2438_COPY_SCRATCHPAD_COMMAND 0x48
 #define DS2438_READ_SCRATCHPAD_COMMAND 0xbe
 #define DS2438_RECALL_MEMORY_COMMAND 0xb8
-#define DS2438_PAGE_0 0x00
+
+#define PAGE_MIN 0
+#define PAGE_MAX 7
 
 #define DS2438_CHA 0
 #define DS2438_CHB 1
@@ -70,8 +72,8 @@ class DS2438 {
         boolean _error;
         boolean startConversion(int channel, boolean doTemperature);
         boolean selectChannel(int channel);
-        void writePageZero(uint8_t *data);
-        boolean readPageZero(uint8_t *data);
+        void writePage(int page, uint8_t *data);
+        boolean readPage(int page, uint8_t *data);
 };
 
 #endif
