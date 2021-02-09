@@ -642,18 +642,6 @@ Wire Wire Line
 	19450 9200 19450 9150
 NoConn ~ 20450 9400
 $Comp
-L Device:R R20
-U 1 1 5FC4784F
-P 6550 5600
-F 0 "R20" V 6343 5600 50  0000 C CNN
-F 1 "10k" V 6434 5600 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 6480 5600 50  0001 C CNN
-F 3 "~" H 6550 5600 50  0001 C CNN
-F 4 "C212284" H 6550 5600 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    6550 5600
-	0    1    1    0   
-$EndComp
-$Comp
 L Jumper:SolderJumper_2_Open OCP1
 U 1 1 6011090E
 P 21800 6900
@@ -685,17 +673,6 @@ F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 10650 14950 50  0001 C
 F 3 "~" H 10650 14950 50  0001 C CNN
 	1    10650 14950
 	0    1    1    0   
-$EndComp
-$Comp
-L Jumper:SolderJumper_2_Bridged JP5
-U 1 1 6023651A
-P 6500 5700
-F 0 "JP5" H 6500 5600 50  0000 C CNN
-F 1 "NC" H 6500 5500 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 6500 5700 50  0001 C CNN
-F 3 "~" H 6500 5700 50  0001 C CNN
-	1    6500 5700
-	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C_Small C13
@@ -2515,38 +2492,26 @@ $EndComp
 Text GLabel 3800 5600 3    50   Input ~ 0
 GND
 Wire Wire Line
-	6750 5400 6750 5500
+	8450 5100 8450 5200
 Wire Wire Line
-	6750 5800 6750 6000
-Text GLabel 6750 6000 2    50   Input ~ 0
+	8450 5500 8450 5700
+Text GLabel 8450 5700 2    50   Input ~ 0
 PWR_SENSORS
 $Comp
 L Connector_Generic:Conn_01x04 Hall1
 U 1 1 5F9D6D22
-P 6950 5600
-F 0 "Hall1" H 7030 5592 50  0000 L CNN
-F 1 "Conn_01x04" H 6750 5300 50  0000 L CNN
-F 2 "ESP32:SR04M-2PinHeader_1x04_P2.54mm_Vertical" H 6950 5600 50  0001 C CNN
-F 3 "~" H 6950 5600 50  0001 C CNN
-	1    6950 5600
+P 8650 5300
+F 0 "Hall1" H 8730 5292 50  0000 L CNN
+F 1 "Conn_01x04" H 8450 5000 50  0000 L CNN
+F 2 "ESP32:SR04M-2PinHeader_1x04_P2.54mm_Vertical" H 8650 5300 50  0001 C CNN
+F 3 "~" H 8650 5300 50  0001 C CNN
+	1    8650 5300
 	1    0    0    -1  
 $EndComp
-Text GLabel 6750 5400 1    50   Input ~ 0
+Text GLabel 8450 5100 1    50   Input ~ 0
 GND
 Wire Wire Line
-	5300 5600 6400 5600
-Wire Wire Line
-	6700 5600 6750 5600
-Wire Wire Line
-	6650 5700 6750 5700
-Wire Wire Line
-	5300 5400 6300 5400
-Wire Wire Line
-	6300 5400 6300 5700
-Wire Wire Line
-	6300 5700 6350 5700
-Text Notes 6900 5350 0    102  ~ 0
-or Flashing
+	8400 5300 8450 5300
 $Comp
 L Device:R R33
 U 1 1 606EF146
@@ -2582,15 +2547,15 @@ Text GLabel 5400 6400 2    50   Input ~ 0
 PLANT_CTRL_PUMP_0
 Text GLabel 5400 6300 2    50   Input ~ 0
 SENSORS_ENABLE
-Text GLabel 7700 6200 0    50   Input ~ 0
+Text GLabel 7700 6300 1    50   Input ~ 0
 PWR_SENSORS
 $Comp
-L Connector:Conn_01x05_Female GPIO1
+L Connector:Conn_01x04_Female GPIO1
 U 1 1 6079FFD7
 P 7900 6400
 F 0 "GPIO1" H 7928 6426 50  0000 L CNN
-F 1 "Conn_01x05_Female" H 7928 6335 50  0000 L CNN
-F 2 "Connector_JST:JST_EH_B5B-EH-A_1x05_P2.50mm_Vertical" H 7900 6400 50  0001 C CNN
+F 1 "Conn_01x04_Female" H 7928 6335 50  0000 L CNN
+F 2 "Connector_JST:JST_EH_B4B-EH-A_1x04_P2.50mm_Vertical" H 7900 6400 50  0001 C CNN
 F 3 "~" H 7900 6400 50  0001 C CNN
 	1    7900 6400
 	1    0    0    -1  
@@ -2748,8 +2713,6 @@ Wire Wire Line
 	5300 7400 5400 7400
 Wire Wire Line
 	5300 6400 5400 6400
-Wire Wire Line
-	5300 6200 6450 6200
 Wire Wire Line
 	21150 9300 21050 9300
 $Comp
@@ -2986,15 +2949,7 @@ Wire Wire Line
 Text GLabel 7050 6600 0    50   Input ~ 0
 GND
 Wire Wire Line
-	7700 6500 6450 6500
-Wire Wire Line
-	6450 6200 6450 6500
-Wire Wire Line
 	5300 6100 6500 6100
-Wire Wire Line
-	6500 6100 6500 6400
-Wire Wire Line
-	6500 6400 7700 6400
 Wire Wire Line
 	9300 15250 9600 15250
 Wire Wire Line
@@ -3121,8 +3076,6 @@ todo: Add DIODEs for onewire
 Wire Wire Line
 	5300 5900 5400 5900
 Wire Wire Line
-	7700 6300 7300 6300
-Wire Wire Line
 	6600 6300 6600 6000
 Wire Wire Line
 	6600 6000 6250 6000
@@ -3142,7 +3095,6 @@ F 4 "C212284" H 7300 6450 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    7300 6450
 	1    0    0    -1  
 $EndComp
-Connection ~ 7300 6300
 Wire Wire Line
 	7300 6300 6600 6300
 Wire Wire Line
@@ -3168,10 +3120,10 @@ PWR_PUMP_CONVERTER
 Text GLabel 9500 10900 1    50   Input ~ 0
 PWR_PUMP_CONVERTER
 $Comp
-L Device:CP C?
+L Device:CP C22
 U 1 1 6020DE75
 P 14500 6450
-F 0 "C?" H 14615 6496 50  0000 L CNN
+F 0 "C22" H 14615 6496 50  0000 L CNN
 F 1 "1000uF" H 14615 6405 50  0000 L CNN
 F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 14538 6300 50  0001 C CNN
 F 3 "~" H 14500 6450 50  0001 C CNN
@@ -3196,10 +3148,10 @@ Wire Wire Line
 	14500 6600 14750 6600
 Connection ~ 14750 6600
 $Comp
-L Device:CP C?
+L Device:CP C23
 U 1 1 603177C6
 P 17000 6300
-F 0 "C?" H 17115 6346 50  0000 L CNN
+F 0 "C23" H 17115 6346 50  0000 L CNN
 F 1 "1000uF" H 17115 6255 50  0000 L CNN
 F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 17038 6150 50  0001 C CNN
 F 3 "~" H 17000 6300 50  0001 C CNN
@@ -3207,4 +3159,44 @@ F 4 "C503217" H 17000 6300 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    17000 6300
 	1    0    0    -1  
 $EndComp
+Text GLabel 5400 6200 2    50   Input ~ 0
+HALL_TX
+Text GLabel 8400 5300 0    50   Input ~ 0
+HALL_TX
+$Comp
+L Connector:Conn_01x01_Male Debug1
+U 1 1 6036B766
+P 8250 5400
+F 0 "Debug1" H 8200 5200 50  0000 C CNN
+F 1 "Conn_01x01_Male" H 8150 5300 50  0000 C CNN
+F 2 "" H 8250 5400 50  0001 C CNN
+F 3 "~" H 8250 5400 50  0001 C CNN
+	1    8250 5400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7300 6300 7550 6300
+Wire Wire Line
+	7550 6300 7550 6400
+Wire Wire Line
+	7550 6400 7700 6400
+Connection ~ 7300 6300
+Wire Wire Line
+	7700 6500 6500 6500
+Wire Wire Line
+	6500 6100 6500 6500
+Wire Wire Line
+	5400 6200 5300 6200
+Text GLabel 5400 5400 2    50   Input ~ 0
+ESP_TX
+Text GLabel 5400 5600 2    50   Input ~ 0
+ESP_RX
+Wire Wire Line
+	5300 5400 5400 5400
+Wire Wire Line
+	5300 5600 5400 5600
+Text GLabel 7450 3300 2    50   Input ~ 0
+ESP_TX
+Text GLabel 7450 3400 2    50   Input ~ 0
+ESP_RX
 $EndSCHEMATC
