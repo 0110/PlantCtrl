@@ -3200,9 +3200,9 @@ L Transistor_BJT:BC337 Q?
 U 1 1 602B8D19
 P 10250 4300
 F 0 "Q?" H 10441 4346 50  0000 L CNN
-F 1 "BC337" H 10441 4255 50  0000 L CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 10450 4225 50  0001 L CIN
-F 3 "https://diotec.com/tl_files/diotec/files/pdf/datasheets/bc337.pdf" H 10250 4300 50  0001 L CNN
+F 1 "BC817" H 10441 4255 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 10450 4225 50  0001 L CIN
+F 3 "" H 10250 4300 50  0001 L CNN
 	1    10250 4300
 	-1   0    0    -1  
 $EndComp
@@ -3211,9 +3211,9 @@ L Transistor_BJT:BC337 Q?
 U 1 1 6031A86F
 P 10250 5100
 F 0 "Q?" H 10441 5054 50  0000 L CNN
-F 1 "BC337" H 10441 5145 50  0000 L CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 10450 5025 50  0001 L CIN
-F 3 "https://diotec.com/tl_files/diotec/files/pdf/datasheets/bc337.pdf" H 10250 5100 50  0001 L CNN
+F 1 "BC817" H 10441 5145 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 10450 5025 50  0001 L CIN
+F 3 "" H 10250 5100 50  0001 L CNN
 	1    10250 5100
 	-1   0    0    1   
 $EndComp
