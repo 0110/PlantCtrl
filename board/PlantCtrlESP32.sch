@@ -614,7 +614,7 @@ Wire Wire Line
 Wire Wire Line
 	20600 9000 20650 9000
 Connection ~ 20600 9000
-Text GLabel 21700 7600 0    50   Input ~ 0
+Text GLabel 21700 7500 0    50   Input ~ 0
 VCC_BATT
 Text GLabel 20050 6150 0    50   Input ~ 0
 VCC_BATT
@@ -2244,9 +2244,7 @@ Wire Notes Line
 	13500 4000 22550 4000
 Wire Notes Line
 	13500 1000 13500 10500
-Text GLabel 1500 5650 1    50   Input ~ 0
-3_3V
-Text GLabel 1500 5950 3    50   Input ~ 0
+Text GLabel 4650 4300 0    50   Input ~ 0
 GND
 $Comp
 L Device:D D26
@@ -2343,65 +2341,63 @@ Wire Wire Line
 	20550 6150 20550 6700
 Wire Wire Line
 	20650 6150 20650 6400
-Text GLabel 1050 6950 1    50   Input ~ 0
+Text GLabel 850  11750 1    50   Input ~ 0
 PUMP_PWR
-Text GLabel 1050 7250 3    50   Input ~ 0
+Text GLabel 850  12050 3    50   Input ~ 0
 GND
 $Comp
 L Device:C C14
 U 1 1 60378F84
-P 1050 7100
-F 0 "C14" H 1165 7146 50  0000 L CNN
-F 1 "22uf" H 1165 7055 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1088 6950 50  0001 C CNN
-F 3 "~" H 1050 7100 50  0001 C CNN
-F 4 "C45783" H 1050 7100 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1050 7100
+P 850 11900
+F 0 "C14" H 965 11946 50  0000 L CNN
+F 1 "22uf" H 965 11855 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 888 11750 50  0001 C CNN
+F 3 "~" H 850 11900 50  0001 C CNN
+F 4 "C45783" H 850 11900 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    850  11900
 	1    0    0    -1  
 $EndComp
-Text GLabel 1450 6950 1    50   Input ~ 0
+Text GLabel 10350 11800 1    50   Input ~ 0
 PUMP_PWR
-Text GLabel 1450 7250 3    50   Input ~ 0
+Text GLabel 10350 12100 3    50   Input ~ 0
 GND
 $Comp
 L Device:C C16
 U 1 1 60397250
-P 1450 7100
-F 0 "C16" H 1565 7146 50  0000 L CNN
-F 1 "22uf" H 1565 7055 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1488 6950 50  0001 C CNN
-F 3 "~" H 1450 7100 50  0001 C CNN
-F 4 "C45783" H 1450 7100 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1450 7100
+P 10350 11950
+F 0 "C16" H 10465 11996 50  0000 L CNN
+F 1 "22uf" H 10465 11905 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 10388 11800 50  0001 C CNN
+F 3 "~" H 10350 11950 50  0001 C CNN
+F 4 "C45783" H 10350 11950 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    10350 11950
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C15
 U 1 1 603B01EC
-P 1000 5800
-F 0 "C15" H 1115 5846 50  0000 L CNN
-F 1 "22uf" H 1115 5755 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1038 5650 50  0001 C CNN
-F 3 "~" H 1000 5800 50  0001 C CNN
-F 4 "C45783" H 1000 5800 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1000 5800
-	1    0    0    -1  
+P 4800 4550
+F 0 "C15" H 4500 4600 50  0000 L CNN
+F 1 "22uf" H 4500 4500 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4838 4400 50  0001 C CNN
+F 3 "~" H 4800 4550 50  0001 C CNN
+F 4 "C45783" H 4800 4550 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    4800 4550
+	-1   0    0    1   
 $EndComp
-Text GLabel 1000 5650 1    50   Input ~ 0
+Text GLabel 4650 4800 0    50   Input ~ 0
 3_3V
-Text GLabel 1000 5950 3    50   Input ~ 0
-GND
 $Comp
 L Device:C C17
 U 1 1 603D3402
-P 1500 5800
-F 0 "C17" H 1385 5754 50  0000 R CNN
-F 1 "100n" H 1385 5845 50  0000 R CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1538 5650 50  0001 C CNN
-F 3 "~" H 1500 5800 50  0001 C CNN
-F 4 "C49678" H 1500 5800 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1500 5800
-	-1   0    0    1   
+P 4550 4550
+F 0 "C17" H 4435 4504 50  0000 R CNN
+F 1 "100n" H 4435 4595 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4588 4400 50  0001 C CNN
+F 3 "~" H 4550 4550 50  0001 C CNN
+F 4 "C49678" H 4550 4550 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    4550 4550
+	1    0    0    -1  
 $EndComp
 $Comp
 L RF_Module:ESP32-WROOM-32D U5
@@ -2416,10 +2412,10 @@ F 4 "C529578" H 4700 6500 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Switch:SW_Push SW1
+L Switch:SW_Push Reset1
 U 1 1 603DF238
 P 2550 5300
-F 0 "SW1" H 2550 5585 50  0000 C CNN
+F 0 "Reset1" H 2550 5585 50  0000 C CNN
 F 1 "SW_Push" H 2550 5494 50  0000 C CNN
 F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_CK_KMR2" H 2550 5500 50  0001 C CNN
 F 3 "~" H 2550 5500 50  0001 C CNN
@@ -2453,8 +2449,6 @@ F 4 "C49678" H 2550 5450 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Text GLabel 2150 5300 0    50   Input ~ 0
 GND
-Wire Wire Line
-	4700 5100 4700 4950
 Wire Wire Line
 	2750 5300 2850 5300
 Wire Wire Line
@@ -2580,16 +2574,14 @@ Text GLabel 5400 7400 2    50   Input ~ 0
 PLANT1_MOIST
 Text GLabel 18950 11100 0    50   Input ~ 0
 SOLAR_IN
-Text GLabel 4700 4950 1    50   Input ~ 0
-3_3V
 Text GLabel 3800 4900 1    50   Input ~ 0
 3_3V
 $Comp
-L Switch:SW_Push SW2
+L Switch:SW_Push Boot1
 U 1 1 60983DAC
 P 5650 3700
-F 0 "SW2" H 5650 3985 50  0000 C CNN
-F 1 "SW_Push" H 5650 3894 50  0000 C CNN
+F 0 "Boot1" H 5650 3985 50  0000 C CNN
+F 1 "Boot" H 5650 3894 50  0000 C CNN
 F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_CK_KMR2" H 5650 3900 50  0001 C CNN
 F 3 "~" H 5650 3900 50  0001 C CNN
 F 4 "C72443" H 5650 3700 50  0001 C CNN "LCSC_PART_NUMBER"
@@ -2722,7 +2714,7 @@ F 3 "~" H 22050 7600 50  0001 C CNN
 	1    22050 7600
 	1    0    0    -1  
 $EndComp
-Text Notes 21500 7500 0    50   ~ 0
+Text Notes 21100 7400 0    79   ~ 0
 LIPO mount
 Text GLabel 18250 2600 0    50   Input ~ 0
 PUMP_PWR
@@ -3054,14 +3046,11 @@ F 3 "~" H 22100 7250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	21700 7600 21850 7600
+	21300 7700 21750 7700
 Wire Wire Line
-	21300 7700 21850 7700
-Wire Wire Line
-	21850 7600 21850 7250
+	21850 7600 21850 7500
 Wire Wire Line
 	21850 7250 21900 7250
-Connection ~ 21850 7600
 Wire Wire Line
 	21900 7350 21900 7700
 Wire Wire Line
@@ -3347,4 +3336,46 @@ Text Notes 11300 1250 0    105  ~ 0
 Hall Soft UART
 Text Notes 10100 6250 0    50   ~ 0
 Enable = 0 -> ESP32 is off\nEnable = 1 -> ESP32 is running\nGPIO0 = 0 -> Download mode\nGPIO0 = 1 -> "normal" boot\n\nDTR RTS | EN  IO0\n1       1       |  1    1\n1       0       |  0    1\n0       1       |  1    0\n0       0       |  1    1
+Wire Wire Line
+	4550 4400 4650 4400
+Wire Wire Line
+	4550 4700 4700 4700
+Wire Wire Line
+	4700 4700 4700 4800
+Connection ~ 4700 4700
+Wire Wire Line
+	4700 4700 4800 4700
+Wire Wire Line
+	4700 4800 4650 4800
+Connection ~ 4700 4800
+Wire Wire Line
+	4700 4800 4700 5100
+Wire Wire Line
+	4650 4300 4650 4400
+Connection ~ 4650 4400
+Wire Wire Line
+	4650 4400 4800 4400
+$Comp
+L Device:CP_Small C24
+U 1 1 609C6D24
+P 21750 7600
+F 0 "C24" H 21865 7646 50  0000 L CNN
+F 1 "1000uF" H 21865 7555 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 21788 7450 50  0001 C CNN
+F 3 "~" H 21750 7600 50  0001 C CNN
+F 4 "C503217" H 21750 7600 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    21750 7600
+	1    0    0    -1  
+$EndComp
+Connection ~ 21750 7700
+Wire Wire Line
+	21750 7700 21850 7700
+Wire Wire Line
+	21700 7500 21750 7500
+Wire Wire Line
+	21750 7500 21850 7500
+Connection ~ 21750 7500
+Connection ~ 21850 7500
+Wire Wire Line
+	21850 7500 21850 7250
 $EndSCHEMATC
