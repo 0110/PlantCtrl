@@ -71,7 +71,7 @@ RTC_DATA_ATTR float rtcLastBatteryVoltage = 0.0f;
 RTC_DATA_ATTR float rtcLastSolarVoltage = 0.0f;
 RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
-RTC_DATA_ATTR int rtcLipoTempIndex = -1;
+RTC_DATA_ATTR int rtcLipoTempIndex = 0; //FIXME use -1 and configure properly
 RTC_DATA_ATTR int rtcWaterTempIndex = -1;
 
 /******************************************************************************
@@ -185,7 +185,7 @@ void readSystemSensors()
   {
     sensors.begin();
     battery.begin();
-    sensorCount = sensors.getDeviceCount();
+    sensorCount = sensors.getDS18Count();
     Serial << "Waitloop: One wire count: " << sensorCount << endl;
     delay(200);
   }
@@ -199,7 +199,7 @@ void readSystemSensors()
   
   for (int i = 0; i < sensorCount; i++)
   {
-    Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
+    Serial << "OneWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
   }
 
   // Update battery chip data
@@ -318,6 +318,10 @@ void mode2MQTT()
 
   sensorLipo.setProperty("percent").send(String(100 * mBatteryVoltage / VOLT_MAX_BATT));
   sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
+  sensorLipo.setProperty("Ah").send(String(battery.getAh()));
+  sensorLipo.setProperty("ICA").send(String(battery.getICA()));
+  sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
+  sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
   sensorSolar.setProperty("percent").send(String(100 * mSolarVoltage / VOLT_MAX_SOLAR));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
   startupReason.setProperty("startupReason").send(String(wakeUpReason));
@@ -453,7 +457,7 @@ void readDistance()
  */
 int readTemp() {
   int readAgain = TEMP_SENSOR_MEASURE_SERIES;
-  int sensorCount = sensors.getDeviceCount();
+  int sensorCount = sensors.getDS18Count();
   int leaveMode1 = 0;
   
   while (readAgain > 0)
@@ -844,7 +848,7 @@ void mode2()
  */
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.setTimeout(1000); // Set timeout of 1 second
   Serial << endl
          << endl;

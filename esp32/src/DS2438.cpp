@@ -90,22 +90,6 @@ void DS2438::update() {
             Serial.println("Error reading zero page ds2438 channel a");
             return;
         }
-        Serial.print(data[0],16);
-        Serial.print(" ");
-        Serial.print(data[1],16);
-        Serial.print(" ");
-        Serial.print(data[2],16);
-        Serial.print(" ");
-        Serial.print(data[3],16);
-        Serial.print(" ");
-        Serial.print(data[4],16);
-        Serial.print(" ");
-        Serial.print(data[5],16);
-        Serial.print(" ");
-        Serial.print(data[6],16);
-        Serial.print(" ");
-        Serial.println(data[7],16);
-
             
         if (doTemperature) {
             _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
@@ -139,48 +123,16 @@ void DS2438::update() {
     float fullByteb = fullByte;
     _current = (fullByteb) / ((4096.0f * _currentShunt));
     _error = false;
-        Serial.print(data[0],16);
-        Serial.print(" ");
-        Serial.print(data[1],16);
-        Serial.print(" ");
-        Serial.print(data[2],16);
-        Serial.print(" ");
-        Serial.print(data[3],16);
-        Serial.print(" ");
-        Serial.print(data[4],16);
-        Serial.print(" ");
-        Serial.print(data[5],16);
-        Serial.print(" ");
-        Serial.print(data[6],16);
-        Serial.print(" ");
-        Serial.println(data[7],16);
-        Serial.println("-");
 
-
-
-    uint16_t ICA = 0;
     if (readPage(1, data)){
         PageOne_t *pOne = (PageOne_t *) data;
-        Serial.println(pOne->ICA);
-        float Ah = pOne->ICA / (2048.0f * _currentShunt);
-        Serial.print("Ah=");
-        Serial.println(Ah);
-        ICA = pOne->ICA;
+        _ICA = pOne->ICA;
     }
-
-       
-
 
     if (readPage(7, data)){
         PageSeven_t *pSeven = (PageSeven_t *) data;
-        int16_t CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
-        int16_t DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
-        Serial.println("ICA, DCA, CCA");
-        Serial.print(ICA);
-        Serial.print(", ");
-        Serial.print(DCA);
-        Serial.print(", ");
-        Serial.println(CCA);
+        _CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
+        _DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
     }
 
 }
@@ -188,6 +140,23 @@ void DS2438::update() {
 double DS2438::getTemperature() {
     return _temperature;
 }
+
+float DS2438::getAh(){
+    return _ICA / (2048.0f * _currentShunt);
+}
+
+long DS2438::getICA(){
+    return _ICA;
+}
+
+long DS2438::getDCA(){
+    return _DCA;
+}
+
+long DS2438::getCCA(){
+    return _CCA;
+}
+
 
 float DS2438::getVoltage(int channel) {
     if (channel == DS2438_CHA) {

@@ -87,6 +87,10 @@ class DS2438 {
         double getTemperature();
         float getVoltage(int channel=DS2438_CHA);
         float getCurrent();
+        long getICA();
+        long getCCA();
+        long getDCA();
+        float getAh();
         boolean isError();
         boolean isFound();
     private:
@@ -102,6 +106,9 @@ class DS2438 {
         float _voltageB;
         float _current;
         float _currentShunt;
+        long _CCA;
+        long _DCA;
+        long _ICA;
         boolean _error;
         boolean startConversion(int channel, boolean doTemperature);
         boolean selectChannel(int channel);
