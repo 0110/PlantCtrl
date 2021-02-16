@@ -387,6 +387,11 @@ void mode2MQTT()
       }
     }
 
+    if (! isnan(mChipTemp)) {
+      sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
+        Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
+    }
+
     /* deactivate the sensors */
     digitalWrite(OUTPUT_SENSOR, LOW);
   }
@@ -795,6 +800,10 @@ void systemInit()
         .setDatatype(NUMBER_TYPE)
         .setUnit(TEMPERATURE_UNIT);
     sensorTemp.advertise(TEMPERATUR_SENSOR_WATER)
+        .setName(TEMPERATURE_NAME)
+        .setDatatype(NUMBER_TYPE)
+        .setUnit(TEMPERATURE_UNIT);
+    sensorTemp.advertise(TEMPERATUR_SENSOR_CHIP)
         .setName(TEMPERATURE_NAME)
         .setDatatype(NUMBER_TYPE)
         .setUnit(TEMPERATURE_UNIT);

@@ -28,6 +28,7 @@
 #define TEMPERATUR_SENSOR_LIPO          "lipo"
 #define TEMPERATUR_SENSOR_WATER         "water"
 #define TEMPERATUR_SENSOR_OUTSIDE       "temp"
+#define TEMPERATUR_SENSOR_CHIP          "chip"
 #define TEMPERATURE_NAME                "Temperature"
 #define TEMPERATURE_UNIT                "°C"
 
