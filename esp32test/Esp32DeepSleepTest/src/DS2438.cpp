@@ -265,6 +265,7 @@ void DS2438::writePage(int page, uint8_t *data) {
 }
 
 boolean DS2438::readPage(int page, uint8_t *data) {
+    //TODO if all data is 0 0 is a valid crc, but most likly not as intended
     _ow->reset();
     _ow->select(_address);
     _ow->write(DS2438_RECALL_MEMORY_COMMAND, 0);
