@@ -46,8 +46,8 @@ void DS2438::begin(){
 		if (validAddress(searchDeviceAddress)) {
 			if (validFamily(searchDeviceAddress)) {
                 memcpy(_address,searchDeviceAddress,8);
-                //DEFAULT_PAGE0(defaultConfig);
-                //writePage(0, defaultConfig);
+                DEFAULT_PAGE0(defaultConfig);
+                writePage(0, defaultConfig);
                 deviceFound = true;
 			}
 		}
@@ -156,40 +156,31 @@ void DS2438::update() {
         Serial.println(data[7],16);
         Serial.println("-");
 
+
+
+    uint16_t ICA = 0;
+    if (readPage(1, data)){
+        PageOne_t *pOne = (PageOne_t *) data;
+        Serial.println(pOne->ICA);
+        float Ah = pOne->ICA / (2048.0f * _currentShunt);
+        Serial.print("Ah=");
+        Serial.println(Ah);
+        ICA = pOne->ICA;
+    }
+
+       
+
+
     if (readPage(7, data)){
         PageSeven_t *pSeven = (PageSeven_t *) data;
         int16_t CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
         int16_t DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
-        
-        
-        Serial.printf("DCA: %d. CCA: %d\n", DCA, CCA);
-    }
-
-    if (readPage(1, data)){
-        PageOne_t *pSeven = (PageOne_t *) data;
-        Serial.print(data[0],16);
-        Serial.print(" ");
-        Serial.print(data[1],16);
-        Serial.print(" ");
-        Serial.print(data[2],16);
-        Serial.print(" ");
-        Serial.print(data[3],16);
-        Serial.print(" ");
-        Serial.print(data[4],16);
-        Serial.print(" ");
-        Serial.print(data[5],16);
-        Serial.print(" ");
-        Serial.print(data[6],16);
-        Serial.print(" ");
-        Serial.println(data[7],16);
-        Serial.println(pSeven->ICA);
-        float Ah = pSeven->ICA / (2048.0f * _currentShunt);
-        Serial.println(Ah);
-        Serial.println("=");
-        
-
-        
-
+        Serial.println("ICA, DCA, CCA");
+        Serial.print(ICA);
+        Serial.print(", ");
+        Serial.print(DCA);
+        Serial.print(", ");
+        Serial.println(CCA);
     }
 
 }

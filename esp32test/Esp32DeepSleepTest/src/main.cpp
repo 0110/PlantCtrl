@@ -114,9 +114,9 @@ void setup() {
 
 void loop() { 
   whatever = !whatever;
-  digitalWrite(OUTPUT_PUMP, whatever?HIGH:LOW);
-  delay(2000);
-  digitalWrite(OUTPUT_PUMP0, HIGH);
+  digitalWrite(OUTPUT_PUMP, HIGH);
+  delay(500);
+  digitalWrite(OUTPUT_PUMP6, HIGH);
 
   for(int j=0; j < 5 && temp.getDeviceCount() == 0; j++) {
     delay(10);
@@ -131,9 +131,9 @@ void loop() {
     battery.update();
   }
   battery.update();
-  Serial.print(battery.getVoltage(0));
+  Serial.print(battery.getVoltage(0)); //use define here, solar
   Serial.print("\t");
-  Serial.print(battery.getVoltage(1));
+  Serial.print(battery.getVoltage(1)); //use define here, battery
   Serial.print("\t");
   Serial.print(battery.getCurrent());
   Serial.print("\t");
