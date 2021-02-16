@@ -87,11 +87,9 @@ int readCounter = 0;
 bool mConfigured = false;
 long nextBlink = 0;         /**< Time needed in main loop to support expected blink code */
 
-RunningMedian lipoRawSensor = RunningMedian(VOLT_SENSOR_MEASURE_SERIES);
-RunningMedian solarRawSensor = RunningMedian(VOLT_SENSOR_MEASURE_SERIES);
 RunningMedian waterRawSensor = RunningMedian(5);
-RunningMedian lipoTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
-RunningMedian waterTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
+float mTempLipo = 0.0f;
+float mTempWater = 0.0f;
 float mBatteryVoltage = 0.0f;
 float mSolarVoltage = 0.0f;
 float mChipTemp = 0.0f;
@@ -181,8 +179,6 @@ void readSystemSensors()
   int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
   int sensorCount = 0;
 
-  rtcLastLipoTemp = lipoTempSensor.getAverage();
-  rtcLastWaterTemp = waterTempSensor.getAverage();
   
   /* Required to read the temperature at least once */
   while (sensorCount == 0 && millis() < timeoutTemp)
@@ -211,14 +207,10 @@ void readSystemSensors()
   mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR; 
   mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   mChipTemp = battery.getTemperature();
-  for (int i = 0; i < VOLT_SENSOR_MEASURE_SERIES; i++)
-  {
-    lipoRawSensor.add(analogRead(SENSOR_LIPO));
-    solarRawSensor.add(analogRead(SENSOR_SOLAR));
-  }
-  Serial << "Lipo " << lipoRawSensor.getAverage() << " -> " << mBatteryVoltage << endl;
   rtcLastBatteryVoltage = mBatteryVoltage;
   rtcLastSolarVoltage = mSolarVoltage;
+  rtcLastLipoTemp = mTempLipo;
+  rtcLastWaterTemp = mTempWater;
 }
 
 long getCurrentTime()
@@ -324,87 +316,24 @@ void mode2MQTT()
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
   lastWaterValue = waterRawSensor.getAverage();
 
-  sensorLipo.setProperty("percent").send(String(100 * lipoRawSensor.getAverage() / 4095));
+  sensorLipo.setProperty("percent").send(String(100 * mBatteryVoltage / VOLT_MAX_BATT));
   sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
-  sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage()) / 4095));
+  sensorSolar.setProperty("percent").send(String(100 * mSolarVoltage / VOLT_MAX_SOLAR));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
   startupReason.setProperty("startupReason").send(String(wakeUpReason));
 
   rtcLipoTempIndex = lipoSensorIndex.get();
   rtcWaterTempIndex = waterSensorIndex.get();
 
-  float lipoTempCurrent = lipoTempSensor.getMedian();
-  float t2 = NAN;
-  if (! isnan(lipoTempCurrent))
-  {
-    sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
-    Serial << "Lipo Temperatur " << lipoTempCurrent << " °C " << endl;
+  
+  sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(mTempLipo));
+  Serial << "Lipo Temperatur " << mTempLipo << " °C " << endl;
 
-    t2 = waterTempSensor.getMedian();
-    if (! isnan(t2))
-    {
-      sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
-      Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
-    }
-    //give mqtt time, use via publish callback instead?
-    delay(100);
-  } else {
-    int j=0;
-    /* Activate the Sensors and measure the temperature again */
-    /* activate all sensors */
-    pinMode(OUTPUT_SENSOR, OUTPUT);
-    digitalWrite(OUTPUT_SENSOR, HIGH);
+  sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(mTempWater));
+  Serial << "Water Temperatur " << mTempWater << " °C " << endl;
 
-    delay(100);
-    sensors.begin();
-
-    for(j=0; j < TEMP_SENSOR_MEASURE_SERIES && sensors.getDeviceCount() == 0; j++) {
-      delay(100);
-      sensors.begin();
-      Serial << "Reset 1-Wire Bus" << endl;
-      // Setup Battery sensor DS2438
-      battery.begin();
-    }
-
-    for(j=0; j < TEMP_SENSOR_MEASURE_SERIES && isnan(lipoTempCurrent); j++) {
-      delay(200);
-      readTemp();
-      lipoTempCurrent = lipoTempSensor.getMedian();
-      t2 = waterTempSensor.getMedian();
-      Serial << "Temperatur Lipo:" << lipoTempCurrent << " °C Water : " << t2 << " °C" << endl;
-    }
-
-    if (! isnan(lipoTempCurrent))
-    {
-      sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(lipoTempCurrent));
-      Serial << "Lipo Temperatur " << lipoTempCurrent << " °C " << endl;
-
-      t2 = waterTempSensor.getMedian();
-      if (! isnan(t2))
-      {
-        sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(t2));
-        Serial << "Water Temperatur " << lipoTempCurrent << " °C " << endl;
-      }
-    }
-
-    if (! isnan(mChipTemp)) {
-      sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
-        Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
-    }
-
-    /* deactivate the sensors */
-    digitalWrite(OUTPUT_SENSOR, LOW);
-  }
-
-  if (! isnan(lipoTempCurrent) && ! isnan(t2)) {
-    bool lipoTempWarning = (lipoTempCurrent != LIPO_MAX_TEMPERATUR) && abs(lipoTempCurrent - t2) > LIPO_MAX_TEMPERATUR_DIFF;
-    if (lipoTempWarning)
-    {
-      Serial.println("Lipo temp incorrect, panic mode deepsleep TODO");
-      //espDeepSleepFor(PANIK_MODE_DEEPSLEEP);
-      //return;
-    }
-  }
+  sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
+  Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
 
   for (int i = 0; i < MAX_PLANTS; i++)
   {
@@ -534,9 +463,7 @@ int readTemp() {
     {
       if (rtcLipoTempIndex != -1)
       {
-        float temp1Raw = sensors.getTempCByIndex(rtcLipoTempIndex);
-        //Serial << "lipoTempCurrent: " << temp1Raw << endl;
-        lipoTempSensor.add(temp1Raw);
+        mTempLipo = sensors.getTempCByIndex(rtcLipoTempIndex);
       }
       else
       {
@@ -552,9 +479,8 @@ int readTemp() {
 
     if (sensorCount > 1 && rtcWaterTempIndex != -1)
     {
-      float temp2Raw = sensors.getTempCByIndex(rtcWaterTempIndex);
+      mTempWater = sensors.getTempCByIndex(rtcWaterTempIndex);
       //Serial << "waterTempCurrent: " << temp2Raw << endl;
-      waterTempSensor.add(temp2Raw);
     }
     
     readAgain--;
@@ -623,12 +549,12 @@ bool readSensors()
   // check if chip needs to start into full operational mode
   leaveMode1 |= readTemp();
 
-  if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  if (abs(mTempWater - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
   {
     leaveMode1 = true;
     wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
   }
-  if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  if (abs(mTempWater - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
   {
     wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
     leaveMode1 = true;
@@ -928,9 +854,6 @@ void setup()
     mPlants[i].init();
   }
 
-  /* Intialize inputs and outputs */
-  pinMode(SENSOR_LIPO, ANALOG);
-  pinMode(SENSOR_SOLAR, ANALOG);
   /* read button */
   pinMode(BUTTON, INPUT);
 

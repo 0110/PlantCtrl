@@ -46,7 +46,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "1.0.10"
+#define FIRMWARE_VERSION "1.1.0"
 
 #define ADC_TO_VOLT(adc)                    ((adc) * 3.3 ) / 4095)
 #define ADC_TO_VOLT_WITH_MULTI(adc, multi)  (((adc)*3.3 * (multi)) / 4095)
@@ -58,23 +58,21 @@
 #define BATTSENSOR_INDEX_BATTERY    1
 #define MS_TO_S 1000
 
-#define SENSOR_LIPO 34   /**< GPIO 34 (ADC1) */
-#define SENSOR_SOLAR 35  /**< GPIO 35 (ADC1) */
-#define SENSOR_PLANT0 12 /**< GPIO 32 (ADC1) */
-#define SENSOR_PLANT1 14/**< GPIO 33 (ADC1) */
-#define SENSOR_PLANT2 27 /**< GPIO 25 (ADC2) */
+#define SENSOR_PLANT0 32 /**< GPIO 32 (ADC1) */
+#define SENSOR_PLANT1 33 /**< GPIO 33 (ADC1) */
+#define SENSOR_PLANT2 25 /**< GPIO 25 (ADC2) */
 #define SENSOR_PLANT3 26 /**< GPIO 26 (ADC2) */
-#define SENSOR_PLANT4 25 /**< GPIO 27 (ADC2) */
-#define SENSOR_PLANT5 14 /**< GPIO 14 (ADC2) */
-#define SENSOR_PLANT6 12 /**< GPIO 12 (ADC2) */
+#define SENSOR_PLANT4 27 /**< GPIO 27 (ADC2) */
+#define SENSOR_PLANT5 39 /**< SENSOR_VIN */
+#define SENSOR_PLANT6 36 /**< SENSOR_VP  */
 
-#define OUTPUT_PUMP0 15 /**< GPIO 23 */
-#define OUTPUT_PUMP1 5 /**< GPIO 22 */
-#define OUTPUT_PUMP2 18 /**< GPIO 21 */
+#define OUTPUT_PUMP0 17 /**< GPIO 17 */
+#define OUTPUT_PUMP1 5  /**< GPIO 5 */
+#define OUTPUT_PUMP2 18 /**< GPIO 18 */
 #define OUTPUT_PUMP3 19 /**< GPIO 19 */
-#define OUTPUT_PUMP4 21 /**< GPIO 18 */
-#define OUTPUT_PUMP5 22  /**< GPIO 5  */
-#define OUTPUT_PUMP6 23 /**< GPIO 15 */
+#define OUTPUT_PUMP4 21 /**< GPIO 21 */
+#define OUTPUT_PUMP5 22 /**< GPIO 22  */
+#define OUTPUT_PUMP6 23 /**< GPIO 23 */
 
 #define OUTPUT_SENSOR 16 /**< GPIO 16 - Enable Sensors  */
 #define OUTPUT_PUMP   13 /**< GPIO 13 - Enable Pumps  */
@@ -89,6 +87,8 @@
 #define MINIMUM_SOLAR_VOLT  4.0f    /**< Minimum voltage of the sun, to detect daylight */
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
+#define VOLT_MAX_BATT               4.2f
+#define VOLT_MAX_SOLAR              20.0f
 
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 
@@ -104,7 +104,6 @@
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
 #define TEMP_SENSOR_MEASURE_SERIES      5
-#define VOLT_SENSOR_MEASURE_SERIES      5
 
 /* @} */
 #endif
