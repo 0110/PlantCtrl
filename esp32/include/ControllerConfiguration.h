@@ -53,8 +53,9 @@
 #define MOIST_SENSOR_MAX_ADC                (85 * 4095 / 100)
 #define MOIST_SENSOR_MIN_ADC                (25 * 4095 / 100)
 
-#define SOLAR_VOLT(adc) ADC_TO_VOLT_WITH_MULTI(adc, 4.0306) /**< 100k and 33k voltage dividor */
-#define ADC_5V_TO_3V3(adc) ADC_TO_VOLT_WITH_MULTI(adc, 1.69) /**< 33k and 47k8 voltage dividor */
+#define SOLAR_VOLT_FACTOR           2
+#define BATTSENSOR_INDEX_SOLAR      0
+#define BATTSENSOR_INDEX_BATTERY    1
 #define MS_TO_S 1000
 
 #define SENSOR_LIPO 34   /**< GPIO 34 (ADC1) */

@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <OneWire.h>
+#include "DS2438.h"   
 
 /******************************************************************************
  *                                     DEFINES
@@ -91,9 +92,15 @@ RunningMedian solarRawSensor = RunningMedian(VOLT_SENSOR_MEASURE_SERIES);
 RunningMedian waterRawSensor = RunningMedian(5);
 RunningMedian lipoTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
 RunningMedian waterTempSensor = RunningMedian(TEMP_SENSOR_MEASURE_SERIES);
+float mBatteryVoltage = 0.0f;
+float mSolarVoltage = 0.0f;
+float mChipTemp = 0.0f;
+
+/*************************** Hardware abstraction *****************************/
 
 OneWire oneWire(SENSOR_DS18B20);
 DallasTemperature sensors(&oneWire);
+DS2438 battery(&oneWire,0.1f);
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -107,16 +114,6 @@ Plant mPlants[MAX_PLANTS] = {
 /******************************************************************************
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
-
-float getBatteryVoltage()
-{
-  return ADC_5V_TO_3V3(lipoRawSensor.getAverage());
-}
-
-float getSolarVoltage()
-{
-  return SOLAR_VOLT(solarRawSensor.getAverage());
-}
 
 void setMoistureTrigger(int plantId, long value)
 {
@@ -176,17 +173,52 @@ long getDistance()
 }
 
 /**
- * @brief Read Voltage
+ * @brief Read Voltage and Temperatur
  * Read the battery voltage and the current voltage, provided by the solar panel
  */
 void readSystemSensors()
 {
+  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
+  int sensorCount = 0;
+
+  rtcLastLipoTemp = lipoTempSensor.getAverage();
+  rtcLastWaterTemp = waterTempSensor.getAverage();
+  
+  /* Required to read the temperature at least once */
+  while (sensorCount == 0 && millis() < timeoutTemp)
+  {
+    sensors.begin();
+    battery.begin();
+    sensorCount = sensors.getDeviceCount();
+    Serial << "Waitloop: One wire count: " << sensorCount << endl;
+    delay(200);
+  }
+
+  Serial << "One wire count: " << sensorCount << endl;
+  /* Measure temperature */
+  if (sensorCount > 0)
+  {
+      sensors.requestTemperatures();
+  }
+  
+  for (int i = 0; i < sensorCount; i++)
+  {
+    Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
+  }
+
+  // Update battery chip data
+  battery.update();
+  mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR; 
+  mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
+  mChipTemp = battery.getTemperature();
   for (int i = 0; i < VOLT_SENSOR_MEASURE_SERIES; i++)
   {
     lipoRawSensor.add(analogRead(SENSOR_LIPO));
     solarRawSensor.add(analogRead(SENSOR_SOLAR));
   }
-  Serial << "Lipo " << lipoRawSensor.getAverage() << " -> " << getBatteryVoltage() << endl;
+  Serial << "Lipo " << lipoRawSensor.getAverage() << " -> " << mBatteryVoltage << endl;
+  rtcLastBatteryVoltage = mBatteryVoltage;
+  rtcLastSolarVoltage = mSolarVoltage;
 }
 
 long getCurrentTime()
@@ -293,9 +325,9 @@ void mode2MQTT()
   lastWaterValue = waterRawSensor.getAverage();
 
   sensorLipo.setProperty("percent").send(String(100 * lipoRawSensor.getAverage() / 4095));
-  sensorLipo.setProperty("volt").send(String(getBatteryVoltage()));
+  sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
   sensorSolar.setProperty("percent").send(String((100 * solarRawSensor.getAverage()) / 4095));
-  sensorSolar.setProperty("volt").send(String(getSolarVoltage()));
+  sensorSolar.setProperty("volt").send(String(mSolarVoltage));
   startupReason.setProperty("startupReason").send(String(wakeUpReason));
 
   rtcLipoTempIndex = lipoSensorIndex.get();
@@ -330,6 +362,8 @@ void mode2MQTT()
       delay(100);
       sensors.begin();
       Serial << "Reset 1-Wire Bus" << endl;
+      // Setup Battery sensor DS2438
+      battery.begin();
     }
 
     for(j=0; j < TEMP_SENSOR_MEASURE_SERIES && isnan(lipoTempCurrent); j++) {
@@ -394,10 +428,11 @@ void mode2MQTT()
   }
   if (lastPumpRunning == -1 || !hasWater)
   {
-    if (getSolarVoltage() < SOLAR_CHARGE_MIN_VOLTAGE)
+    if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
     {
       gotoMode2AfterThisTimestamp = getCurrentTime() + maxTimeBetweenMQTTUpdates.get();
-      Serial.println("No pumps to activate and low light, deepSleepNight");
+      Serial.print(mSolarVoltage);
+      Serial.println("V! No pumps to activate and low light, deepSleepNight");
       espDeepSleepFor(deepSleepNightTime.get());
       rtcDeepSleepTime = deepSleepNightTime.get();
     }
@@ -530,8 +565,6 @@ int readTemp() {
 bool readSensors()
 {
   bool leaveMode1 = false;
-  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
-  int sensorCount = 0;
   
   Serial << "Read Sensors" << endl;
 
@@ -567,62 +600,33 @@ bool readSensors()
     }
   }
 
-  if (abs(getBatteryVoltage() - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC)
+  if (abs(mBatteryVoltage - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC)
   {
     wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
     leaveMode1 = true;
   }
-  if (abs(getSolarVoltage() - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC)
+  if (abs(mSolarVoltage - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC)
   {
     wakeUpReason = WAKEUP_REASON_SOLAR_CHANGE;
     leaveMode1 = true;
-  }
-
-  rtcLastLipoTemp = lipoTempSensor.getAverage();
-  rtcLastWaterTemp = waterTempSensor.getAverage();
-  rtcLastBatteryVoltage = getBatteryVoltage();
-  rtcLastSolarVoltage = getSolarVoltage();
-  
-  /* Required to read the temperature at least once */
-  while (sensorCount == 0 && millis() < timeoutTemp)
-  {
-    sensors.begin();
-    sensorCount = sensors.getDeviceCount();
-    Serial << "Waitloop: One wire count: " << sensorCount << endl;
-    delay(200);
-  }
-
-  Serial << "One wire count: " << sensorCount << endl;
-  /* Measure temperature */
-  if (sensorCount > 0)
-  {
-      sensors.requestTemperatures();
   }
 
   /* Read the distance and give the temperature sensors some time */
   readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
 
-  /* Retreive temperatures */
-  if (sensorCount > 0)
+  // check if chip needs to start into full operational mode
+  leaveMode1 |= readTemp();
+
+  if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
   {
-    leaveMode1 |= readTemp();
-
-    for (int i = 0; i < sensorCount; i++)
-    {
-      Serial << "OnwWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
-    }
-
-    if (abs(lipoTempSensor.getAverage() - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-    {
-      leaveMode1 = true;
-      wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
-    }
-    if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-    {
-      wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
-      leaveMode1 = true;
-    }
+    leaveMode1 = true;
+    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
+  }
+  if (abs(waterTempSensor.getAverage() - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
+  {
+    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
+    leaveMode1 = true;
   }
 
   /* deactivate the sensors */
@@ -679,8 +683,7 @@ void onHomieEvent(const HomieEvent &event)
 
 int determineNextPump()
 {
-  float solarValue = getSolarVoltage();
-  bool isLowLight = (solarValue > SOLAR_CHARGE_MIN_VOLTAGE || solarValue < SOLAR_CHARGE_MAX_VOLTAGE);
+  bool isLowLight = (mSolarVoltage > SOLAR_CHARGE_MIN_VOLTAGE || mSolarVoltage < SOLAR_CHARGE_MAX_VOLTAGE);
 
   //FIXME instead of for, use sorted by last activation index to ensure equal runtime?
 
@@ -937,10 +940,10 @@ void setup()
   // Big TODO use here the settings in RTC_Memory
 
   //Panik mode, the Lipo is empty, sleep a long long time:
-  if ((getBatteryVoltage() < MINIMUM_LIPO_VOLT) &&
-      (getBatteryVoltage() > NO_LIPO_VOLT))
+  if ((mBatteryVoltage < MINIMUM_LIPO_VOLT) &&
+      (mBatteryVoltage > NO_LIPO_VOLT))
   {
-    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << getBatteryVoltage() << "V" << endl;
+    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << mBatteryVoltage << "V" << endl;
     esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
