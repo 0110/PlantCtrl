@@ -82,13 +82,12 @@
 
 #define MIN_TIME_RUNNING    5UL /**< Amount of seconds the controller must stay awoken */
 #define MAX_PLANTS          7
-#define MINIMUM_LIPO_VOLT   3.6f    /**< Minimum voltage of the Lipo, that must be present */
+#define MINIMUM_LIPO_VOLT   3.2f    /**< Minimum voltage of the Lipo, that must be present */
 #define NO_LIPO_VOLT        2.0f    /**< No Lipo connected */
 #define MINIMUM_SOLAR_VOLT  4.0f    /**< Minimum voltage of the sun, to detect daylight */
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
 #define VOLT_MAX_BATT               4.2f
-#define VOLT_MAX_SOLAR              20.0f
 
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 

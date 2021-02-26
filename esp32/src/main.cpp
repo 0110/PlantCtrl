@@ -25,67 +25,44 @@
 #include <stdint.h>
 #include <math.h>
 #include <OneWire.h>
-#include "DS2438.h"   
+#include "DS2438.h"
 
 /******************************************************************************
  *                                     DEFINES
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
-#define SENSOR_QUERY_SHIFTS 3
-#define SOLAR4SENSORS 6.0f
-#define TEMP_INIT_VALUE -999.0f
-#define TEMP_MAX_VALUE 85.0f
-#define HalfHour 60
-
-/******************************************************************************
- *                                     TYPE DEFS
-******************************************************************************/
-typedef struct
-{
-  long lastActive;   /**< Timestamp, a pump was activated */
-  long moistTrigger; /**< Trigger value of the moist sensor */
-  long moisture;     /**< last measured moist value */
-
-} rtc_plant_t;
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
 ******************************************************************************/
 
 int determineNextPump();
-void setLastActivationForPump(int pumpId, long time);
+//void setLastActivationForPump(int pumpId, long time);
 int readTemp();
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-RTC_DATA_ATTR rtc_plant_t rtcPlant[MAX_PLANTS];
-RTC_DATA_ATTR long gotoMode2AfterThisTimestamp = 0;
-RTC_DATA_ATTR long rtcDeepSleepTime = 0; /**< Time, when the microcontroller shall be up again */
+//only relevant if mode2 did start pumping before
 RTC_DATA_ATTR int lastPumpRunning = 0;
 RTC_DATA_ATTR long lastWaterValue = 0;
-RTC_DATA_ATTR float rtcLastLipoTemp = 0.0f;
-RTC_DATA_ATTR float rtcLastWaterTemp = 0.0f;
-RTC_DATA_ATTR float rtcLastBatteryVoltage = 0.0f;
-RTC_DATA_ATTR float rtcLastSolarVoltage = 0.0f;
+
 RTC_DATA_ATTR int gBootCount = 0;
-RTC_DATA_ATTR int gCurrentPlant = 0; /**< Value Range: 1 ... 7 (0: no plant needs water) */
-RTC_DATA_ATTR int rtcLipoTempIndex = 0; //FIXME use -1 and configure properly
+
+//FIXME use -1 and configure properly
+RTC_DATA_ATTR int rtcLipoTempIndex = 0;
 RTC_DATA_ATTR int rtcWaterTempIndex = -1;
 
 /******************************************************************************
  *                            LOCAL VARIABLES
 ******************************************************************************/
-const unsigned long TEMPREADCYCLE = 30000; /**< Check temperature all half minutes */
-
-int wakeUpReason = WAKEUP_REASON_UNDEFINED;
 bool volatile mode3Active = false; /**< Controller must not sleep */
 bool volatile mDeepsleep = false;
 
 int readCounter = 0;
 bool mConfigured = false;
-long nextBlink = 0;         /**< Time needed in main loop to support expected blink code */
+long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
 
 RunningMedian waterRawSensor = RunningMedian(5);
 float mTempLipo = 0.0f;
@@ -98,7 +75,7 @@ float mChipTemp = 0.0f;
 
 OneWire oneWire(SENSOR_DS18B20);
 DallasTemperature sensors(&oneWire);
-DS2438 battery(&oneWire,0.1f);
+DS2438 battery(&oneWire, 0.1f);
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -112,35 +89,6 @@ Plant mPlants[MAX_PLANTS] = {
 /******************************************************************************
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
-
-void setMoistureTrigger(int plantId, long value)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    rtcPlant[plantId].moistTrigger = value;
-  }
-}
-
-void setLastMoisture(int plantId, long value)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    rtcPlant[plantId].moisture = value;
-  }
-}
-
-long getLastMoisture(int plantId)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    return rtcPlant[plantId].moisture;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
 long getDistance()
 {
   byte startByte, h_data, l_data, sum;
@@ -168,49 +116,6 @@ long getDistance()
   {
     return -2;
   }
-}
-
-/**
- * @brief Read Voltage and Temperatur
- * Read the battery voltage and the current voltage, provided by the solar panel
- */
-void readSystemSensors()
-{
-  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
-  int sensorCount = 0;
-
-  
-  /* Required to read the temperature at least once */
-  while (sensorCount == 0 && millis() < timeoutTemp)
-  {
-    sensors.begin();
-    battery.begin();
-    sensorCount = sensors.getDS18Count();
-    Serial << "Waitloop: One wire count: " << sensorCount << endl;
-    delay(200);
-  }
-
-  Serial << "One wire count: " << sensorCount << endl;
-  /* Measure temperature */
-  if (sensorCount > 0)
-  {
-      sensors.requestTemperatures();
-  }
-  
-  for (int i = 0; i < sensorCount; i++)
-  {
-    Serial << "OneWire sensor " << i << " has value " << sensors.getTempCByIndex(i) << endl;
-  }
-
-  // Update battery chip data
-  battery.update();
-  mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR; 
-  mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
-  mChipTemp = battery.getTemperature();
-  rtcLastBatteryVoltage = mBatteryVoltage;
-  rtcLastSolarVoltage = mSolarVoltage;
-  rtcLastLipoTemp = mTempLipo;
-  rtcLastWaterTemp = mTempWater;
 }
 
 long getCurrentTime()
@@ -242,16 +147,17 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
   }
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
   if (activatePump)
   {
+    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
     gpio_deep_sleep_hold_en();
     gpio_hold_en(GPIO_NUM_13); //pump pwr
   }
   else
   {
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
     gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_PUMP, LOW);
@@ -268,28 +174,21 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
   Serial.print(seconds);
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
+
   mDeepsleep = true;
 }
 
 void mode2MQTT()
 {
-  readSystemSensors();
-
   digitalWrite(OUTPUT_PUMP, LOW);
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     mPlants[i].deactivatePump();
   }
 
-  if (deepSleepTime.get())
-  {
-    Serial << "deepsleep time is configured to " << deepSleepTime.get() << endl;
-  }
-  /* Publish default values */
-
   if (lastPumpRunning != -1)
   {
-    long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
+    //long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
     //TODO attribute used water in ml to plantid
   }
   for (int i = 0; i < MAX_PLANTS; i++)
@@ -318,18 +217,16 @@ void mode2MQTT()
 
   sensorLipo.setProperty("percent").send(String(100 * mBatteryVoltage / VOLT_MAX_BATT));
   sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
+  sensorLipo.setProperty("current").send(String(battery.getCurrent()));
   sensorLipo.setProperty("Ah").send(String(battery.getAh()));
   sensorLipo.setProperty("ICA").send(String(battery.getICA()));
   sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
   sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
-  sensorSolar.setProperty("percent").send(String(100 * mSolarVoltage / VOLT_MAX_SOLAR));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
-  startupReason.setProperty("startupReason").send(String(wakeUpReason));
 
   rtcLipoTempIndex = lipoSensorIndex.get();
   rtcWaterTempIndex = waterSensorIndex.get();
 
-  
   sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(mTempLipo));
   Serial << "Lipo Temperatur " << mTempLipo << " °C " << endl;
 
@@ -338,11 +235,6 @@ void mode2MQTT()
 
   sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
   Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
-
-  for (int i = 0; i < MAX_PLANTS; i++)
-  {
-    setMoistureTrigger(i, mPlants[i].mSetting->pSensorDry->get());
-  }
 
   bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
@@ -360,65 +252,29 @@ void mode2MQTT()
     else
     {
       digitalWrite(OUTPUT_PUMP, HIGH);
-      setLastActivationForPump(lastPumpRunning, getCurrentTime());
+      //TODO setLastActivationForPump(lastPumpRunning, getCurrentTime());
       mPlants[lastPumpRunning].activatePump();
     }
   }
+
   if (lastPumpRunning == -1 || !hasWater)
   {
     if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
     {
-      gotoMode2AfterThisTimestamp = getCurrentTime() + maxTimeBetweenMQTTUpdates.get();
       Serial.print(mSolarVoltage);
       Serial.println("V! No pumps to activate and low light, deepSleepNight");
       espDeepSleepFor(deepSleepNightTime.get());
-      rtcDeepSleepTime = deepSleepNightTime.get();
     }
     else
     {
-      gotoMode2AfterThisTimestamp = getCurrentTime() + maxTimeBetweenMQTTUpdates.get();
       Serial.println("No pumps to activate, deepSleep");
       espDeepSleepFor(deepSleepTime.get());
-      rtcDeepSleepTime = deepSleepTime.get();
     }
   }
   else
   {
-    gotoMode2AfterThisTimestamp = 0;
     Serial.println("Running pump, watering deepsleep");
     espDeepSleepFor(wateringDeepSleep.get(), true);
-  }
-}
-
-long getMoistureTrigger(int plantId)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    return rtcPlant[plantId].moistTrigger;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
-void setLastActivationForPump(int plantId, long value)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    rtcPlant[plantId].lastActive = value;
-  }
-}
-
-long getLastActivationForPump(int plantId)
-{
-  if ((plantId >= 0) && (plantId < MAX_PLANTS))
-  {
-    return rtcPlant[plantId].lastActive;
-  }
-  else
-  {
-    return -1;
   }
 }
 
@@ -449,69 +305,56 @@ void readDistance()
 }
 
 /**
- * @brief read all temperatur sensors
- * 
- * @return int 
- * <code>0</code> device can sleep, no change in the temperatures
- * <code>1</code> something changed and the temperatures shall be published via MQTT
- */
-int readTemp() {
-  int readAgain = TEMP_SENSOR_MEASURE_SERIES;
-  int sensorCount = sensors.getDS18Count();
-  int leaveMode1 = 0;
-  
-  while (readAgain > 0)
-  {
-    sensors.requestTemperatures();
-    if (sensorCount > 0)
-    {
-      if (rtcLipoTempIndex != -1)
-      {
-        mTempLipo = sensors.getTempCByIndex(rtcLipoTempIndex);
-      }
-      else
-      {
-        Serial << "missing lipotemp, proceed to mode2: " << endl;
-        leaveMode1 = 1;
-        readAgain = 0;
-        wakeUpReason = WAKEUP_REASON_RTC_MISSING;
-      }
-    } else {
-      Serial << "No Sensors detected" << endl;
-      return 1;
-    }
-
-    if (sensorCount > 1 && rtcWaterTempIndex != -1)
-    {
-      mTempWater = sensors.getTempCByIndex(rtcWaterTempIndex);
-      //Serial << "waterTempCurrent: " << temp2Raw << endl;
-    }
-    
-    readAgain--;
-    delay(50);
-  }
-  return leaveMode1;
-}
-
-/**
  * @brief Sensors, that are connected to GPIOs, mandatory for WIFI.
  * These sensors (ADC2) can only be read when no Wifi is used.
  */
-bool readSensors()
+void readSensors()
 {
-  bool leaveMode1 = false;
-  
   Serial << "Read Sensors" << endl;
-
-  readSystemSensors();
-
-  /* activate all sensors */
-  pinMode(OUTPUT_SENSOR, OUTPUT);
+    /* activate all sensors */
   digitalWrite(OUTPUT_SENSOR, HIGH);
-
-  delay(20);
-  sensors.begin();
   /* wait before reading something */
+  delay(20);
+
+  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
+  int sensorCount = 0;
+
+  /* Required to read the temperature at least once */
+  while ((sensorCount == 0 || !battery.isFound()) && millis() < timeoutTemp)
+  {
+    sensors.begin();
+    battery.begin();
+    sensorCount = sensors.getDS18Count();
+    delay(50);
+  }
+
+  Serial << "One wire count: " << sensorCount << " found in " << (millis() - timeoutTemp) << "ms" << endl;
+  /* Measure temperature */
+  if (sensorCount > 0)
+  {
+    sensors.requestTemperatures();
+  }
+
+  for (int i = 0; i < sensorCount; i++) {
+    float temp = sensors.getTempCByIndex(i);
+    Serial << "OneWire sensor " << i << " has value " << temp << endl;
+    if (rtcWaterTempIndex != -1 && rtcWaterTempIndex == i) {
+      mTempWater = temp;
+    }
+    if (rtcLipoTempIndex != -1 && rtcLipoTempIndex == i) {
+      mTempLipo = temp;
+    }
+  }
+
+  // Update battery chip data
+  battery.update();
+  mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR;
+  mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
+  mChipTemp = battery.getTemperature();
+  //  if(mBatteryVoltage < MINIMUM_LIPO_VOLT){
+  //    Serial.println("Low lipo voltage, abort high level processing");
+  //  }
+
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -521,52 +364,12 @@ bool readSensors()
     delay(10);
   }
 
-  for (int i = 0; i < MAX_PLANTS; i++)
-  {
-    long current = mPlants[i].getCurrentMoisture();
-    long delta = abs(getLastMoisture(i) - current);
-    bool tmp = (delta > MOIST_DELTA_TRIGGER_ADC);
-    setLastMoisture(i, current);
-    if (tmp)
-    {
-      wakeUpReason = WAKEUP_REASON_MOIST_CHANGE + i;
-      leaveMode1 = true;
-      Serial.printf("Mode2 start due to moist delta in plant %d with %ld \r\n", i, delta);
-    }
-  }
-
-  if (abs(mBatteryVoltage - rtcLastBatteryVoltage) > LIPO_DELTA_VOLT_ADC)
-  {
-    wakeUpReason = WAKEUP_REASON_BATTERY_CHANGE;
-    leaveMode1 = true;
-  }
-  if (abs(mSolarVoltage - rtcLastSolarVoltage) > SOLAR_DELTA_VOLT_ADC)
-  {
-    wakeUpReason = WAKEUP_REASON_SOLAR_CHANGE;
-    leaveMode1 = true;
-  }
-
   /* Read the distance and give the temperature sensors some time */
   readDistance();
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
 
-  // check if chip needs to start into full operational mode
-  leaveMode1 |= readTemp();
-
-  if (abs(mTempWater - rtcLastLipoTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-  {
-    leaveMode1 = true;
-    wakeUpReason = WAKEUP_REASON_TEMP1_CHANGE;
-  }
-  if (abs(mTempWater - rtcLastWaterTemp) > TEMPERATURE_DELTA_TRIGGER_IN_C)
-  {
-    wakeUpReason = WAKEUP_REASON_TEMP2_CHANGE;
-    leaveMode1 = true;
-  }
-
   /* deactivate the sensors */
   digitalWrite(OUTPUT_SENSOR, LOW);
-  return leaveMode1;
 }
 
 void onHomieEvent(const HomieEvent &event)
@@ -579,8 +382,7 @@ void onHomieEvent(const HomieEvent &event)
   case HomieEventType::MQTT_READY:
     Serial.printf("NTP Setup with server %s\r\n", ntpServer.get());
     configTime(0, 0, ntpServer.get());
-    //wait for rtc sync?
-    rtcDeepSleepTime = deepSleepTime.get();
+
     Serial << "Setup plants" << endl;
     for (int i = 0; i < MAX_PLANTS; i++)
     {
@@ -588,10 +390,6 @@ void onHomieEvent(const HomieEvent &event)
     }
 
     mode2MQTT();
-    break;
-  case HomieEventType::READY_TO_SLEEP:
-    Homie.getLogger() << "rtsleep" << endl;
-    esp_deep_sleep_start();
     break;
   case HomieEventType::OTA_STARTED:
     Homie.getLogger() << "OTA started" << endl;
@@ -626,15 +424,12 @@ int determineNextPump()
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     Plant plant = mPlants[i];
-    long lastActivation = getLastActivationForPump(i);
-    long sinceLastActivation = getCurrentTime() - lastActivation;
-    //this pump is in cooldown skip it and disable low power mode trigger for it
-    if (plant.isInCooldown(sinceLastActivation))
-    {
-      Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, sinceLastActivation, plant.getCooldownInSeconds());
-      setMoistureTrigger(i, DEACTIVATED_PLANT);
-      continue;
-    }
+    //TODO skip pump last used here!
+    //if (plant.isInCooldown(sinceLastActivation))
+    //{
+    //      Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, sinceLastActivation, plant.getCooldownInSeconds());
+    //continue;
+    //}
     //skip as it is not low light
     if (!isLowLight && plant.isAllowedOnlyAtLowLight())
     {
@@ -701,8 +496,8 @@ void systemInit()
 
   //in seconds
 
-  maxTimeBetweenMQTTUpdates.setDefaultValue(120);
-  deepSleepTime.setDefaultValue(60);
+  maxTimeBetweenMQTTUpdates.setDefaultValue(700);
+  deepSleepTime.setDefaultValue(600);
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -761,74 +556,6 @@ void systemInit()
   stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
 }
 
-bool mode1()
-{
-  Serial.println("==== Mode 1 ====");
-  Serial << getCurrentTime() << " curtime" << endl;
-
-  bool deltaTrigger = readSensors();
-  //queue sensor values for
-
-  if (deltaTrigger)
-  {
-    Serial.println("1 delta triggered, going to mode2");
-    return true;
-  }
-  if (rtcDeepSleepTime == 0)
-  {
-    wakeUpReason = WAKEUP_REASON_RTC_MISSING;
-    Serial.println("1 missing rtc value, going to mode2");
-    return true;
-  }
-  for (int i = 0; i < MAX_PLANTS; i++)
-  {
-    long trigger = getMoistureTrigger(i);
-    if (trigger == 0)
-    {
-      wakeUpReason = WAKEUP_REASON_RTC_MISSING;
-      Serial << "Missing rtc trigger " << i << endl;
-      return true;
-    }
-    if (trigger == DEACTIVATED_PLANT)
-    {
-      continue;
-    }
-    long raw = mPlants[i].getCurrentMoisture();
-    if (raw == MISSING_SENSOR)
-    {
-      continue;
-    }
-    if (raw > trigger)
-    {
-      Serial << "plant " << i << " dry " << raw << " / " << trigger << " starting mode 2" << endl;
-      wakeUpReason = WAKEUP_REASON_PLANT_DRY + i;
-      return true;
-    }
-  }
-
-  //check how long it was already in mode1 if to long goto mode2
-
-  long cTime = getCurrentTime();
-  if (cTime < 100000)
-  {
-    Serial.println("Starting mode 2 due to missing ntp");
-    //missing ntp time boot to mode3
-    wakeUpReason = WAKEUP_REASON_TIME_UNSET;
-    return true;
-  }
-  if (gotoMode2AfterThisTimestamp < cTime)
-  {
-    wakeUpReason = WAKEUP_REASON_MODE2_WAKEUP_TIMER;
-    Serial.println("Starting mode 2 after specified mode1 time");
-    return true;
-  }
-  else
-  {
-    Serial << "Mode2 Timer " << gotoMode2AfterThisTimestamp << " curtime " << cTime << endl;
-  }
-  return false;
-}
-
 void mode2()
 {
   Serial.println("==== Mode 2 ====");
@@ -849,7 +576,6 @@ void mode2()
 void setup()
 {
   Serial.begin(115200);
-  Serial.setTimeout(1000); // Set timeout of 1 second
   Serial << endl
          << endl;
   /* Intialize Plant */
@@ -858,11 +584,14 @@ void setup()
     mPlants[i].init();
   }
 
-  /* read button */
+  // read button
   pinMode(BUTTON, INPUT);
 
-  /* Power pins */
+  // Power pins
   pinMode(OUTPUT_PUMP, OUTPUT);
+  pinMode(OUTPUT_SENSOR, OUTPUT);
+
+  // Individual Pump pins
 
   /* Disable Wifi and bluetooth */
   WiFi.mode(WIFI_OFF);
@@ -873,30 +602,23 @@ void setup()
     Serial << "Limits.hpp" << endl;
   }
 
+  readSensors();
+
   // Big TODO use here the settings in RTC_Memory
 
   //Panik mode, the Lipo is empty, sleep a long long time:
-  if ((mBatteryVoltage < MINIMUM_LIPO_VOLT) &&
-      (mBatteryVoltage > NO_LIPO_VOLT))
-  {
-    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << mBatteryVoltage << "V" << endl;
-    esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
-    esp_deep_sleep_start();
-  }
-
-  if (mode1())
-  {
-    mode2();
-  }
-  else
-  {
-    Serial.println("nop");
-    espDeepSleepFor(rtcDeepSleepTime);
-  }
+  //  if ((mBatteryVoltage < MINIMUM_LIPO_VOLT) &&
+  //      (mBatteryVoltage > NO_LIPO_VOLT))
+  //  {
+  //    Serial << PANIK_MODE_DEEPSLEEP << " s lipo " << mBatteryVoltage << "V" << endl;
+  //    esp_sleep_enable_timer_wakeup(PANIK_MODE_DEEPSLEEP_US);
+  //    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  //    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  //    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
+  //    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+  //    esp_deep_sleep_start();
+  //  }
+  mode2();
 }
 
 /**
@@ -905,7 +627,16 @@ void setup()
  */
 void loop()
 {
-  if (!mDeepsleep || mode3Active)
+  /* Toggel Senor LED to visualize mode 3 */
+  if (mode3Active)
+  {
+    if (nextBlink < millis())
+    {
+      nextBlink = millis() + 500;
+      digitalWrite(OUTPUT_SENSOR, !digitalRead(OUTPUT_SENSOR));
+    }
+  }
+  else if (!mDeepsleep)
   {
     Homie.loop();
   }
@@ -918,19 +649,9 @@ void loop()
 
   if (millis() > 30000 && !mode3Active)
   {
-    Serial << (millis() / 1000) << "not terminated watchdog putting to sleep" << endl;
+    Serial << (millis() / 1000) << "not terminated watchdog reset" << endl;
     Serial.flush();
-    espDeepSleepFor(rtcDeepSleepTime);
-  }
-
-  /* Toggel Senor LED to visualize mode 3 */
-  if (mode3Active)
-  {
-    if (nextBlink < millis())
-    {
-      nextBlink = millis() + 500;
-      digitalWrite(OUTPUT_SENSOR, !digitalRead(OUTPUT_SENSOR));
-    }
+    esp_restart();
   }
 }
 
