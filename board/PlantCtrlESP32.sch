@@ -3428,4 +3428,6 @@ F 4 "C17506" H 19400 9050 50  0001 C CNN "LCSC_PART_NUMBER"
 $EndComp
 Text Notes 11150 10250 0    394  ~ 79
 Shunt update dsbla capacity limit ica
+Text Notes 6650 8800 0    394  ~ 79
+JSN-SR04T-2.0\nIO16 RX\nIO17 TX
 $EndSCHEMATC
