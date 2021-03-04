@@ -18,7 +18,8 @@ There the following components are connected:
 * 7 pump
 * DC-DC convert (generating voltage from Lipo for pumps)
 * DS18B20 temperature sensors
-* water tank ultrasonic sensor (via HC_SR04)
+* water tank ultrasonic sensor (via JSN-SR04T-2.0)
+* DS2438 battery monitor
 * general purpose expansion pin
 
 # Software
