@@ -31,6 +31,7 @@
  *                                     DEFINES
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
+#define MAX_TANK_DEPTH 1000
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -89,35 +90,6 @@ Plant mPlants[MAX_PLANTS] = {
 /******************************************************************************
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
-long getDistance()
-{
-  byte startByte, h_data, l_data, sum;
-  byte buf[3];
-
-  startByte = (byte)Serial.read();
-  if (startByte == 255)
-  {
-    unsigned int distance;
-    Serial.readBytes(buf, 3);
-    h_data = buf[0];
-    l_data = buf[1];
-    sum = buf[2];
-    distance = (h_data << 8) + l_data;
-    if (((startByte + h_data + l_data) & 0xFF) != sum)
-    {
-      return -1;
-    }
-    else
-    {
-      return distance;
-    }
-  }
-  else
-  {
-    return -2;
-  }
-}
-
 long getCurrentTime()
 {
   struct timeval tv_now;
@@ -284,22 +256,22 @@ void mode2MQTT()
  */
 void readDistance()
 {
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < AMOUNT_SENOR_QUERYS; i++)
   {
-    long start = millis();
-    while (!Serial.available())
-    {
-      if ((start + 500) < millis())
-      {
-        Serial << "Abort reading hall sensor, not measurement after 200ms" << endl;
-        waterRawSensor.add(0);
-        return;
-      }
-    }
-    unsigned int distance = getDistance();
-    if (distance > 0)
-    {
-      waterRawSensor.add(distance);
+    unsigned long duration = 0;
+  
+    digitalWrite(triggerPin, HIGH);
+    delayMicroseconds(20);
+    cli();
+    digitalWrite(triggerPin, LOW);
+    duration = pulseIn(echoPin, HIGH);
+    sei();
+
+    int mmDis = duration * 0.3432 / 2; 
+    if(mmDis > MAX_TANK_DEPTH){
+      waterRawSensor.add(0);
+    } else {
+      waterRawSensor.add(mmDis);
     }
   }
 }
