@@ -2535,7 +2535,7 @@ Text GLabel 4100 5700 3    50   Input ~ 0
 PLANT5_MOIST
 Text GLabel 5400 6400 2    50   Input ~ 0
 PLANT_CTRL_PUMP_0
-Text GLabel 5400 6300 2    50   Input ~ 0
+Text GLabel 5400 6200 2    50   Input ~ 0
 SENSORS_ENABLE
 Text GLabel 7700 6300 1    50   Input ~ 0
 PWR_SENSORS
@@ -2676,7 +2676,7 @@ Wire Wire Line
 Wire Wire Line
 	5300 6000 5400 6000
 Wire Wire Line
-	5300 6300 5400 6300
+	5300 6200 5400 6200
 Wire Wire Line
 	5300 6500 5400 6500
 Wire Wire Line
@@ -2931,8 +2931,6 @@ Wire Wire Line
 Text GLabel 7050 6600 0    50   Input ~ 0
 GND
 Wire Wire Line
-	5300 6100 6500 6100
-Wire Wire Line
 	9300 15250 9600 15250
 Wire Wire Line
 	9600 15250 9600 15150
@@ -3138,7 +3136,7 @@ F 4 "C503217" H 17000 6300 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    17000 6300
 	1    0    0    -1  
 $EndComp
-Text GLabel 5400 6200 2    50   Input ~ 0
+Text GLabel 5550 6300 2    50   Input ~ 0
 HALL_TX
 Text GLabel 11650 1800 0    50   Input ~ 0
 HALL_TX
@@ -3160,12 +3158,6 @@ Wire Wire Line
 Wire Wire Line
 	7550 6400 7700 6400
 Connection ~ 7300 6300
-Wire Wire Line
-	7700 6500 6500 6500
-Wire Wire Line
-	6500 6100 6500 6500
-Wire Wire Line
-	5400 6200 5300 6200
 Text GLabel 5400 5400 2    50   Input ~ 0
 ESP_TX
 Text GLabel 5400 5600 2    50   Input ~ 0
