@@ -2219,9 +2219,9 @@ Text GLabel 11400 6450 2    50   Input ~ 0
 PUMP_ENABLE
 Text GLabel 10100 6150 3    50   Input ~ 0
 PLANT5_MOIST
-Text GLabel 11400 6550 2    50   Input ~ 0
-PLANT_CTRL_PUMP_0
 Text GLabel 11400 6650 2    50   Input ~ 0
+PLANT_CTRL_PUMP_0
+Text GLabel 11400 6550 2    50   Input ~ 0
 SENSORS_ENABLE
 Text GLabel 11400 6950 2    50   Input ~ 0
 PLANT_CTRL_PUMP_2
@@ -2571,10 +2571,6 @@ GND
 Text GLabel 12350 8150 0    50   Input ~ 0
 3_3V
 Wire Wire Line
-	11300 7950 12350 7950
-Wire Wire Line
-	12350 8050 11300 8050
-Wire Wire Line
 	9300 15250 9600 15250
 Wire Wire Line
 	9600 15250 9600 15150
@@ -2649,12 +2645,12 @@ Connection ~ 19600 11150
 Text GLabel 19900 11150 2    50   Input ~ 0
 Rsense-
 $Comp
-L Jumper:SolderJumper_2_Bridged SOLAR_PWR1
+L Jumper:SolderJumper_2_Open SOLAR_PWR1
 U 1 1 60C8802B
 P 17650 6200
 F 0 "SOLAR_PWR1" H 17650 6350 50  0000 C CNN
 F 1 "NC" H 17650 6000 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 17650 6200 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 17650 6200 50  0001 C CNN
 F 3 "~" H 17650 6200 50  0001 C CNN
 	1    17650 6200
 	0    1    1    0   
@@ -3278,10 +3274,10 @@ Wire Wire Line
 Wire Wire Line
 	20300 9600 20000 9600
 $Comp
-L Device:CP C?
+L Device:CP C25
 U 1 1 60DD16D1
 P 6800 2500
-F 0 "C?" H 6915 2546 50  0000 L CNN
+F 0 "C25" H 6915 2546 50  0000 L CNN
 F 1 "1000uF" H 6915 2455 50  0000 L CNN
 F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 6838 2350 50  0001 C CNN
 F 3 "~" H 6800 2500 50  0001 C CNN
@@ -3307,4 +3303,20 @@ Connection ~ 6800 2350
 Wire Wire Line
 	7000 2650 6800 2650
 Connection ~ 6800 2650
+Wire Wire Line
+	12350 7950 11800 7950
+Wire Wire Line
+	11800 7950 11800 8050
+Wire Wire Line
+	11800 8050 11300 8050
+Wire Wire Line
+	11300 7950 11600 7950
+Wire Wire Line
+	11600 7950 11600 8000
+Wire Wire Line
+	11600 8000 11950 8000
+Wire Wire Line
+	11950 8000 11950 8050
+Wire Wire Line
+	11950 8050 12350 8050
 $EndSCHEMATC

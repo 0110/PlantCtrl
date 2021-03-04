@@ -6,16 +6,19 @@
 	],
 	"settings": {
 		"files.associations": {
+			"functional": "cpp",
 			"*.tcc": "cpp",
+			"map": "cpp",
+			"*.cps": "javascript",
 			"bitset": "cpp",
 			"algorithm": "cpp",
 			"istream": "cpp",
 			"limits": "cpp",
 			"streambuf": "cpp",
-			"functional": "cpp",
 			"string": "cpp",
 			"typeinfo": "cpp",
-			"cmath": "cpp"
+			"cmath": "cpp",
+			"iterator": "cpp"
 		}
 	}
 }
