@@ -110,9 +110,29 @@ void setup() {
   Serial.print("Bat I");
   Serial.print("\t");
   Serial.println("Temp/10");
+
 }
 
 void loop() { 
+  static int loop=1;
+
+
+  DeviceAddress t;
+  for(int i=0; i < sizeof(t); i++) {
+    t[i] = loop + i*2;
+  }
+  char buf[sizeof(DeviceAddress)*2];
+  snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X", t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7]);
+/*
+  %X -> linksbündige hexzahl
+  %2X -> 2Stellige hexzahl ... dynamisch erweitert
+  %0.2X -> 2stellige hexzahl mit führerder "0"
+  */
+  printf("Print: %s\n", buf);
+  loop++;
+  delay(500);
+  return;
+
   whatever = !whatever;
   digitalWrite(OUTPUT_PUMP, HIGH);
   delay(500);

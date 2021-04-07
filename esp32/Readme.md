@@ -82,5 +82,6 @@ DS18B20 one wire temp sensor
  * Nicht mehrere Messungen vom Temp-Sensor nur warten, bis wir einen Wert bekommen
  * Partitionslayout
  * OW-search address in topic nutzen
+ * Wifi bei timout deaktivieren (damit wir entweder wlan spielen oder fallback: nur pflanzen giessen)
 
 

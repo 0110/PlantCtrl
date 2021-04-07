@@ -46,8 +46,8 @@ int readTemp();
 ******************************************************************************/
 
 //only relevant if mode2 did start pumping before
-RTC_DATA_ATTR int lastPumpRunning = 0;    /**< store last successfully waterd plant */
-RTC_DATA_ATTR long lastWaterValue = 0;    /**< to calculate the used water per plant */
+RTC_DATA_ATTR int lastPumpRunning = 0; /**< store last successfully waterd plant */
+RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 
 RTC_DATA_ATTR int gBootCount = 0;
 
@@ -192,12 +192,6 @@ void mode2MQTT()
   sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
 
-  sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(mTempLipo));
-  Serial << "Lipo Temperatur " << mTempLipo << " °C " << endl;
-
-  sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(mTempWater));
-  Serial << "Water Temperatur " << mTempWater << " °C " << endl;
-
   sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
   Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
 
@@ -252,7 +246,7 @@ void readDistance()
   for (int i = 0; i < AMOUNT_SENOR_QUERYS; i++)
   {
     unsigned long duration = 0;
-  
+
     digitalWrite(SENSOR_TANK_TRG, HIGH);
     delayMicroseconds(20);
     cli();
@@ -260,10 +254,13 @@ void readDistance()
     duration = pulseIn(SENSOR_TANK_ECHO, HIGH);
     sei();
 
-    int mmDis = duration * 0.3432 / 2; 
-    if(mmDis > MAX_TANK_DEPTH){
+    int mmDis = duration * 0.3432 / 2;
+    if (mmDis > MAX_TANK_DEPTH)
+    {
       waterRawSensor.add(0);
-    } else {
+    }
+    else
+    {
       waterRawSensor.add(mmDis);
     }
   }
@@ -276,13 +273,13 @@ void readDistance()
 void readSensors()
 {
   Serial << "Read Sensors" << endl;
-    /* activate all sensors */
+  /* activate all sensors */
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
   /* wait before reading something */
   delay(20);
 
   int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
-  int sensorCount = 0;
+  uint8_t sensorCount = 0U;
 
   /* Required to read the temperature at least once */
   while ((sensorCount == 0 || !battery.isFound()) && millis() < timeoutTemp)
@@ -300,10 +297,33 @@ void readSensors()
     sensors.requestTemperatures();
   }
 
-  for (int i = 0; i < sensorCount; i++) {
-    float temp = sensors.getTempCByIndex(i);
+  for (uint8_t i = 0; i < sensorCount; i++)
+  {
+    DeviceAddress ds18b20Address;
+    sensors.getAddress(ds18b20Address, i);
+    float temp = sensors.getTempC(ds18b20Address);
     Serial << "OneWire sensor " << i << " has value " << temp << endl;
-    /** FIXME: handle via address */
+    char buf[sizeof(DeviceAddress) * 2];
+    snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
+             ds18b20Address[0],
+             ds18b20Address[1],
+             ds18b20Address[2],
+             ds18b20Address[3],
+             ds18b20Address[4],
+             ds18b20Address[5],
+             ds18b20Address[6],
+             ds18b20Address[7]);
+
+      if (String(lipoSensorAddr.get()).compareTo(String(buf))) {
+        sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
+        Serial << "Lipo Temperatur " << temp << " °C " << endl;
+      } else if (String(waterSensorAddr.get()).compareTo(String(buf))) {
+        sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
+        Serial << "Water Temperatur " << temp << " °C " << endl;      
+      }
+      /* Always send the sensor address with the temperatur value */
+      sensorTemp.setProperty(String(buf)).send(String(temp));
+      Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;      
   }
 
   // Update battery chip data
@@ -455,8 +475,8 @@ void systemInit()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([] (long candidate) {
-    return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */ );
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) {
+    return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */);
   });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
