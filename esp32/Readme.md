@@ -74,3 +74,12 @@ DS18B20 one wire temp sensor
     * Deepsleep verboten (MQTT topic, retained)
     * alle Pumpen & Sensoren deaktiviert
 
+## Masterplan 2.0
+ * ESP heruntertakten Mhz heruntertakten
+ * kein WLAN 
+   * Bewässerung muss immer laufen
+   * Timeout um nicht ewig aufs WLAN zu warten
+ * Nicht mehrere Messungen vom Temp-Sensor nur warten, bis wir einen Wert bekommen
+ * Partitionslayout
+
+

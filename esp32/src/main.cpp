@@ -74,7 +74,7 @@ float mChipTemp = 0.0f;
 
 /*************************** Hardware abstraction *****************************/
 
-OneWire oneWire(SENSOR_DS18B20);
+OneWire oneWire(SENSOR_ONEWIRE);
 DallasTemperature sensors(&oneWire);
 DS2438 battery(&oneWire, 0.1f);
 
@@ -132,8 +132,8 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
     gpio_deep_sleep_hold_dis();
-    digitalWrite(OUTPUT_PUMP, LOW);
-    digitalWrite(OUTPUT_SENSOR, LOW);
+    digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
+    digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].deactivatePump();
@@ -152,7 +152,7 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
 
 void mode2MQTT()
 {
-  digitalWrite(OUTPUT_PUMP, LOW);
+  digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     mPlants[i].deactivatePump();
@@ -223,7 +223,7 @@ void mode2MQTT()
     }
     else
     {
-      digitalWrite(OUTPUT_PUMP, HIGH);
+      digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
       //TODO setLastActivationForPump(lastPumpRunning, getCurrentTime());
       mPlants[lastPumpRunning].activatePump();
     }
@@ -260,11 +260,11 @@ void readDistance()
   {
     unsigned long duration = 0;
   
-    digitalWrite(triggerPin, HIGH);
+    digitalWrite(SENSOR_TANK_TRG, HIGH);
     delayMicroseconds(20);
     cli();
-    digitalWrite(triggerPin, LOW);
-    duration = pulseIn(echoPin, HIGH);
+    digitalWrite(SENSOR_TANK_TRG, LOW);
+    duration = pulseIn(SENSOR_TANK_ECHO, HIGH);
     sei();
 
     int mmDis = duration * 0.3432 / 2; 
@@ -284,7 +284,7 @@ void readSensors()
 {
   Serial << "Read Sensors" << endl;
     /* activate all sensors */
-  digitalWrite(OUTPUT_SENSOR, HIGH);
+  digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
   /* wait before reading something */
   delay(20);
 
@@ -341,7 +341,7 @@ void readSensors()
   Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
 
   /* deactivate the sensors */
-  digitalWrite(OUTPUT_SENSOR, LOW);
+  digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
 void onHomieEvent(const HomieEvent &event)
@@ -365,8 +365,8 @@ void onHomieEvent(const HomieEvent &event)
     break;
   case HomieEventType::OTA_STARTED:
     Homie.getLogger() << "OTA started" << endl;
-    digitalWrite(OUTPUT_SENSOR, HIGH);
-    digitalWrite(OUTPUT_PUMP, HIGH);
+    digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
+    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
     gpio_hold_dis(GPIO_NUM_13); //pump pwr
     gpio_deep_sleep_hold_dis();
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -377,8 +377,8 @@ void onHomieEvent(const HomieEvent &event)
     break;
   case HomieEventType::OTA_SUCCESSFUL:
     Homie.getLogger() << "OTA successfull" << endl;
-    digitalWrite(OUTPUT_SENSOR, LOW);
-    digitalWrite(OUTPUT_PUMP, LOW);
+    digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
+    digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     ESP.restart();
     break;
   default:
@@ -467,7 +467,6 @@ void systemInit()
   // Set default values
 
   //in seconds
-
   maxTimeBetweenMQTTUpdates.setDefaultValue(700);
   deepSleepTime.setDefaultValue(600);
   deepSleepNightTime.setDefaultValue(600);
@@ -560,8 +559,8 @@ void setup()
   pinMode(BUTTON, INPUT);
 
   // Power pins
-  pinMode(OUTPUT_PUMP, OUTPUT);
-  pinMode(OUTPUT_SENSOR, OUTPUT);
+  pinMode(OUTPUT_ENABLE_PUMP, OUTPUT);
+  pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
 
   // Individual Pump pins
 
@@ -605,7 +604,7 @@ void loop()
     if (nextBlink < millis())
     {
       nextBlink = millis() + 500;
-      digitalWrite(OUTPUT_SENSOR, !digitalRead(OUTPUT_SENSOR));
+      digitalWrite(OUTPUT_ENABLE_SENSOR, !digitalRead(OUTPUT_ENABLE_SENSOR));
     }
   }
   else if (!mDeepsleep)
