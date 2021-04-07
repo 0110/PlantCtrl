@@ -75,7 +75,6 @@ DS18B20 one wire temp sensor
     * alle Pumpen & Sensoren deaktiviert
 
 ## Masterplan 2.0
- * ESP heruntertakten Mhz heruntertakten
  * kein WLAN 
    * Bewässerung muss immer laufen
    * Timeout um nicht ewig aufs WLAN zu warten

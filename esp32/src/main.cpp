@@ -403,6 +403,9 @@ void homieLoop()
  */
 void setup()
 {
+  /* reduce power consumption */
+  setCpuFrequencyMhz(80);
+
   Serial.begin(115200);
   Serial << endl
          << endl;
