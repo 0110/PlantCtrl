@@ -87,6 +87,8 @@
 #define BATTSENSOR_INDEX_SOLAR      0
 #define BATTSENSOR_INDEX_BATTERY    1
 
+#define MQTT_TIMEOUT                (1000 * 10) /**< After 10 seconds, MQTT is expected to be connected */
+
 #define MAX_PLANTS          7
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
