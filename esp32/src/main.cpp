@@ -242,7 +242,7 @@ void readSensors()
     {
       mPlants[i].addSenseValue();
     }
-    delay(10);
+    delay(2);
   }
 
   /* Read the distance and give the temperature sensors some time */
@@ -559,9 +559,12 @@ void plantcontrol()
 
   if (lastPumpRunning != -1)
   {
-    //long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
-    //TODO attribute used water in ml to plantid
+    long waterDiff = waterRawSensor.getAverage() - lastWaterValue;
+    mPlants[lastPumpRunning].setProperty("waterusage").send(String(waterDiff));
+    /* TODO convert diff into volume (milli liter) */
+    Serial << "Plant" << lastPumpRunning << ": Water diff " << waterDiff << " mm" << endl;
   }
+
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     long raw = mPlants[i].getCurrentMoisture();

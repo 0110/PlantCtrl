@@ -76,7 +76,5 @@ DS18B20 one wire temp sensor
 
 ## Masterplan 2.0
  * Partitionslayout
- * OW-search address in topic nutzen
- * Wifi bei timout deaktivieren (damit wir entweder wlan spielen oder fallback: nur pflanzen giessen)
 
 
