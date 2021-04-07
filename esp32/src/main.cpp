@@ -38,7 +38,6 @@
 ******************************************************************************/
 
 int determineNextPump();
-//void setLastActivationForPump(int pumpId, long time);
 int readTemp();
 void plantcontrol();
 
@@ -46,30 +45,23 @@ void plantcontrol();
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-//only relevant if mode2 did start pumping before
 RTC_DATA_ATTR int lastPumpRunning = 0; /**< store last successfully waterd plant */
 RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 
-RTC_DATA_ATTR int gBootCount = 0;
 RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
 
 /******************************************************************************
  *                            LOCAL VARIABLES
 ******************************************************************************/
-bool volatile mode3Active = false; /**< Controller must not sleep */
-bool volatile mDeepsleep = false;
+bool volatile mDownloadMode = false; /**< Controller must not sleep */
+bool volatile mDeepsleep = false;   /**< about to sleep, clearing the todolist of the controller */
 bool volatile mSensorsRead = false; /**< Sensors are read without Wifi or MQTT */
 
-int readCounter = 0;
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
 
 RunningMedian waterRawSensor = RunningMedian(5);
-float mTempLipo = 0.0f;
-float mTempWater = 0.0f;
-float mBatteryVoltage = 0.0f;
-float mSolarVoltage = 0.0f;
-float mChipTemp = 0.0f;
+float mSolarVoltage = 0.0f;   /**< Voltage from solar panels */
 
 /*************************** Hardware abstraction *****************************/
 
@@ -107,9 +99,9 @@ int getCurrentHour()
 
 void espDeepSleepFor(long seconds, bool activatePump = false)
 {
-  if (mode3Active)
+  if (mDownloadMode)
   {
-    Serial << "abort deepsleep, mode3Active" << endl;
+    Serial << "abort deepsleep, DownloadMode active" << endl;
     return;
   }
   for (int i = 0; i < 10; i++)
@@ -230,12 +222,7 @@ void readSensors()
   // Update battery chip data
   battery.update();
   mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR;
-  mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
-  mChipTemp = battery.getTemperature();
-  //  if(mBatteryVoltage < MINIMUM_LIPO_VOLT){
-  //    Serial.println("Low lipo voltage, abort high level processing");
-  //  }
-
+  
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -258,7 +245,6 @@ void onHomieEvent(const HomieEvent &event)
   switch (event.type)
   {
   case HomieEventType::SENDING_STATISTICS:
-    Homie.getLogger() << "My statistics" << endl;
     break;
   case HomieEventType::MQTT_READY:
     if (mSensorsRead) {
@@ -288,7 +274,7 @@ void onHomieEvent(const HomieEvent &event)
     {
       mPlants[i].deactivatePump();
     }
-    mode3Active = true;
+    mDownloadMode = true;
     break;
   case HomieEventType::OTA_SUCCESSFUL:
     Homie.getLogger() << "OTA successfull" << endl;
@@ -362,11 +348,11 @@ bool aliveHandler(const HomieRange &range, const String &value)
     return false; // only one controller is present
   if (value.equals("ON") || value.equals("On") || value.equals("1"))
   {
-    mode3Active = true;
+    mDownloadMode = true;
   }
   else
   {
-    mode3Active = false;
+    mDownloadMode = false;
   }
 
   return true;
@@ -495,7 +481,7 @@ void setup()
     sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
   } else {
     Serial.println("Initial Setup. Start Accesspoint...");
-    mode3Active = true;
+    mDownloadMode = true;
   }
   stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
 }
@@ -507,7 +493,7 @@ void setup()
 void loop()
 {
   /* Toggel Senor LED to visualize mode 3 */
-  if (mode3Active)
+  if (mDownloadMode)
   {
     if (nextBlink < millis())
     {
@@ -534,7 +520,7 @@ void loop()
   }
 
   /** Timeout always stopping the ESP -> no endless power consumption */
-  if (millis() > 30000 && !mode3Active)
+  if (millis() > 30000 && !mDownloadMode)
   {
     Serial << (millis() / 1000) << "not terminated watchdog reset" << endl;
     Serial.flush();
@@ -589,8 +575,12 @@ void plantcontrol()
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
   lastWaterValue = waterRawSensor.getAverage();
 
-  sensorLipo.setProperty("percent").send(String(100 * mBatteryVoltage / VOLT_MAX_BATT));
-  sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
+  float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
+  float chipTemp = battery.getTemperature();
+  
+
+  sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
+  sensorLipo.setProperty("volt").send(String(batteryVoltage));
   sensorLipo.setProperty("current").send(String(battery.getCurrent()));
   sensorLipo.setProperty("Ah").send(String(battery.getAh()));
   sensorLipo.setProperty("ICA").send(String(battery.getICA()));
@@ -598,8 +588,8 @@ void plantcontrol()
   sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
 
-  sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(mChipTemp));
-  Serial << "Chip Temperatur " << mChipTemp << " °C " << endl;
+  sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
+  Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
   bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
@@ -607,10 +597,10 @@ void plantcontrol()
   if (lastPumpRunning != -1 && !hasWater)
   {
     Serial.println("Want to pump but no water");
-  }
-  if (lastPumpRunning != -1 && hasWater)
+  } 
+  else if (lastPumpRunning != -1 && hasWater)
   {
-    if (mode3Active)
+    if (mDownloadMode)
     {
       Serial.println("Mode 3 active, ignoring pump request");
     }
@@ -622,6 +612,7 @@ void plantcontrol()
     }
   }
 
+  /* Always handle one of the deep sleep duration */
   if (lastPumpRunning == -1 || !hasWater)
   {
     if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
