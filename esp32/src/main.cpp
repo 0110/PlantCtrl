@@ -50,6 +50,7 @@ RTC_DATA_ATTR int lastPumpRunning = 0; /**< store last successfully waterd plant
 RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 
 RTC_DATA_ATTR int gBootCount = 0;
+RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
 
 /******************************************************************************
  *                            LOCAL VARIABLES
@@ -91,6 +92,15 @@ long getCurrentTime()
   struct timeval tv_now;
   gettimeofday(&tv_now, NULL);
   return tv_now.tv_sec;
+}
+
+int getCurrentHour()
+{
+  struct tm info;
+  time_t now;
+  time(&now);
+  localtime_r(&now, &info);
+  return info.tm_hour;
 }
 
 void espDeepSleepFor(long seconds, bool activatePump = false)
@@ -211,7 +221,7 @@ void mode2MQTT()
     else
     {
       digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
-      //TODO setLastActivationForPump(lastPumpRunning, getCurrentTime());
+      rtcLastWateringPlant[lastPumpRunning] = getCurrentTime();
       mPlants[lastPumpRunning].activatePump();
     }
   }
@@ -396,7 +406,7 @@ void onHomieEvent(const HomieEvent &event)
 
 int determineNextPump()
 {
-  bool isLowLight = (mSolarVoltage > SOLAR_CHARGE_MIN_VOLTAGE || mSolarVoltage < SOLAR_CHARGE_MAX_VOLTAGE);
+  bool isLowLight = (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE);
 
   //FIXME instead of for, use sorted by last activation index to ensure equal runtime?
 
@@ -404,35 +414,41 @@ int determineNextPump()
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     Plant plant = mPlants[i];
-    //TODO skip pump last used here!
-    //if (plant.isInCooldown(sinceLastActivation))
-    //{
-    //      Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, sinceLastActivation, plant.getCooldownInSeconds());
-    //continue;
-    //}
-    //skip as it is not low light
+    if (!plant.isPumpTriggerActive())
+    {
+      Serial.printf("%d Skip deactivated pump\r\n", i);
+      continue;
+    }
+    if ((rtcLastWateringPlant[i] > 0) 
+        && ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) < getCurrentTime())) {
+      Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, rtcLastWateringPlant[i], plant.getCooldownInSeconds());
+      continue;
+    }
     if (!isLowLight && plant.isAllowedOnlyAtLowLight())
     {
       Serial.printf("%d No pump required: due to light\r\n", i);
       continue;
     }
-    if (plant.getCurrentMoisture() == MISSING_SENSOR && plant.isPumpTriggerActive())
+    if (plant.getCurrentMoisture() == MISSING_SENSOR)
     {
       Serial.printf("%d No pump possible: missing sensor \r\n", i);
       continue;
     }
     if (plant.isPumpRequired())
     {
-      Serial.printf("%d Requested pumping\r\n", i);
-      pumpToUse = i;
-    }
-    else if (plant.isPumpTriggerActive())
-    {
-      Serial.printf("%d No pump required: moisture acceptable %f / %ld\r\n", i, plant.getCurrentMoisture(), plant.getSettingsMoisture());
+      if ((plant.getHoursStart() > getCurrentHour() && plant.getHoursEnd() < getCurrentHour()) || 
+          (getCurrentTime() < 10000) /* no time from NTP received */)
+      {
+        Serial.printf("%d Requested pumping\r\n", i);
+        pumpToUse = i;
+      } else {
+        Serial.printf("%d ignored due to time boundary: %d to %d (current %d)\r\n", i, plant.getHoursStart(), plant.getHoursEnd(), getCurrentHour());
+      }
+      continue;
     }
     else
     {
-      Serial.printf("%d No pump required: disabled pump trigger \r\n", i);
+      Serial.printf("%d No pump required: moisture acceptable %f / %ld\r\n", i, plant.getCurrentMoisture(), plant.getSettingsMoisture());
     }
   }
   return pumpToUse;
