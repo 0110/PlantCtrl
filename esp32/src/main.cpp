@@ -193,30 +193,10 @@ void readDistance()
  */
 void readSensors()
 {
+  int sensorCount = sensors.getDS18Count();
   Serial << "Read Sensors" << endl;
   /* activate all sensors */
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
-  /* wait before reading something */
-  delay(20);
-
-  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
-  uint8_t sensorCount = 0U;
-
-  /* Required to read the temperature at least once */
-  while ((sensorCount == 0 || !battery.isFound()) && millis() < timeoutTemp)
-  {
-    sensors.begin();
-    battery.begin();
-    sensorCount = sensors.getDS18Count();
-    delay(50);
-  }
-
-  Serial << "One wire count: " << sensorCount << " found in " << (millis() - timeoutTemp) << "ms" << endl;
-  /* Measure temperature */
-  if (sensorCount > 0)
-  {
-    sensors.requestTemperatures();
-  }
 
   for (uint8_t i = 0; i < sensorCount; i++)
   {
@@ -428,6 +408,26 @@ void setup()
     Serial << "Limits.hpp" << endl;
   }
 
+  /************************* Start One-Wire bus ***************/
+  int timeoutTemp = millis() + TEMPERATUR_TIMEOUT;
+  uint8_t sensorCount = 0U;
+
+  /* Required to read the temperature at least once */
+  while ((sensorCount == 0 || !battery.isFound()) && millis() < timeoutTemp)
+  {
+    sensors.begin();
+    battery.begin();
+    sensorCount = sensors.getDS18Count();
+    delay(50);
+  }
+
+  Serial << "One wire count: " << sensorCount << " found in " << (millis() - timeoutTemp) << "ms" << endl;
+  /* Measure temperature TODO idea: move this into setup */
+  if (sensorCount > 0)
+  {
+    sensors.setResolution(DS18B20_RESOLUTION);
+    sensors.requestTemperatures();
+  }
   
   /************************* Start Homie Framework ***************/
   WiFi.mode(WIFI_STA);

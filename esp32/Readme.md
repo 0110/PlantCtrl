@@ -75,10 +75,6 @@ DS18B20 one wire temp sensor
     * alle Pumpen & Sensoren deaktiviert
 
 ## Masterplan 2.0
- * kein WLAN 
-   * Bewässerung muss immer laufen
-   * Timeout um nicht ewig aufs WLAN zu warten
- * Nicht mehrere Messungen vom Temp-Sensor nur warten, bis wir einen Wert bekommen
  * Partitionslayout
  * OW-search address in topic nutzen
  * Wifi bei timout deaktivieren (damit wir entweder wlan spielen oder fallback: nur pflanzen giessen)

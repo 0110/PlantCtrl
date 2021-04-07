@@ -97,7 +97,8 @@
 #define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
-#define TEMP_SENSOR_MEASURE_SERIES      5
+#define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
+
 /* @} */
 
 #endif
