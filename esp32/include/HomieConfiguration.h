@@ -19,43 +19,53 @@
 #define MAX_PLANTS 7
 
 /**
- * @name Attributes
+ * @name Homie Attributes
  * generated Information
  * @{
  **/
 
-#define NUMBER_TYPE                     "number"
-#define TEMPERATUR_SENSOR_LIPO          "lipo"
-#define TEMPERATUR_SENSOR_WATER         "water"
-#define TEMPERATUR_SENSOR_OUTSIDE       "temp"
-#define TEMPERATUR_SENSOR_CHIP          "chip"
+#define NUMBER_TYPE                     "number"        /**< numberic information, published or read in Homie */
+
+/**
+ * @name Temperatur Node
+ * @{
+ **/
+
 #define TEMPERATURE_NAME                "Temperature"
 #define TEMPERATURE_UNIT                "°C"
+#define TEMPERATUR_SENSOR_LIPO          "lipo"          /**< Homie node: temperatur, setting: lipo temperatur (or close to it) */
+#define TEMPERATUR_SENSOR_CHIP          "chip"          /**< Homie node: temperatur, setting: battery chip */
+#define TEMPERATUR_SENSOR_WATER         "water"         /**< Homie node: temperatur, setting: water temperatur */
+/** @} 
+ *
+ * @name Plant Nodes
+ * @{
+ */
 
 HomieNode plant0("plant0", "Plant 0", "Plant"); /**< dynamic Homie information for first plant */
 HomieNode plant1("plant1", "Plant 1", "Plant"); /**< dynamic Homie information for second plant */
-HomieNode plant2("plant2", "Plant 2", "Plant"); /**< dynamic Homie information for first plant */
-HomieNode plant3("plant3", "Plant 3", "Plant"); /**< dynamic Homie information for first plant */
-HomieNode plant4("plant4", "Plant 4", "Plant"); /**< dynamic Homie information for first plant */
-HomieNode plant5("plant5", "Plant 5", "Plant"); /**< dynamic Homie information for first plant */
-HomieNode plant6("plant6", "Plant 6", "Plant"); /**< dynamic Homie information for first plant */
+HomieNode plant2("plant2", "Plant 2", "Plant"); /**< dynamic Homie information for third plant */
+HomieNode plant3("plant3", "Plant 3", "Plant"); /**< dynamic Homie information for fourth plant */
+HomieNode plant4("plant4", "Plant 4", "Plant"); /**< dynamic Homie information for fivth plant */
+HomieNode plant5("plant5", "Plant 5", "Plant"); /**< dynamic Homie information for sixth plant */
+HomieNode plant6("plant6", "Plant 6", "Plant"); /**< dynamic Homie information for seventh plant */
 
 HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
 HomieNode sensorWater("water", "WaterSensor", "Water");
 HomieNode sensorTemp("temperature", "Temperature", "temperature");
-HomieNode startupReason("startupReason", "startupReason", "startupReason");
 HomieNode stayAlive("stay", "alive", "alive");  /**< Necessary for Mqtt Active Command */
 
-/* @} */
+/**
+ *  @} 
+ */
 
 /**
  * @name Settings
  * General settings for the controller
  * @{
  */
-HomieSetting<long> maxTimeBetweenMQTTUpdates("mqttSleep", "time in seconds to start into mode2");
-HomieSetting<long> deepSleepTime("deepsleep", "time in seconds to sleep (0 deactivats it)");
+HomieSetting<long> deepSleepTime("deepsleep", "time in seconds to sleep");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in seconds to sleep (0 uses same setting: deepsleep at night, too)");
 HomieSetting<long> wateringDeepSleep("pumpdeepsleep", "time seconds to sleep, while a pump is running");
 
@@ -63,12 +73,12 @@ HomieSetting<long> waterLevelMax("watermaxlevel", "distance (mm) at maximum wate
 HomieSetting<long> waterLevelMin("waterminlevel", "distance (mm) at minimum water level (pumps still covered)");
 HomieSetting<long> waterLevelWarn("waterlevelwarn", "warn (mm) if below this water level %");
 HomieSetting<long> waterLevelVol("waterVolume", "(ml) between minimum and maximum");
-HomieSetting<long> lipoSensorIndex("lipoTempIndex", "index onwire bus for lipo temperature sensor");
-HomieSetting<long> waterSensorIndex("waterTempIndex", "index onwire bus for water temperature sensor");
+HomieSetting<const char *> lipoSensorAddr("lipoTempAddr", "1wire address for lipo temperature sensor");
+HomieSetting<const char *> waterSensorAddr("waterTempIndex", "1wire address for water temperature sensor");
 HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
 
 /**
- *@}
+ * @}
  */
 
 /** 

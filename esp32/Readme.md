@@ -81,5 +81,6 @@ DS18B20 one wire temp sensor
    * Timeout um nicht ewig aufs WLAN zu warten
  * Nicht mehrere Messungen vom Temp-Sensor nur warten, bis wir einen Wert bekommen
  * Partitionslayout
+ * OW-search address in topic nutzen
 
 

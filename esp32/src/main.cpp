@@ -46,14 +46,10 @@ int readTemp();
 ******************************************************************************/
 
 //only relevant if mode2 did start pumping before
-RTC_DATA_ATTR int lastPumpRunning = 0;
-RTC_DATA_ATTR long lastWaterValue = 0;
+RTC_DATA_ATTR int lastPumpRunning = 0;    /**< store last successfully waterd plant */
+RTC_DATA_ATTR long lastWaterValue = 0;    /**< to calculate the used water per plant */
 
 RTC_DATA_ATTR int gBootCount = 0;
-
-//FIXME use -1 and configure properly
-RTC_DATA_ATTR int rtcLipoTempIndex = 0;
-RTC_DATA_ATTR int rtcWaterTempIndex = -1;
 
 /******************************************************************************
  *                            LOCAL VARIABLES
@@ -196,9 +192,6 @@ void mode2MQTT()
   sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
   sensorSolar.setProperty("volt").send(String(mSolarVoltage));
 
-  rtcLipoTempIndex = lipoSensorIndex.get();
-  rtcWaterTempIndex = waterSensorIndex.get();
-
   sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(mTempLipo));
   Serial << "Lipo Temperatur " << mTempLipo << " °C " << endl;
 
@@ -310,12 +303,7 @@ void readSensors()
   for (int i = 0; i < sensorCount; i++) {
     float temp = sensors.getTempCByIndex(i);
     Serial << "OneWire sensor " << i << " has value " << temp << endl;
-    if (rtcWaterTempIndex != -1 && rtcWaterTempIndex == i) {
-      mTempWater = temp;
-    }
-    if (rtcLipoTempIndex != -1 && rtcLipoTempIndex == i) {
-      mTempLipo = temp;
-    }
+    /** FIXME: handle via address */
   }
 
   // Update battery chip data
@@ -467,8 +455,9 @@ void systemInit()
   // Set default values
 
   //in seconds
-  maxTimeBetweenMQTTUpdates.setDefaultValue(700);
-  deepSleepTime.setDefaultValue(600);
+  deepSleepTime.setDefaultValue(600).setValidator([] (long candidate) {
+    return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */ );
+  });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -477,8 +466,8 @@ void systemInit()
   waterLevelMin.setDefaultValue(50);   /* 5cm in mm */
   waterLevelWarn.setDefaultValue(500); /* 50cm in mm */
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
-  lipoSensorIndex.setDefaultValue(0);
-  waterSensorIndex.setDefaultValue(-1);
+  lipoSensorAddr.setDefaultValue("");
+  waterSensorAddr.setDefaultValue("");
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
@@ -522,7 +511,6 @@ void systemInit()
         .setDatatype(NUMBER_TYPE)
         .setUnit("V");
     sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
-    startupReason.advertise("startupReason").setDatatype(NUMBER_TYPE).setUnit("Enum");
   }
   stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
 }
