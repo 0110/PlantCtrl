@@ -3319,4 +3319,6 @@ Wire Wire Line
 	11950 8000 11950 8050
 Wire Wire Line
 	11950 8050 12350 8050
+Text Notes 16600 7300 0    207  ~ 0
+TODO: Richtige Shot-Diode bestellen
 $EndSCHEMATC
