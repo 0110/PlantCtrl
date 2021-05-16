@@ -3321,4 +3321,6 @@ Wire Wire Line
 	11950 8050 12350 8050
 Text Notes 16600 7300 0    207  ~ 0
 TODO: Richtige Shot-Diode bestellen
+Text Notes 7800 4150 0    129  ~ 0
+TODO: Button mit nur zwei Pins nutzen, statt den 4pin-varianten
 $EndSCHEMATC
