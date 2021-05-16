@@ -2207,9 +2207,9 @@ Wire Wire Line
 	9800 5750 10100 5750
 Wire Wire Line
 	9800 5450 9800 5350
-Text GLabel 11400 6350 2    50   Input ~ 0
-Temp
 Text GLabel 11400 6150 2    50   Input ~ 0
+Temp
+Text GLabel 11400 6350 2    50   Input ~ 0
 CUSTOM_GPIO1
 Text GLabel 11400 6250 2    50   Input ~ 0
 PLANT_CTRL_PUMP_1

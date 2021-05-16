@@ -65,12 +65,12 @@
 #define OUTPUT_ENABLE_SENSOR 14 /**< GPIO 14 - Enable Sensors  */
 #define OUTPUT_ENABLE_PUMP   13 /**< GPIO 13 - Enable Pumps  */
 
-#define SENSOR_ONEWIRE      12 /**< GPIO 12 - Temperatur sensor, Battery and other cool onewire stuff */
+#define SENSOR_ONEWIRE      4 /**< GPIO 12 - Temperatur sensor, Battery and other cool onewire stuff */
 #define SENSOR_TANK_ECHO    16 /**< GPIO 16 - echo feedback of water sensor */ 
 #define SENSOR_TANK_TRG     17 /**< GPIO 17 - trigger for water sensor */
 #define BUTTON              0  /**< GPIO 0 - Fix button of NodeMCU */
 #define CUSTOM1_PIN3        2   /**< GPIO 2 - Custom GPIO controlling a MOSFET, connected to GND */
-#define CUSTOM1_PIN2        4   /**< GPIO 4 - custom GPIO directly connected to GPIO header */
+#define CUSTOM1_PIN2        12   /**< GPIO 4 - custom GPIO directly connected to GPIO header */
 #define I2C1_PIN2          34   /**< GPIO 34 - I2C */
 #define I2C1_PIN3          35   /**< GPIO 35 - I2C */
 /* @} */
