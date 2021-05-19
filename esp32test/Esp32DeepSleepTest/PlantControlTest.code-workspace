@@ -15,7 +15,14 @@
 			"functional": "cpp",
 			"string": "cpp",
 			"typeinfo": "cpp",
-			"cmath": "cpp"
+			"cmath": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"initializer_list": "cpp",
+			"regex": "cpp"
 		}
 	}
 }

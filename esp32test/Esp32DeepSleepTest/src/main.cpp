@@ -8,13 +8,12 @@
 
 #define SENSOR_DS18B20      2 /**< GPIO 2 */
 
-
 #define OUTPUT_PUMP0        17  /**< GPIO 23  */
 #define OUTPUT_PUMP1        05  /**< GPIO 22  */
 #define OUTPUT_PUMP2        18  /**< GPIO 21 */
 #define OUTPUT_PUMP3        19  /**< GPIO 19 */
 #define OUTPUT_PUMP4        21  /**< GPIO 18 */
-#define OUTPUT_PUMP5        22  /**< GPIO 5  */
+#define OUTPUT_PUMP5        15  /**< GPIO 5  */
 #define OUTPUT_PUMP6        23  /**< GPIO 15 */
 
 #define OUTPUT_SENSOR       16  /**< GPIO 16 - Enable Sensors  */
@@ -50,26 +49,34 @@ void print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\r\n",wakeup_reason); break;
   }
 }
 
 bool whatever = true;
 
-void setAll2Off() {
-  digitalWrite(OUTPUT_PUMP0, LOW);
-  digitalWrite(OUTPUT_PUMP1, LOW);
-  digitalWrite(OUTPUT_PUMP2, LOW);
-  digitalWrite(OUTPUT_PUMP3, LOW);
-  digitalWrite(OUTPUT_PUMP4, LOW);
-  digitalWrite(OUTPUT_PUMP5, LOW);
-  digitalWrite(OUTPUT_PUMP6, LOW);
-  digitalWrite(OUTPUT_SENSOR, LOW);
-  digitalWrite(OUTPUT_PUMP, LOW);
+void setAll2to(int state) {
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP0) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP0, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP1) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP1, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP2) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP2, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP3) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP3, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP4) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP4, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP5) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP5, state);
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP6) + "=" + String(state));
+  digitalWrite(OUTPUT_PUMP6, state);
+  Serial.println("Set GPIO" + String(OUTPUT_SENSOR) + "=" + String(state));
+  digitalWrite(OUTPUT_SENSOR, state);
 }
 
 void setup() {
 
+  Serial.begin(115200);
   pinMode(OUTPUT_PUMP0, OUTPUT);
   pinMode(OUTPUT_PUMP1, OUTPUT);
   pinMode(OUTPUT_PUMP2, OUTPUT);
@@ -79,12 +86,8 @@ void setup() {
   pinMode(OUTPUT_PUMP6, OUTPUT);
   pinMode(OUTPUT_SENSOR, OUTPUT);
   pinMode(OUTPUT_PUMP, OUTPUT);
-
   pinMode(SENSOR_PLANT0, ANALOG);
 
-  setAll2Off();
-  
-  Serial.begin(9600);
 
   //Increment boot number and print it every reboot
   ++bootCount;
@@ -93,6 +96,16 @@ void setup() {
 
   //Print the wakeup reason for ESP32
   print_wakeup_reason();
+  Serial.println("------- build from " + String(__DATE__) + "=" + String(__TIME__) + " @ " + String(millis()) + "ms");
+  Serial.println("Set GPIO" + String(OUTPUT_PUMP) + "=" + String(LOW));
+  digitalWrite(OUTPUT_PUMP, LOW);
+
+  setAll2to(HIGH);
+  delay(1000);
+  Serial.println("--------------------------" + String(" @ ") + String(millis()) + "ms");
+  setAll2to(LOW);
+  delay(1000);
+  Serial.println("--------------------------" + String(" @ ") + String(millis()) + "ms");
 
   /* activate power pump and pump 0 */
 
