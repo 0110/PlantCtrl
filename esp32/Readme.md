@@ -18,6 +18,7 @@ Uses ESP32MiniKit
   * Solar powered (voltage)
   * Lipo-Powered (voltage)
   * Temperature
+  * Distance sensor [JSN-SR04T-2.0] (for waterlevel)
  * Custom GPIO
 
 ## Documentation of Power-Modes
@@ -41,35 +42,18 @@ DS18B20 one wire temp sensor
 ## Empires Wunschliste
  * Pflanze
   * Pumpe
-   * Zeitspann (wann laufen darf)
-   * Helligkeitstrigger (Um den Morgen zum pumpen zu erkennen)
-   * Maximal Dauer zum Pumpen (als Zeit oder Milliliter)
-   * Zeitspanne zwischen zwei Pumpvorgängen
+   * [x] Zeitspann (wann laufen darf)
+   * [x] Helligkeitstrigger (Um den Morgen zum pumpen zu erkennen)
+   * [-] Maximal Dauer zum Pumpen (als Zeit oder Milliliter)
+   * [x] Zeitspanne zwischen zwei Pumpvorgängen
   * Moister sensor
-   * Oberen
-   * Unteren Wert
+   * [x] Schwellwert für Pumpe
 * Tank
  * Füllstand Anzeige (in Liter)
  * Minimum Wasserstand (in cm damit Pumpen nicht leer laufen; enspricht 0 nutzbaren Liter)
- * Trigger-Erinnerungen um Wasser nachzufüllen
- * Maximaler Wasserstand des Tanks (in cm & Liter)
-* System
- * Tiefentladungsschutz vom LIPO (fest im Controller die Spannung festlegen)
-  * 3.5V unterschritten, dann nur noch Deepsleep
-  * MQTT Topic, wenn Spannung unterschritten wurde
- * Lipo innerhalb 24h nicht geladen -> MQTT Topic
- * Deep-Sleep
-  * Mode1: 
-    * Nur Sensor werte einsameln
-    * Wird verlassen bei Aktionen
-        * Pumpe schalten
-        * MQTT Nachrichten
-        * nach x Minuten nur in Mode1
-  * Mode2: 
-    * WLAN aktivieren und Werte über MQTT raus hauen
-    * aktuelle Werte raushauen
-    * MQTT lesen
-  * Mode3:
-    * Deepsleep verboten (MQTT topic, retained)
-    * alle Pumpen & Sensoren deaktiviert
+ * [x] Maximaler Wasserstand des Tanks (in cm & Liter)
+
+## Masterplan 2.0
+ * Partitionslayout
+
 

@@ -1,0 +1,31 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#(c) SnapEDA 2016 (snapeda.com)
+#This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA) with Design Exception 1.0
+#
+# SX1308
+#
+DEF SX1308 U 0 40 Y Y 1 L N
+F0 "U" -700 800 50 H V L BNN
+F1 "SX1308" -701 701 50 H V L BNN
+F2 "SOT-23-6" 0 0 50 H I L BNN
+F3 "" 0 0 50 H I L BNN
+DRAW
+P 2 0 0 10 -700 600 0 600 N
+P 2 0 0 10 0 600 0 -300 N
+P 2 0 0 10 0 -300 -700 -300 N
+P 2 0 0 10 -700 -300 -700 600 N
+P 2 0 0 10 -543 7 -443 7 N
+P 2 0 0 10 -443 7 -445 66 N
+P 2 0 0 10 -445 66 -345 66 N
+T 0 -428 -2 32 0 0 0 ON/OFF Normal 0 L B
+X SW 1 200 500 200 L 40 40 0 0 B 
+X FB 3 200 -100 200 L 40 40 0 0 B 
+X IN 5 -900 500 200 R 40 40 0 0 B 
+X EN 4 -900 100 200 R 40 40 0 0 B 
+X GND 2 -900 -200 200 R 40 40 0 0 B 
+X N/C 6 200 200 200 L 40 40 0 0 B 
+ENDDRAW
+ENDDEF
+#
+# End Library

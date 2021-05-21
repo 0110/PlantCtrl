@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP CN61CN33
+D Microprocessor Reset (active-low) Circuit, SOT-23
+K reset supervisor
+F http://www.ti.com/lit/ds/symlink/lm809.pdf
+$ENDCMP
+#
+#End Doc Library

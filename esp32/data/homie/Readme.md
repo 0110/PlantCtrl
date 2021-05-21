@@ -7,3 +7,6 @@ Open a new Atom-Terminal and generate the filesystem with the following command 
 ```pio run -t buildfs```
 Upload this new generated filesystem with:
 ```pio run -t uploadfs```
+
+## Command pio
+Can be found at ```~/.platformio/penv/bin/pio```

@@ -24,6 +24,7 @@ private:
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
+    int mPlantId = -1;
 
 public:
     PlantSettings_t *mSetting;
@@ -97,23 +98,26 @@ public:
 
     void init(void);
 
-    /** @fn  bool isInCooldown(long sinceLastActivation)
-     *  @brief determine, if the plant was recently casted
-     *  @param sinceLastActivation timestamp of last time
-     */
-    bool isInCooldown(long sinceLastActivation)
-    {
-        /* if the time difference is greater than one month, we know these are initial values */
-        if (sinceLastActivation > (60 * 60 * 24 * 30))
-        {
-            return false;
-        }
-
-        return (getCooldownInSeconds() > sinceLastActivation);
+    long getCooldownInSeconds() {
+        return this->mSetting->pPumpCooldownInHours->get()*60*60;
     }
 
-    long getCooldownInSeconds(){
-        return this->mSetting->pPumpCooldownInHours->get()*60*60;
+    /**
+     * @brief Get the Hours when pumping should start
+     * 
+     * @return hour 
+     */
+    int getHoursStart() {
+        return this->mSetting->pPumpAllowedHourRangeStart->get();
+    }
+
+    /**
+     * @brief Get the Hours when pumping should end
+     * 
+     * @return hour 
+     */
+    int getHoursEnd() {
+        return this->mSetting->pPumpAllowedHourRangeEnd->get();
     }
 
     bool isAllowedOnlyAtLowLight(void)

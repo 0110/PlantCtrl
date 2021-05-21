@@ -6,19 +6,23 @@
 	],
 	"settings": {
 		"files.associations": {
-			"functional": "cpp",
 			"*.tcc": "cpp",
-			"map": "cpp",
-			"*.cps": "javascript",
 			"bitset": "cpp",
 			"algorithm": "cpp",
 			"istream": "cpp",
 			"limits": "cpp",
 			"streambuf": "cpp",
+			"functional": "cpp",
 			"string": "cpp",
 			"typeinfo": "cpp",
 			"cmath": "cpp",
-			"iterator": "cpp"
+			"array": "cpp",
+			"deque": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"initializer_list": "cpp",
+			"regex": "cpp"
 		}
 	}
 }
