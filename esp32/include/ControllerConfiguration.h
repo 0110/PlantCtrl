@@ -78,7 +78,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "1.1.0"
+#define FIRMWARE_VERSION "sw 1.2 hw 0.9"
 
 #define MOIST_SENSOR_MAX_ADC                (85 * 4095 / 100)
 #define MOIST_SENSOR_MIN_ADC                (25 * 4095 / 100)

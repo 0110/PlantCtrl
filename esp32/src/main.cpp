@@ -32,6 +32,13 @@
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 1000
+#define TEST_TOPIC "roundtrip\0"
+
+#define getTopic char* topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(TEST_TOPIC) + 1]; \
+    strcpy(topic, Homie.getConfiguration().mqtt.baseTopic); \
+    strcat(topic, Homie.getConfiguration().deviceId); \
+    strcat(topic, "/"); \
+    strcat(topic, TEST_TOPIC);
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -45,16 +52,18 @@ void readPowerSwitchedSensors();
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
-RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
+RTC_SLOW_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
+RTC_SLOW_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 
-RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
+RTC_SLOW_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
 
 /******************************************************************************
  *                            LOCAL VARIABLES
 ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false; /**< Sensors are read without Wifi or MQTT */
+bool volatile mAliveWasRead = false;
+bool volatile mMQTTReady = false;
 
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
@@ -68,7 +77,7 @@ unsigned long setupFinishedTimestamp;
 
 OneWire oneWire(SENSOR_ONEWIRE);
 DallasTemperature sensors(&oneWire);
-DS2438 battery(&oneWire, 0.1f);
+DS2438 battery(&oneWire, 0.0333333f);
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -105,23 +114,25 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
     Serial << "abort deepsleep, DownloadMode active" << endl;
     return;
   }
-  for (int i = 0; i < 10; i++)
-  {
-    long cTime = getCurrentTime();
-    if (cTime < 100000)
+  if(withHomieShutdown){
+    for (int i = 0; i < 10; i++)
     {
-      Serial << "Wait for ntp" << endl;
-      delay(100);
-    }
-    else
-    {
-      break;
+      long cTime = getCurrentTime();
+      if (cTime < 100000)
+      {
+        Serial << "Wait for ntp" << endl;
+        delay(100);
+      }
+      else
+      {
+        break;
+      }
     }
   }
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
   if (activatePump)
   {
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
@@ -130,7 +141,6 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
   }
   else
   {
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
     gpio_hold_dis(OUTPUT_ENABLE_PUMP); //pump pwr
     gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
@@ -140,14 +150,20 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
       mPlants[i].deactivatePump();
     }
   }
-  //gpio_hold_en(GPIO_NUM_23); //p0
+  gpio_hold_en(OUTPUT_PUMP0);
+  gpio_hold_en(OUTPUT_PUMP1);
+  gpio_hold_en(OUTPUT_PUMP2);
+  gpio_hold_en(OUTPUT_PUMP3);
+  gpio_hold_en(OUTPUT_PUMP4);
+  gpio_hold_en(OUTPUT_PUMP5);
+  gpio_hold_en(OUTPUT_PUMP6);
   //FIXME fix for outher outputs
 
   Serial.print("Trying to sleep for ");
   Serial.print(seconds);
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
-
+  Serial.flush();
   if(withHomieShutdown){
     Homie.prepareToSleep();
   }else {
@@ -254,6 +270,14 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
+
+void onMessage(char* incoming, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total){
+  getTopic
+  if(strcmp(incoming,topic) == 0){
+    mAliveWasRead = true;
+  }
+};
+
 void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
@@ -280,14 +304,17 @@ void onHomieEvent(const HomieEvent &event)
     {
       mPlants[i].postMQTTconnection();
     }
+    {
+      getTopic
+      Homie.getMqttClient().subscribe(topic,2);
+      Homie.getMqttClient().publish(topic, 2, false, "ping");
+      Homie.getMqttClient().onMessage(onMessage);
+    }
+    mMQTTReady = true;
 
-    plantcontrol(true);
     break;
   case HomieEventType::OTA_STARTED:
     Homie.getLogger() << "OTA started" << endl;
-    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
-    gpio_hold_dis(GPIO_NUM_13); //pump pwr
-    gpio_deep_sleep_hold_dis();
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].deactivatePump();
@@ -297,7 +324,6 @@ void onHomieEvent(const HomieEvent &event)
   case HomieEventType::OTA_SUCCESSFUL:
     Homie.getLogger() << "OTA successfull" << endl;
     digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
-    digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     ESP.restart();
     break;
   default:
@@ -364,21 +390,31 @@ bool aliveHandler(const HomieRange &range, const String &value)
 {
   if (range.isRange)
     return false; // only one controller is present
+    Serial.println("aliuve handler");
+    Serial.flush();
   if (value.equals("ON") || value.equals("On") || value.equals("1"))
   {
     mDownloadMode = true;
   }
   else
   {
+    if(mDownloadMode){
+      esp_restart();
+    }
     mDownloadMode = false;
   }
 
   return true;
 }
 
+bool notStarted = true;
 void homieLoop()
 {
-
+  if(mMQTTReady && mAliveWasRead && notStarted){
+    Serial.println("received alive & mqtt is ready");
+    notStarted = false;
+    plantcontrol(true);
+  }
 }
 
 /**
@@ -475,6 +511,10 @@ void setup()
   {
     Serial <<"Wifi mode set to " << WIFI_STA << endl;
     WiFi.mode(WIFI_STA);
+
+    
+
+
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].advertise();
