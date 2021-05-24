@@ -369,7 +369,7 @@ int determineNextPump()
     {
       if ((plant.getHoursStart() > getCurrentHour() && plant.getHoursEnd() < getCurrentHour()) || 
           (getCurrentTime() < 10000) /* no time from NTP received */)
-      {
+      {todotdotdotodtodtoedot
         Serial.printf("%d Requested pumping\r\n", i);
         pumpToUse = i;
       } else {
@@ -561,6 +561,8 @@ void setup()
         .setUnit("V");
     sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
   } else {
+    Serial <<"Wifi mode set to " << WIFI_AP_STA << endl;
+    WiFi.mode(WIFI_AP_STA);
     Serial.println("Initial Setup. Start Accesspoint...");
     mDownloadMode = true;
   }
