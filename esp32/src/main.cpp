@@ -26,6 +26,8 @@
 #include <math.h>
 #include <OneWire.h>
 #include "DS2438.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 /******************************************************************************
  *                                     DEFINES
@@ -319,11 +321,16 @@ void onHomieEvent(const HomieEvent &event)
     {
       mPlants[i].deactivatePump();
     }
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
+    delay(100);
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
     mDownloadMode = true;
     break;
   case HomieEventType::OTA_SUCCESSFUL:
-    Homie.getLogger() << "OTA successfull" << endl;
+    Homie.getLogger() << "OTA successful" << endl;
     digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
+    digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     ESP.restart();
     break;
   default:
@@ -444,7 +451,10 @@ void setup()
 
   // Power pins
   pinMode(OUTPUT_ENABLE_PUMP, OUTPUT);
+
   digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
+
+
   pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
 
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
@@ -673,7 +683,12 @@ void plantcontrol(bool withHomie)
     }
     else
     {
+      //prevent BOD to be paranoid
+      WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
       digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
+      delay(100);
+      WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
+
       rtcLastWateringPlant[lastPumpRunning] = getCurrentTime();
       mPlants[lastPumpRunning].activatePump();
     }
