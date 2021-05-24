@@ -38,14 +38,14 @@
 ******************************************************************************/
 
 int determineNextPump();
-void plantcontrol();
+void plantcontrol(boolean withHomie);
 void readPowerSwitchedSensors();
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-RTC_DATA_ATTR int lastPumpRunning = 0; /**< store last successfully waterd plant */
+RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
 RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 
 RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
@@ -54,7 +54,6 @@ RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
  *                            LOCAL VARIABLES
 ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
-bool volatile mDeepsleep = false;   /**< about to sleep, clearing the todolist of the controller */
 bool volatile mSensorsRead = false; /**< Sensors are read without Wifi or MQTT */
 
 bool mConfigured = false;
@@ -99,7 +98,7 @@ int getCurrentHour()
   return info.tm_hour;
 }
 
-void espDeepSleepFor(long seconds, bool activatePump = false)
+void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
 {
   if (mDownloadMode)
   {
@@ -127,12 +126,12 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
   {
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
     gpio_deep_sleep_hold_en();
-    gpio_hold_en(GPIO_NUM_13); //pump pwr
+    gpio_hold_en(OUTPUT_ENABLE_PUMP); //pump pwr
   }
   else
   {
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-    gpio_hold_dis(GPIO_NUM_13); //pump pwr
+    gpio_hold_dis(OUTPUT_ENABLE_PUMP); //pump pwr
     gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
@@ -149,12 +148,19 @@ void espDeepSleepFor(long seconds, bool activatePump = false)
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
 
-  mDeepsleep = true;
+  if(withHomieShutdown){
+    Homie.prepareToSleep();
+  }else {
+    Serial << "Bye offline mode" << endl;
+    Serial.flush();
+    esp_deep_sleep_start();
+  }
+  
 }
 
 
 //requires homie being started
-void readOneWireSensors(boolean withMQTT){
+void readOneWireSensors(bool withMQTT){
   int sensorCount = sensors.getDS18Count();
   Serial << "Read OneWire" << endl;
   Serial.flush();
@@ -252,6 +258,11 @@ void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
   {
+  case HomieEventType::READY_TO_SLEEP:
+    Serial << "Bye homie mode" << endl;
+    Serial.flush();
+    esp_deep_sleep_start();
+    break;
   case HomieEventType::SENDING_STATISTICS:
     break;
   case HomieEventType::MQTT_READY:
@@ -264,13 +275,13 @@ void onHomieEvent(const HomieEvent &event)
     Serial.printf("NTP Setup with server %s\r\n", ntpServer.get());
     configTime(0, 0, ntpServer.get());
 
-    Serial << "Setup plants" << endl;
+    Serial << "publish plants mqtt" << endl;
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].postMQTTconnection();
     }
 
-    plantcontrol();
+    plantcontrol(true);
     break;
   case HomieEventType::OTA_STARTED:
     Homie.getLogger() << "OTA started" << endl;
@@ -523,9 +534,7 @@ void loop()
       digitalWrite(OUTPUT_ENABLE_SENSOR, !digitalRead(OUTPUT_ENABLE_SENSOR));
     }
   }
-  else if (!mDeepsleep)
-  {
-
+  else {
     unsigned long timeSinceSetup = millis() - setupFinishedTimestamp;
     if ((timeSinceSetup > MQTT_TIMEOUT) && (!mSensorsRead)) {
       mSensorsRead = true;
@@ -533,18 +542,12 @@ void loop()
       WiFi.mode(WIFI_OFF);
       Serial <<"Wifi mode set to " << WIFI_OFF  << " mqqt was no reached within " << timeSinceSetup << "ms , fallback to offline mode " << endl;
       Serial.flush();
-      plantcontrol();
+      plantcontrol(false);
     }
-  }
-  else
-  {
-    Serial << "Bye" << endl;
-    Serial.flush();
-    esp_deep_sleep_start();
   }
 
   /** Timeout always stopping the ESP -> no endless power consumption */
-  if (millis() > 30000 && !mDownloadMode)
+  if (millis() > 60000 && !mDownloadMode)
   {
     Serial << (millis() / 1000) << "not terminated watchdog reset" << endl;
     Serial.flush();
@@ -557,7 +560,7 @@ void loop()
  * @fn plantcontrol
  * Main function, doing the logic
  */
-void plantcontrol()
+void plantcontrol(bool withHomie)
 {
   if (lastPumpRunning != -1)
   {
@@ -589,25 +592,31 @@ void plantcontrol()
     mPlants[i].setProperty("moist").send(String(pct));
     mPlants[i].setProperty("moistraw").send(String(raw));
   }
-  sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
+
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
   lastWaterValue = waterRawSensor.getAverage();
 
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
+  Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
+
+  if(withHomie){
+    sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
+    sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
+    sensorLipo.setProperty("volt").send(String(batteryVoltage));
+    sensorLipo.setProperty("current").send(String(battery.getCurrent()));
+    sensorLipo.setProperty("Ah").send(String(battery.getAh()));
+    sensorLipo.setProperty("ICA").send(String(battery.getICA()));
+    sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
+    sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
+    sensorSolar.setProperty("volt").send(String(mSolarVoltage));
+    sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
+  } else {
+    Serial.println("Skipping MQTT, offline mode");
+    Serial.flush();
+  }
   
 
-  sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
-  sensorLipo.setProperty("volt").send(String(batteryVoltage));
-  sensorLipo.setProperty("current").send(String(battery.getCurrent()));
-  sensorLipo.setProperty("Ah").send(String(battery.getAh()));
-  sensorLipo.setProperty("ICA").send(String(battery.getICA()));
-  sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
-  sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
-  sensorSolar.setProperty("volt").send(String(mSolarVoltage));
-
-  sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
-  Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
   bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
@@ -637,18 +646,18 @@ void plantcontrol()
     {
       Serial.print(mSolarVoltage);
       Serial.println("V! No pumps to activate and low light, deepSleepNight");
-      espDeepSleepFor(deepSleepNightTime.get());
+      espDeepSleepFor(deepSleepNightTime.get(), false, withHomie);
     }
     else
     {
       Serial.println("No pumps to activate, deepSleep");
-      espDeepSleepFor(deepSleepTime.get());
+      espDeepSleepFor(deepSleepTime.get(), false ,withHomie);
     }
   }
   else
   {
     Serial.println("Running pump, watering deepsleep");
-    espDeepSleepFor(wateringDeepSleep.get(), true);
+    espDeepSleepFor(wateringDeepSleep.get(), true, withHomie);
   }
 }
 
