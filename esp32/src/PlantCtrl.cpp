@@ -44,8 +44,14 @@ void Plant::init(void)
     });
 
     /* Initialize Hardware */
+    Serial.println("Set GPIO mode " + String(mPinPump) + "=" + String(OUTPUT));
+    Serial.flush();
     pinMode(this->mPinPump, OUTPUT);
+    Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
+    Serial.flush();
     pinMode(this->mPinSensor, ANALOG);
+    Serial.println("Set GPIO " + String(mPinPump) + "=" + String(LOW));
+    Serial.flush();
     digitalWrite(this->mPinPump, LOW);
 }
 
