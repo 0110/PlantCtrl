@@ -281,11 +281,48 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
+void copyFile(const char *source, const char *target)
+{
+  byte buffer[512];
+  File file = SPIFFS.open(source, FILE_READ);
+  File file2 = SPIFFS.open(target, FILE_WRITE);
+  if (!file)
+  {
+    Serial << "There was an error opening " << source << " for reading" << endl;
+    return;
+  }
+  if (!file2)
+  {
+    Serial << "There was an error opening " << target << " for reading" << endl;
+    return;
+  }
+  while (file.available())
+  {
+    int read = file.read(buffer, 512);
+    if (read < 0)
+    {
+      Serial << "copy file is fucked" << endl;
+    }
+    else
+    {
+      file.write(buffer, read);
+    }
+  }
+  file2.flush();
+  Serial << "copy finished " << source << " -> " << target << endl;
+  file.close();
+  file2.close();
+}
+
 void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
   getTopic if (strcmp(incoming, topic) == 0)
   {
     mAliveWasRead = true;
+  }
+  if (strstr(incoming, "$implementation/config/set") > 0)
+  {
+    copyFile("/homie/config.json", "/homie/config.old");
   }
 };
 
@@ -610,17 +647,22 @@ void loop()
       }
       else
       {
-        nextBlink = millis() + 5000;
         if (lastPumpRunning >= 0 && lastPumpRunning < MAX_PLANTS)
         {
           mPlants[lastPumpRunning].deactivatePump();
         }
-        if (lastPumpRunning > MAX_PLANTS)
+         if (lastPumpRunning >= MAX_PLANTS)
         {
           digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
+          nextBlink = millis() + 500;
         }
-        if (lastPumpRunning < MAX_PLANTS){
+        else
+        {
           lastPumpRunning++;
+          nextBlink = millis() + 5000;
+        }
+        if (lastPumpRunning < MAX_PLANTS)
+        {
           mPlants[lastPumpRunning].activatePump();
         }
       }
