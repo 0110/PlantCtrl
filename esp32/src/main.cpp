@@ -36,11 +36,12 @@
 #define MAX_TANK_DEPTH 1000
 #define TEST_TOPIC "roundtrip\0"
 
-#define getTopic char* topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(TEST_TOPIC) + 1]; \
-    strcpy(topic, Homie.getConfiguration().mqtt.baseTopic); \
-    strcat(topic, Homie.getConfiguration().deviceId); \
-    strcat(topic, "/"); \
-    strcat(topic, TEST_TOPIC);
+#define getTopic                                                                                                                                    \
+  char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(TEST_TOPIC) + 1]; \
+  strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                           \
+  strcat(topic, Homie.getConfiguration().deviceId);                                                                                                 \
+  strcat(topic, "/");                                                                                                                               \
+  strcat(topic, TEST_TOPIC);
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -55,15 +56,15 @@ void readPowerSwitchedSensors();
 ******************************************************************************/
 
 RTC_SLOW_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
-RTC_SLOW_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
+RTC_SLOW_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
 
-RTC_SLOW_ATTR long rtcLastWateringPlant[MAX_PLANTS] = { 0 };
+RTC_SLOW_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
 
 /******************************************************************************
  *                            LOCAL VARIABLES
 ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
-bool volatile mSensorsRead = false; /**< Sensors are read without Wifi or MQTT */
+bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
 bool volatile mAliveWasRead = false;
 bool volatile mMQTTReady = false;
 
@@ -71,9 +72,8 @@ bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
 
 RunningMedian waterRawSensor = RunningMedian(5);
-float mSolarVoltage = 0.0f;   /**< Voltage from solar panels */
+float mSolarVoltage = 0.0f; /**< Voltage from solar panels */
 unsigned long setupFinishedTimestamp;
-
 
 /*************************** Hardware abstraction *****************************/
 
@@ -116,7 +116,8 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
     Serial << "abort deepsleep, DownloadMode active" << endl;
     return;
   }
-  if(withHomieShutdown){
+  if (withHomieShutdown)
+  {
     for (int i = 0; i < 10; i++)
     {
       long cTime = getCurrentTime();
@@ -166,19 +167,21 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
   Serial.flush();
-  if(withHomieShutdown){
+  if (withHomieShutdown)
+  {
     Homie.prepareToSleep();
-  }else {
+  }
+  else
+  {
     Serial << "Bye offline mode" << endl;
     Serial.flush();
     esp_deep_sleep_start();
   }
-  
 }
 
-
 //requires homie being started
-void readOneWireSensors(bool withMQTT){
+void readOneWireSensors(bool withMQTT)
+{
   int sensorCount = sensors.getDS18Count();
   Serial << "Read OneWire" << endl;
   Serial.flush();
@@ -200,22 +203,28 @@ void readOneWireSensors(bool withMQTT){
              ds18b20Address[6],
              ds18b20Address[7]);
 
-      if (String(lipoSensorAddr.get()).compareTo(String(buf))) {
-        if(withMQTT){
-          sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
-        }
-        Serial << "Lipo Temperatur " << temp << " °C " << endl;
-      } else if (String(waterSensorAddr.get()).compareTo(String(buf))) {
-        if(withMQTT){
-          sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
-        }
-        Serial << "Water Temperatur " << temp << " °C " << endl;      
+    if (String(lipoSensorAddr.get()).compareTo(String(buf)))
+    {
+      if (withMQTT)
+      {
+        sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
       }
-      /* Always send the sensor address with the temperatur value */
-      if(withMQTT){        
-        sensorTemp.setProperty(String(buf)).send(String(temp));
+      Serial << "Lipo Temperatur " << temp << " °C " << endl;
+    }
+    else if (String(waterSensorAddr.get()).compareTo(String(buf)))
+    {
+      if (withMQTT)
+      {
+        sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
       }
-      Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;      
+      Serial << "Water Temperatur " << temp << " °C " << endl;
+    }
+    /* Always send the sensor address with the temperatur value */
+    if (withMQTT)
+    {
+      sensorTemp.setProperty(String(buf)).send(String(temp));
+    }
+    Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;
   }
 
   battery.update();
@@ -272,10 +281,10 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
-
-void onMessage(char* incoming, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total){
-  getTopic
-  if(strcmp(incoming,topic) == 0){
+void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+{
+  getTopic if (strcmp(incoming, topic) == 0)
+  {
     mAliveWasRead = true;
   }
 };
@@ -292,7 +301,8 @@ void onHomieEvent(const HomieEvent &event)
   case HomieEventType::SENDING_STATISTICS:
     break;
   case HomieEventType::MQTT_READY:
-    if (mSensorsRead) {
+    if (mSensorsRead)
+    {
       Serial.printf("Timeout occured... too late!\r\n");
       return;
     }
@@ -308,7 +318,8 @@ void onHomieEvent(const HomieEvent &event)
     }
     {
       getTopic
-      Homie.getMqttClient().subscribe(topic,2);
+          Homie.getMqttClient()
+              .subscribe(topic, 2);
       Homie.getMqttClient().publish(topic, 2, false, "ping");
       Homie.getMqttClient().onMessage(onMessage);
     }
@@ -350,8 +361,8 @@ int determineNextPump()
       Serial.printf("%d Skip deactivated pump\r\n", i);
       continue;
     }
-    if ((rtcLastWateringPlant[i] > 0) 
-        && ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) < getCurrentTime())) {
+    if ((rtcLastWateringPlant[i] > 0) && ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) < getCurrentTime()))
+    {
       Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, rtcLastWateringPlant[i], plant.getCooldownInSeconds());
       continue;
     }
@@ -367,20 +378,20 @@ int determineNextPump()
     }
     if (plant.isPumpRequired())
     {
-           /* Handle e.g. start = 21, end = 8 */
+      /* Handle e.g. start = 21, end = 8 */
       if (((plant.getHoursStart() > plant.getHoursEnd()) &&
-            (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd()))
-          ||
+           (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd())) ||
           /* Handle e.g. start = 8, end = 21 */
           ((plant.getHoursStart() < plant.getHoursEnd()) &&
-            (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd()))
-          || 
+           (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd())) ||
           /* no time from NTP received */
-          (getCurrentTime() < 10000) )
+          (getCurrentTime() < 10000))
       {
         Serial.printf("%d Requested pumping\r\n", i);
         pumpToUse = i;
-      } else {
+      }
+      else
+      {
         Serial.printf("%d ignored due to time boundary: %d to %d (current %d)\r\n", i, plant.getHoursStart(), plant.getHoursEnd(), getCurrentHour());
       }
       continue;
@@ -405,15 +416,16 @@ bool aliveHandler(const HomieRange &range, const String &value)
 {
   if (range.isRange)
     return false; // only one controller is present
-    Serial.println("aliuve handler");
-    Serial.flush();
+  Serial.println("aliuve handler");
+  Serial.flush();
   if (value.equals("ON") || value.equals("On") || value.equals("1"))
   {
     mDownloadMode = true;
   }
   else
   {
-    if(mDownloadMode){
+    if (mDownloadMode)
+    {
       esp_restart();
     }
     mDownloadMode = false;
@@ -425,7 +437,8 @@ bool aliveHandler(const HomieRange &range, const String &value)
 bool notStarted = true;
 void homieLoop()
 {
-  if(mMQTTReady && mAliveWasRead && notStarted){
+  if (mMQTTReady && mAliveWasRead && notStarted)
+  {
     Serial.println("received alive & mqtt is ready");
     notStarted = false;
     plantcontrol(true);
@@ -443,7 +456,7 @@ void setup()
 
   Serial.begin(115200);
 
-  Serial <<"Wifi mode set to " << WIFI_OFF  << " to allow analog2 useage " << endl;
+  Serial << "Wifi mode set to " << WIFI_OFF << " to allow analog2 useage " << endl;
   WiFi.mode(WIFI_OFF);
   Serial.flush();
 
@@ -462,7 +475,6 @@ void setup()
 
   digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
 
-
   pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
 
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
@@ -471,7 +483,6 @@ void setup()
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
-  
 
   /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -521,17 +532,14 @@ void setup()
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
-  
+
   Homie.setup();
 
   mConfigured = Homie.isConfigured();
   if (mConfigured)
   {
-    Serial <<"Wifi mode set to " << WIFI_STA << endl;
+    Serial << "Wifi mode set to " << WIFI_STA << endl;
     WiFi.mode(WIFI_STA);
-
-    
-
 
     for (int i = 0; i < MAX_PLANTS; i++)
     {
@@ -568,8 +576,13 @@ void setup()
         .setDatatype(NUMBER_TYPE)
         .setUnit("V");
     sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
-  } else {
-    Serial <<"Wifi mode set to " << WIFI_AP_STA << endl;
+  }
+  else
+  {
+    readOneWireSensors(false);
+    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
+    delay(100);
+    Serial << "Wifi mode set to " << WIFI_AP_STA << endl;
     WiFi.mode(WIFI_AP_STA);
     Serial.println("Initial Setup. Start Accesspoint...");
     mDownloadMode = true;
@@ -590,17 +603,38 @@ void loop()
   {
     if (nextBlink < millis())
     {
-      nextBlink = millis() + 500;
       digitalWrite(OUTPUT_ENABLE_SENSOR, !digitalRead(OUTPUT_ENABLE_SENSOR));
+      if (mConfigured)
+      {
+        nextBlink = millis() + 500;
+      }
+      else
+      {
+        nextBlink = millis() + 5000;
+        if (lastPumpRunning >= 0 && lastPumpRunning < MAX_PLANTS)
+        {
+          mPlants[lastPumpRunning].deactivatePump();
+        }
+        if (lastPumpRunning > MAX_PLANTS)
+        {
+          digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
+        }
+        if (lastPumpRunning < MAX_PLANTS){
+          lastPumpRunning++;
+          mPlants[lastPumpRunning].activatePump();
+        }
+      }
     }
   }
-  else {
+  else
+  {
     unsigned long timeSinceSetup = millis() - setupFinishedTimestamp;
-    if ((timeSinceSetup > MQTT_TIMEOUT) && (!mSensorsRead)) {
+    if ((timeSinceSetup > MQTT_TIMEOUT) && (!mSensorsRead))
+    {
       mSensorsRead = true;
       /* Disable Wifi and put modem into sleep mode */
       WiFi.mode(WIFI_OFF);
-      Serial <<"Wifi mode set to " << WIFI_OFF  << " mqqt was no reached within " << timeSinceSetup << "ms , fallback to offline mode " << endl;
+      Serial << "Wifi mode set to " << WIFI_OFF << " mqqt was no reached within " << timeSinceSetup << "ms , fallback to offline mode " << endl;
       Serial.flush();
       plantcontrol(false);
     }
@@ -614,7 +648,6 @@ void loop()
     esp_restart();
   }
 }
-
 
 /***
  * @fn plantcontrol
@@ -660,7 +693,8 @@ void plantcontrol(bool withHomie)
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
-  if(withHomie){
+  if (withHomie)
+  {
     sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
@@ -671,12 +705,12 @@ void plantcontrol(bool withHomie)
     sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
     sensorSolar.setProperty("volt").send(String(mSolarVoltage));
     sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
-  } else {
+  }
+  else
+  {
     Serial.println("Skipping MQTT, offline mode");
     Serial.flush();
   }
-  
-
 
   bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
@@ -684,7 +718,7 @@ void plantcontrol(bool withHomie)
   if (lastPumpRunning != -1 && !hasWater)
   {
     Serial.println("Want to pump but no water");
-  } 
+  }
   else if (lastPumpRunning != -1 && hasWater)
   {
     if (mDownloadMode)
@@ -716,7 +750,7 @@ void plantcontrol(bool withHomie)
     else
     {
       Serial.println("No pumps to activate, deepSleep");
-      espDeepSleepFor(deepSleepTime.get(), false ,withHomie);
+      espDeepSleepFor(deepSleepTime.get(), false, withHomie);
     }
   }
   else

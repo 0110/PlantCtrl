@@ -75,6 +75,8 @@ void Plant::postMQTTconnection(void)
 
 void Plant::deactivatePump(void)
 {
+    int plantId = this->mPlantId;
+    Serial << "deactivating pump " << plantId << endl;
     digitalWrite(this->mPinPump, LOW);
     if (this->mConnected)
     {
@@ -85,6 +87,8 @@ void Plant::deactivatePump(void)
 
 void Plant::activatePump(void)
 {
+    int plantId = this->mPlantId;
+    Serial << "activating pump " << plantId << endl;
     digitalWrite(this->mPinPump, HIGH);
     if (this->mConnected)
     {
