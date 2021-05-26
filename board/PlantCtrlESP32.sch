@@ -32,15 +32,15 @@ Lipo
 $Comp
 L Connector_Generic:Conn_01x03 1WIRE1
 U 1 1 5F109CD6
-P 4800 1150
-F 0 "1WIRE1" H 4718 825 50  0000 C CNN
-F 1 "Conn_01x03" H 4718 916 50  0000 C CNN
-F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 4800 1150 50  0001 C CNN
-F 3 "~" H 4800 1150 50  0001 C CNN
-	1    4800 1150
+P 5200 1100
+F 0 "1WIRE1" H 5118 775 50  0000 C CNN
+F 1 "Conn_01x03" H 5118 866 50  0000 C CNN
+F 2 "Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical" H 5200 1100 50  0001 C CNN
+F 3 "~" H 5200 1100 50  0001 C CNN
+	1    5200 1100
 	-1   0    0    1   
 $EndComp
-Text GLabel 5000 1150 2    50   Input ~ 0
+Text GLabel 5400 1100 2    50   Input ~ 0
 Temp
 $Comp
 L Transistor_FET:BSS84 Q_PWR1
@@ -442,9 +442,7 @@ F 3 "~" H 18100 2250 50  0001 C CNN
 $EndComp
 Text GLabel 18550 2600 2    50   Input ~ 0
 VCC
-Wire Wire Line
-	16400 9350 16400 9300
-Text GLabel 16400 9350 3    50   Input ~ 0
+Text GLabel 16400 9600 3    50   Input ~ 0
 VCC
 Text GLabel 18300 2150 2    50   Input ~ 0
 PUMP_PWR
@@ -488,13 +486,13 @@ Wire Wire Line
 Wire Wire Line
 	6350 2600 6400 2600
 Connection ~ 6400 2600
-Text GLabel 5050 1250 2    50   Input ~ 0
+Text GLabel 5450 1200 2    50   Input ~ 0
 GND
 Wire Wire Line
-	5050 1250 5000 1250
+	5450 1200 5400 1200
 Text GLabel 9350 2000 3    50   Input ~ 0
 GND
-Text GLabel 16750 9500 3    50   Input ~ 0
+Text GLabel 16750 9550 2    50   Input ~ 0
 GND
 Text GLabel 10650 15150 3    50   Input ~ 0
 GND
@@ -608,8 +606,6 @@ Wire Wire Line
 Wire Wire Line
 	15500 5750 16150 5750
 Wire Wire Line
-	15050 5750 15050 6100
-Wire Wire Line
 	15200 5750 15050 5750
 $Comp
 L Device:L L1
@@ -628,9 +624,6 @@ Wire Wire Line
 Connection ~ 14750 6800
 Wire Wire Line
 	14750 6600 14750 6800
-Wire Wire Line
-	14750 6100 15050 6100
-Connection ~ 14750 6100
 Wire Wire Line
 	14750 6300 14750 6100
 $Comp
@@ -652,8 +645,6 @@ Wire Wire Line
 	14700 6100 14750 6100
 Text GLabel 14700 6800 0    50   Input ~ 0
 GND
-Text GLabel 14700 6100 0    50   Input ~ 0
-PWR_PUMP_CONVERTER
 $Comp
 L Connector_Generic:Conn_01x04 DCDC1
 U 1 1 5F837F50
@@ -704,7 +695,7 @@ L Device:R R26
 U 1 1 5EE03137
 P 4150 1200
 F 0 "R26" H 4220 1246 50  0000 L CNN
-F 1 "4k7" H 4220 1155 50  0000 L CNN
+F 1 "2.2k" H 4220 1155 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric" V 4080 1200 50  0001 C CNN
 F 3 "~" H 4150 1200 50  0001 C CNN
 F 4 "C17673" H 4150 1200 50  0001 C CNN "LCSC_PART_NUMBER"
@@ -2517,7 +2508,7 @@ Wire Wire Line
 	19350 10500 19400 10500
 Text GLabel 3650 900  0    50   Input ~ 0
 3_3V
-Text GLabel 5000 1050 2    50   Input ~ 0
+Text GLabel 5400 1000 2    50   Input ~ 0
 3_3V
 $Comp
 L Device:R R4
@@ -2677,8 +2668,6 @@ Wire Wire Line
 Wire Wire Line
 	21900 7700 21850 7700
 Connection ~ 21850 7700
-Text Notes 4900 1400 0    50   ~ 0
-todo: Add DIODEs for onewire
 Wire Wire Line
 	11300 6350 11400 6350
 Connection ~ 3700 900 
@@ -3323,6 +3312,55 @@ Text Notes 16600 7300 0    207  ~ 0
 TODO: Richtige Shot-Diode bestellen
 Text Notes 7800 4150 0    129  ~ 0
 TODO: Button mit nur zwei Pins nutzen, statt den 4pin-varianten
-Text Notes 3100 5200 0    129  ~ 0
-TODO: Stiftleisten bestellen!!!!!!!!!!!!!!\n\nPumpe LED einen Mililmeter nach links aufm PCB schieben\n\nHW- An&Ausschalter
+Wire Wire Line
+	15050 5750 15050 6100
+Connection ~ 14750 6100
+Wire Wire Line
+	14750 6100 15050 6100
+Text GLabel 14700 6100 0    50   Input ~ 0
+PWR_PUMP_CONVERTER
+Wire Wire Line
+	5250 1700 5300 1700
+Text GLabel 5300 1700 2    50   Input ~ 0
+GND
+$Comp
+L Diode:BAS40-04 D28
+U 1 1 60B6BC6E
+P 4950 1600
+F 0 "D28" H 4950 1925 50  0000 C CNN
+F 1 "BAS40-04" H 4950 1834 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 4700 1900 50  0001 L CNN
+F 3 "http://www.vishay.com/docs/85701/bas40v.pdf" H 4830 1700 50  0001 C CNN
+F 4 "C397601" H 4950 1600 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    4950 1600
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	4650 1700 4600 1700
+Text GLabel 4950 1500 1    50   Input ~ 0
+Temp
+Text GLabel 4600 1700 3    50   Input ~ 0
+3_3V
+$Comp
+L Device:CP C26
+U 1 1 60BF7877
+P 16600 9500
+F 0 "C26" H 16715 9546 50  0000 L CNN
+F 1 "1000uF" H 16715 9455 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 16638 9350 50  0001 C CNN
+F 3 "~" H 16600 9500 50  0001 C CNN
+F 4 "C503217" H 16600 9500 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    16600 9500
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	16450 9500 16400 9500
+Connection ~ 16400 9500
+Wire Wire Line
+	16400 9500 16400 9600
+Wire Wire Line
+	16750 9500 16750 9550
+Wire Wire Line
+	16400 9300 16400 9500
+Connection ~ 16750 9500
 $EndSCHEMATC
