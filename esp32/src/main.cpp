@@ -367,9 +367,17 @@ int determineNextPump()
     }
     if (plant.isPumpRequired())
     {
-      if ((plant.getHoursStart() > getCurrentHour() && plant.getHoursEnd() < getCurrentHour()) || 
-          (getCurrentTime() < 10000) /* no time from NTP received */)
-      {todotdotdotodtodtoedot
+           /* Handle e.g. start = 21, end = 8 */
+      if (((plant.getHoursStart() > plant.getHoursEnd()) &&
+            (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd()))
+          ||
+          /* Handle e.g. start = 8, end = 21 */
+          ((plant.getHoursStart() < plant.getHoursEnd()) &&
+            (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd()))
+          || 
+          /* no time from NTP received */
+          (getCurrentTime() < 10000) )
+      {
         Serial.printf("%d Requested pumping\r\n", i);
         pumpToUse = i;
       } else {
