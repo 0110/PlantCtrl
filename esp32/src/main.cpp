@@ -35,13 +35,15 @@
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 1000
 #define TEST_TOPIC "roundtrip\0"
+#define BACKUP_TOPIC "$implementation/config/backup/set\0"
+#define BACKUP_STATUS_TOPIC "$implementation/config/backup\0"
 
-#define getTopic                                                                                                                                    \
-  char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(TEST_TOPIC) + 1]; \
-  strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                           \
-  strcat(topic, Homie.getConfiguration().deviceId);                                                                                                 \
-  strcat(topic, "/");                                                                                                                               \
-  strcat(topic, TEST_TOPIC);
+#define getTopic(test, topic)                                                                                                                 \
+  char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(test) + 1]; \
+  strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                     \
+  strcat(topic, Homie.getConfiguration().deviceId);                                                                                           \
+  strcat(topic, "/");                                                                                                                         \
+  strcat(topic, test);
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -214,8 +216,6 @@ void readOneWireSensors(bool withMQTT)
              ds18b20Address[6],
              ds18b20Address[7]);
 
-    
-
     if (valid)
     {
       Serial << "OneWire sensor " << String(buf) << " has value " << temp << endl;
@@ -241,7 +241,9 @@ void readOneWireSensors(bool withMQTT)
         sensorTemp.setProperty(String(buf)).send(String(temp));
       }
       Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;
-    } else {
+    }
+    else
+    {
       Serial << "OneWire sensor " << String(buf) << " could not be read " << temp << endl;
     }
   }
@@ -300,20 +302,30 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
-void copyFile(const char *source, const char *target)
+bool copyFile(const char *source, const char *target)
 {
+  Serial << "copy started " << source << " -> " << target << endl;
   byte buffer[512];
+  if (!SPIFFS.begin())
+  {
+    return false;
+  }
+
   File file = SPIFFS.open(source, FILE_READ);
   File file2 = SPIFFS.open(target, FILE_WRITE);
+  Serial.flush();
   if (!file)
   {
     Serial << "There was an error opening " << source << " for reading" << endl;
-    return;
+    SPIFFS.end();
+    return false;
   }
   if (!file2)
   {
     Serial << "There was an error opening " << target << " for reading" << endl;
-    return;
+    file.close();
+    SPIFFS.end();
+    return false;
   }
   while (file.available())
   {
@@ -321,6 +333,10 @@ void copyFile(const char *source, const char *target)
     if (read < 0)
     {
       Serial << "copy file is fucked" << endl;
+      file.close();
+      file2.close();
+      SPIFFS.end();
+      return false;
     }
     else
     {
@@ -331,19 +347,28 @@ void copyFile(const char *source, const char *target)
   Serial << "copy finished " << source << " -> " << target << endl;
   file.close();
   file2.close();
+  SPIFFS.end();
+  return true;
 }
 
 void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
-  getTopic if (strcmp(incoming, topic) == 0)
+  getTopic(TEST_TOPIC, testTopic);
+  if (strcmp(incoming, testTopic) == 0)
   {
     mAliveWasRead = true;
   }
-  if (strstr(incoming, "$implementation/config/set") > 0)
+  delete testTopic;
+  getTopic(BACKUP_TOPIC, backupTopic);
+  if (strcmp(incoming, backupTopic) == 0)
   {
-    copyFile("/homie/config.json", "/homie/config.old");
+    bool backupSucessful = copyFile("/homie/config.json", "/homie/config.old");
+    getTopic(BACKUP_STATUS_TOPIC, backupStatusTopic);
+    Homie.getMqttClient().publish(backupStatusTopic, 2, true, backupSucessful ? "true" : "false");
+    delete backupStatusTopic;
   }
-};
+  delete backupTopic;
+}
 
 void onHomieEvent(const HomieEvent &event)
 {
@@ -373,11 +398,15 @@ void onHomieEvent(const HomieEvent &event)
       mPlants[i].postMQTTconnection();
     }
     {
-      getTopic
+      getTopic(TEST_TOPIC, testopic)
           Homie.getMqttClient()
-              .subscribe(topic, 2);
-      Homie.getMqttClient().publish(topic, 2, false, "ping");
+              .subscribe(testopic, 2);
+      Homie.getMqttClient().publish(testopic, 2, false, "ping");
       Homie.getMqttClient().onMessage(onMessage);
+
+      getTopic(BACKUP_TOPIC, backupTopic)
+          Homie.getMqttClient()
+              .subscribe(backupTopic, 2);
     }
     mMQTTReady = true;
 
