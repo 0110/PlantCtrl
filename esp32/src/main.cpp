@@ -79,7 +79,7 @@ unsigned long setupFinishedTimestamp;
 
 OneWire oneWire(SENSOR_ONEWIRE);
 DallasTemperature sensors(&oneWire);
-DS2438 battery(&oneWire, 0.0333333f);
+DS2438 battery(&oneWire, 0.0333333f, AMOUNT_SENOR_QUERYS);
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -190,8 +190,19 @@ void readOneWireSensors(bool withMQTT)
   {
     DeviceAddress ds18b20Address;
     sensors.getAddress(ds18b20Address, i);
-    float temp = sensors.getTempC(ds18b20Address);
-    Serial << "OneWire sensor " << i << " has value " << temp << endl;
+    bool valid = false;
+    float temp = -127;
+    for (int retry = 0; retry < AMOUNT_SENOR_QUERYS && !valid; retry++)
+    {
+      temp = sensors.getTempC(ds18b20Address);
+      if (temp != -127)
+      {
+        valid = true;
+      }
+    }
+
+    //TODO is -127 bus error? if so add retry code
+
     char buf[sizeof(DeviceAddress) * 2];
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
@@ -203,28 +214,36 @@ void readOneWireSensors(bool withMQTT)
              ds18b20Address[6],
              ds18b20Address[7]);
 
-    if (String(lipoSensorAddr.get()).compareTo(String(buf)))
+    
+
+    if (valid)
     {
+      Serial << "OneWire sensor " << String(buf) << " has value " << temp << endl;
+      if (String(lipoSensorAddr.get()).compareTo(String(buf)))
+      {
+        if (withMQTT)
+        {
+          sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
+        }
+        Serial << "Lipo Temperatur " << temp << " °C " << endl;
+      }
+      else if (String(waterSensorAddr.get()).compareTo(String(buf)))
+      {
+        if (withMQTT)
+        {
+          sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
+        }
+        Serial << "Water Temperatur " << temp << " °C " << endl;
+      }
+      /* Always send the sensor address with the temperatur value */
       if (withMQTT)
       {
-        sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
+        sensorTemp.setProperty(String(buf)).send(String(temp));
       }
-      Serial << "Lipo Temperatur " << temp << " °C " << endl;
+      Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;
+    } else {
+      Serial << "OneWire sensor " << String(buf) << " could not be read " << temp << endl;
     }
-    else if (String(waterSensorAddr.get()).compareTo(String(buf)))
-    {
-      if (withMQTT)
-      {
-        sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
-      }
-      Serial << "Water Temperatur " << temp << " °C " << endl;
-    }
-    /* Always send the sensor address with the temperatur value */
-    if (withMQTT)
-    {
-      sensorTemp.setProperty(String(buf)).send(String(temp));
-    }
-    Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;
   }
 
   battery.update();
@@ -651,7 +670,7 @@ void loop()
         {
           mPlants[lastPumpRunning].deactivatePump();
         }
-         if (lastPumpRunning >= MAX_PLANTS)
+        if (lastPumpRunning >= MAX_PLANTS)
         {
           digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
           nextBlink = millis() + 500;
