@@ -184,28 +184,39 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
 //requires homie being started
 void readOneWireSensors(bool withMQTT)
 {
-  int sensorCount = sensors.getDS18Count();
+
   Serial << "Read OneWire" << endl;
   Serial.flush();
 
-  for (uint8_t i = 0; i < sensorCount; i++)
+  for (uint8_t i = 0; i < sensors.getDeviceCount(); i++)
   {
-    DeviceAddress ds18b20Address;
-    sensors.getAddress(ds18b20Address, i);
+    uint8_t ds18b20Address[8];
+
     bool valid = false;
     float temp = -127;
     for (int retry = 0; retry < AMOUNT_SENOR_QUERYS && !valid; retry++)
     {
-      temp = sensors.getTempC(ds18b20Address);
-      if (temp != -127)
+      bool validAddress = sensors.getAddress(ds18b20Address, i);
+      if (validAddress && sensors.validFamily(ds18b20Address))
       {
-        valid = true;
+        temp = sensors.getTempC(ds18b20Address);
+        if (temp != -127)
+        {
+          valid = true;
+        }
+        else
+        {
+          delay(10);
+        }
       }
     }
 
-    //TODO is -127 bus error? if so add retry code
+    if(!valid){
+      //wrong family or crc errors on each retry
+      continue;
+    }
 
-    char buf[sizeof(DeviceAddress) * 2];
+    char buf[sizeof(ds18b20Address) * 2];
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -218,7 +229,7 @@ void readOneWireSensors(bool withMQTT)
 
     if (valid)
     {
-      Serial << "OneWire sensor " << String(buf) << " has value " << temp << endl;
+      Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (String(lipoSensorAddr.get()).compareTo(String(buf)))
       {
         if (withMQTT)
@@ -240,11 +251,10 @@ void readOneWireSensors(bool withMQTT)
       {
         sensorTemp.setProperty(String(buf)).send(String(temp));
       }
-      Serial << "Temperatur " << String(buf) << " : " << temp << " °C " << endl;
     }
     else
     {
-      Serial << "OneWire sensor " << String(buf) << " could not be read " << temp << endl;
+      Serial << "DS18S20 sensor " << String(buf) << " could not be read " << temp << endl;
     }
   }
 
@@ -583,12 +593,12 @@ void setup()
     delay(50);
   }
 
-  Serial << "One wire count: " << sensorCount << " found in " << (millis() - tempInitStartTime) << "ms" << endl;
+  Serial << "DS18S20 count: " << sensorCount << " found in " << (millis() - tempInitStartTime) << " ms" << endl;
   Serial.flush();
   /* Measure temperature TODO idea: move this into setup */
   if (sensorCount > 0)
   {
-    sensors.setResolution(DS18B20_RESOLUTION);
+    //sensors.setResolution(DS18B20_RESOLUTION);
     sensors.requestTemperatures();
   }
   Serial << "Reading sensors start" << endl;
@@ -602,9 +612,8 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) {
-    return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */);
-  });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
+                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
