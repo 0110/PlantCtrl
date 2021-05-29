@@ -261,6 +261,7 @@ void readOneWireSensors(bool withMQTT)
 void readPowerSwitchedSensors()
 {
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
+  delay(10);
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
     for (int i = 0; i < MAX_PLANTS; i++)
