@@ -230,7 +230,7 @@ void readOneWireSensors(bool withMQTT)
     if (valid)
     {
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
-      if (String(lipoSensorAddr.get()).compareTo(String(buf)))
+      if (strcmp(lipoSensorAddr.get(),buf) == 0)
       {
         if (withMQTT)
         {
@@ -238,7 +238,7 @@ void readOneWireSensors(bool withMQTT)
         }
         Serial << "Lipo Temperatur " << temp << " °C " << endl;
       }
-      else if (String(waterSensorAddr.get()).compareTo(String(buf)))
+      if (strcmp(waterSensorAddr.get(),buf) == 0)
       {
         if (withMQTT)
         {
