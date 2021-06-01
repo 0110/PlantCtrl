@@ -2313,7 +2313,7 @@ L Device:R R2
 U 1 1 60983DD4
 P 11800 5450
 F 0 "R2" V 11593 5450 50  0000 C CNN
-F 1 "10k" V 11684 5450 50  0000 C CNN
+F 1 "1k" V 11684 5450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0805_2012Metric" V 11730 5450 50  0001 C CNN
 F 3 "~" H 11800 5450 50  0001 C CNN
 F 4 "C212284" H 11800 5450 50  0001 C CNN "LCSC_PART_NUMBER"
@@ -2527,7 +2527,7 @@ L Device:R R48
 U 1 1 60592B8B
 P 19000 11550
 F 0 "R48" V 18793 11550 50  0000 C CNN
-F 1 "10k" V 18884 11550 50  0000 C CNN
+F 1 "1k" V 18884 11550 50  0000 C CNN
 F 2 "Resistor_SMD:R_0805_2012Metric" V 18930 11550 50  0001 C CNN
 F 3 "~" H 19000 11550 50  0001 C CNN
 F 4 "C212284" H 19000 11550 50  0001 C CNN "LCSC_PART_NUMBER"
@@ -2600,18 +2600,6 @@ Wire Wire Line
 Wire Wire Line
 	19500 10300 19450 10300
 $Comp
-L Device:R R54
-U 1 1 60B3E4F0
-P 19300 11400
-F 0 "R54" H 19230 11354 50  0000 R CNN
-F 1 "100k" H 19230 11445 50  0000 R CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 19230 11400 50  0001 C CNN
-F 3 "~" H 19300 11400 50  0001 C CNN
-F 4 "C702859" H 19300 11400 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    19300 11400
-	0    -1   -1   0   
-$EndComp
-$Comp
 L Device:C C21
 U 1 1 60B3E4F7
 P 19750 11150
@@ -2623,11 +2611,7 @@ F 4 "C49678" H 19750 11150 50  0001 C CNN "LCSC_PART_NUMBER"
 	1    19750 11150
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	19000 11400 19150 11400
 Connection ~ 19000 11400
-Wire Wire Line
-	19450 11400 19600 11400
 Wire Wire Line
 	19600 11400 19600 11150
 Wire Wire Line
@@ -2739,164 +2723,8 @@ Wire Wire Line
 	11300 5850 11400 5850
 Wire Wire Line
 	11300 6050 11400 6050
-Text GLabel 1500 3600 0    50   Input ~ 0
-ESP_TX
-Text GLabel 1500 3700 0    50   Input ~ 0
-ESP_RX
-$Comp
-L Transistor_BJT:BC337 Q13
-U 1 1 602B8D19
-P 1200 4800
-F 0 "Q13" H 1391 4846 50  0000 L CNN
-F 1 "BC817" H 1391 4755 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 1400 4725 50  0001 L CIN
-F 3 "" H 1200 4800 50  0001 L CNN
-F 4 "C908259" H 1200 4800 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1200 4800
-	-1   0    0    -1  
-$EndComp
-$Comp
-L Transistor_BJT:BC337 Q14
-U 1 1 6031A86F
-P 1200 5600
-F 0 "Q14" H 1391 5554 50  0000 L CNN
-F 1 "BC817" H 1391 5645 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 1400 5525 50  0001 L CIN
-F 3 "" H 1200 5600 50  0001 L CNN
-F 4 "C908259" H 1200 5600 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1200 5600
-	-1   0    0    1   
-$EndComp
-$Comp
-L Device:R R20
-U 1 1 6031B230
-P 1650 4800
-F 0 "R20" V 1443 4800 50  0000 C CNN
-F 1 "10k" V 1534 4800 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 1580 4800 50  0001 C CNN
-F 3 "~" H 1650 4800 50  0001 C CNN
-F 4 "C212284" H 1650 4800 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1650 4800
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Device:R R56
-U 1 1 6031B7FB
-P 1650 5600
-F 0 "R56" V 1443 5600 50  0000 C CNN
-F 1 "10k" V 1534 5600 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 1580 5600 50  0001 C CNN
-F 3 "~" H 1650 5600 50  0001 C CNN
-F 4 "C212284" H 1650 5600 50  0001 C CNN "LCSC_PART_NUMBER"
-	1    1650 5600
-	0    -1   -1   0   
-$EndComp
-Text GLabel 2000 4800 2    50   Input ~ 0
-DTR
-Text GLabel 1950 5600 2    50   Input ~ 0
-RTS
-Wire Wire Line
-	1400 4800 1500 4800
-Wire Wire Line
-	1800 4800 1900 4800
-Wire Wire Line
-	1800 5600 1850 5600
-Wire Wire Line
-	1100 5000 1100 5200
-Wire Wire Line
-	1100 5200 1850 5200
-Wire Wire Line
-	1850 5200 1850 5600
-Connection ~ 1850 5600
-Wire Wire Line
-	1850 5600 1950 5600
-Wire Wire Line
-	1400 5600 1500 5600
-Wire Wire Line
-	1100 5400 1100 5300
-Wire Wire Line
-	1900 5300 1900 4800
-Wire Wire Line
-	1100 5300 1900 5300
-Connection ~ 1900 4800
-Wire Wire Line
-	1900 4800 2000 4800
-Wire Wire Line
-	1100 4600 1100 4450
-Wire Wire Line
-	1100 4450 950  4450
-Wire Wire Line
-	1100 5800 1100 5900
-Wire Wire Line
-	1100 5900 1000 5900
-Text GLabel 1000 5900 0    50   Input ~ 0
-IO0
-Text GLabel 950  4450 0    50   Input ~ 0
-EN
-Text GLabel 12100 5150 2    50   Input ~ 0
-IO0
-Wire Wire Line
-	11650 4950 11650 5150
-Wire Wire Line
-	11800 5150 11650 5150
-Connection ~ 11650 5150
-Wire Wire Line
-	11650 5150 11650 5450
-Wire Wire Line
-	9350 5750 9500 5750
-Text GLabel 9500 5450 1    50   Input ~ 0
-EN
-$Comp
-L Jumper:SolderJumper_2_Bridged EN1
-U 1 1 605896D0
-P 9500 5600
-F 0 "EN1" V 9454 5668 50  0000 L CNN
-F 1 "NC" V 9545 5668 50  0000 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 9500 5600 50  0001 C CNN
-F 3 "~" H 9500 5600 50  0001 C CNN
-	1    9500 5600
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Jumper:SolderJumper_2_Bridged IO0_1
-U 1 1 60596D62
-P 11950 5150
-F 0 "IO0_1" V 11904 5218 50  0000 L CNN
-F 1 "NC" V 11995 5218 50  0000 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm" H 11950 5150 50  0001 C CNN
-F 3 "~" H 11950 5150 50  0001 C CNN
-	1    11950 5150
-	1    0    0    -1  
-$EndComp
-Connection ~ 9500 5750
-Wire Wire Line
-	9500 5750 9800 5750
-Text GLabel 1500 3500 0    50   Input ~ 0
-DTR
-Text GLabel 1500 3900 0    50   Input ~ 0
-RTS
-$Comp
-L Connector:Conn_01x06_Female J1
-U 1 1 6068F329
-P 1700 3700
-F 0 "J1" H 1728 3676 50  0000 L CNN
-F 1 "Conn_01x06_Female" H 1728 3585 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical" H 1700 3700 50  0001 C CNN
-F 3 "~" H 1700 3700 50  0001 C CNN
-	1    1700 3700
-	1    0    0    -1  
-$EndComp
-Text GLabel 1500 4000 0    50   Input ~ 0
-GND
-NoConn ~ 1500 3800
-Text Notes 1150 3300 0    105  ~ 0
-ESP32 UART
-Text Notes 800  4350 0    105  ~ 0
-UART Automatic Download
 Text Notes 2950 3300 0    105  ~ 0
 Hall Sensor Serial2|Trigger/Echo
-Text Notes 1050 6750 0    50   ~ 0
-Enable = 0 -> ESP32 is off\nEnable = 1 -> ESP32 is running\nGPIO0 = 0 -> Download mode\nGPIO0 = 1 -> "normal" boot\n\nDTR RTS | EN  IO0\n1       1       |  1    1\n1       0       |  0    1\n0       1       |  1    0\n0       0       |  1    1
 Wire Wire Line
 	10550 4850 10650 4850
 Wire Wire Line
@@ -2957,11 +2785,9 @@ Wire Wire Line
 	3950 3750 4000 3750
 Wire Wire Line
 	4000 4050 3950 4050
-Wire Wire Line
-	8400 1550 8350 1550
 Text GLabel 9050 1550 1    50   Input ~ 0
 3_3V
-Text GLabel 8350 1550 0    50   Input ~ 0
+Text GLabel 8200 1550 0    50   Input ~ 0
 GND
 $Comp
 L Diode:BAS40-04 D16
@@ -3009,10 +2835,8 @@ Wire Wire Line
 	11300 5950 11400 5950
 Text GLabel 8900 2900 3    50   Input ~ 0
 GPIO2
-Text GLabel 8650 1750 0    50   Input ~ 0
+Text GLabel 8350 1750 0    50   Input ~ 0
 CUSTOM_GPIO1
-Wire Wire Line
-	8650 1750 8700 1750
 Connection ~ 8700 1750
 Wire Wire Line
 	8700 1750 9500 1750
@@ -3310,8 +3134,6 @@ Wire Wire Line
 	11950 8050 12350 8050
 Text Notes 16600 7300 0    207  ~ 0
 TODO: Richtige Shot-Diode bestellen
-Text Notes 7800 4150 0    129  ~ 0
-TODO: Button mit nur zwei Pins nutzen, statt den 4pin-varianten
 Wire Wire Line
 	15050 5750 15050 6100
 Connection ~ 14750 6100
@@ -3363,4 +3185,52 @@ Wire Wire Line
 Wire Wire Line
 	16400 9300 16400 9500
 Connection ~ 16750 9500
+Wire Wire Line
+	19000 11400 19600 11400
+$Comp
+L Device:R R54
+U 1 1 60C0C50E
+P 8350 1650
+F 0 "R54" V 8550 1600 50  0000 L CNN
+F 1 "10k" V 8450 1550 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 8280 1650 50  0001 C CNN
+F 3 "~" H 8350 1650 50  0001 C CNN
+F 4 "C212284" H 8350 1650 50  0001 C CNN "LCSC_PART_NUMBER"
+	1    8350 1650
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8200 1550 8200 1650
+Wire Wire Line
+	8200 1550 8400 1550
+Wire Wire Line
+	8350 1750 8500 1750
+Wire Wire Line
+	8500 1650 8500 1750
+Connection ~ 8500 1750
+Wire Wire Line
+	8500 1750 8700 1750
+Wire Wire Line
+	9350 5750 9800 5750
+Wire Wire Line
+	11650 4950 11650 5450
+Text Notes 1150 3300 0    105  ~ 0
+ESP32 UART
+Text GLabel 1550 3550 2    50   Input ~ 0
+GND
+$Comp
+L Connector:Conn_01x03_Male J1
+U 1 1 6068F329
+P 1350 3650
+F 0 "J1" H 1378 3626 50  0000 L CNN
+F 1 "Conn_01x03_Female" H 950 3450 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 1350 3650 50  0001 C CNN
+F 3 "~" H 1350 3650 50  0001 C CNN
+	1    1350 3650
+	1    0    0    -1  
+$EndComp
+Text GLabel 1550 3750 2    50   Input ~ 0
+ESP_RX
+Text GLabel 1550 3650 2    50   Input ~ 0
+ESP_TX
 $EndSCHEMATC
