@@ -67,9 +67,8 @@ typedef uint8_t DeviceAddress[8];
 
 class DS2438 {
     public:
-        DS2438(OneWire *ow, float currentShunt);
-        DS2438(OneWire *ow, uint8_t *address);
-
+        DS2438(OneWire *ow, float currentShunt, int retryOnCRCError);
+    
         void begin();
         void update();
         double getTemperature();
@@ -94,6 +93,7 @@ class DS2438 {
         float _voltageB;
         float _current;
         float _currentShunt;
+        int _retryOnCRCError;
         long _CCA;
         long _DCA;
         long _ICA;

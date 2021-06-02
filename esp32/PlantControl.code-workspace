@@ -18,7 +18,10 @@
 			"string": "cpp",
 			"typeinfo": "cpp",
 			"cmath": "cpp",
-			"iterator": "cpp"
+			"iterator": "cpp",
+			"array": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp"
 		}
 	}
 }

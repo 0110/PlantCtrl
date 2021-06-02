@@ -24,9 +24,10 @@
 
 #define DS2438MODEL     0x26
 
-DS2438::DS2438(OneWire *ow, float currentShunt = 1.0f) {
+DS2438::DS2438(OneWire *ow, float currentShunt, int retryOnCRCError) {
     _ow = ow;
     _currentShunt = currentShunt;
+    _retryOnCRCError = retryOnCRCError;
 };
 
 void DS2438::begin(){
@@ -234,22 +235,26 @@ void DS2438::writePage(int page, uint8_t *data) {
 }
 
 boolean DS2438::readPage(int page, uint8_t *data) {
-    //TODO if all data is 0 0 is a valid crc, but most likly not as intended
-    _ow->reset();
-    _ow->select(_address);
-    _ow->write(DS2438_RECALL_MEMORY_COMMAND, 0);
-    if ((page >= PAGE_MIN) && (page <= PAGE_MAX)) {
+    bool valid = false;
+    for(int retry = 0;retry < this->_retryOnCRCError && !valid; retry ++){
+        //TODO if all data is 0 0 is a valid crc, but most likly not as intended
+        _ow->reset();
+        _ow->select(_address);
+        _ow->write(DS2438_RECALL_MEMORY_COMMAND, 0);
+        if ((page >= PAGE_MIN) && (page <= PAGE_MAX)) {
+            _ow->write(page, 0);
+        } else {
+            return false;
+        }
+        _ow->reset();
+        _ow->select(_address);
+        _ow->write(DS2438_READ_SCRATCHPAD_COMMAND, 0);
         _ow->write(page, 0);
-    } else {
-        return false;
+        for (int i = 0; i < 9; i++){
+            data[i] = _ow->read();
+        }
+        valid = _ow->crc8(data, 8) == data[8];
     }
-    _ow->reset();
-    _ow->select(_address);
-    _ow->write(DS2438_READ_SCRATCHPAD_COMMAND, 0);
-    _ow->write(page, 0);
-    for (int i = 0; i < 9; i++){
-        data[i] = _ow->read();
-    }
-    return _ow->crc8(data, 8) == data[8];
+    return valid;
 }
 
