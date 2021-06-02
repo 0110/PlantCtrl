@@ -7926,7 +7926,7 @@
   (gr_text "PlantCtrl V0.10" (at 212.09 85.598) (layer B.SilkS) (tstamp 5F9CBCD8)
     (effects (font (size 4 4) (thickness 0.5)) (justify mirror))
   )
-  (gr_text "PlantCtrl           V0.10\n" (at 216.662 88.646) (layer F.SilkS) (tstamp 5F9CBCD5)
+  (gr_text "PlantCtrl           V0.10\n" (at 218.38 88.37) (layer F.SilkS) (tstamp 5F9CBCD5)
     (effects (font (size 3 3) (thickness 0.5)))
   )
   (dimension 26.173095 (width 0.15) (layer Cmts.User)
