@@ -809,6 +809,7 @@ void plantcontrol(bool withHomie)
   if (withHomie)
   {
     sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
+    sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
     sensorLipo.setProperty("current").send(String(battery.getCurrent()));
