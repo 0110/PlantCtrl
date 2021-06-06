@@ -71,8 +71,8 @@
 #define BUTTON              GPIO_NUM_0  /**< GPIO 0 - Fix button of NodeMCU */
 #define CUSTOM1_PIN3        GPIO_NUM_2   /**< GPIO 2 - Custom GPIO controlling a MOSFET, connected to GND */
 #define CUSTOM1_PIN2        GPIO_NUM_12   /**< GPIO 4 - custom GPIO directly connected to GPIO header */
-#define I2C1_PIN2          GPIO_NUM_34   /**< GPIO 34 - I2C */
-#define I2C1_PIN3          GPIO_NUM_35   /**< GPIO 35 - I2C */
+#define I2C1_SDA          GPIO_NUM_34   /**< GPIO 34 - I2C */
+#define I2C1_SCL          GPIO_NUM_35   /**< GPIO 35 - I2C */
 /* @} */
 
 /** \addtogroup Configuration

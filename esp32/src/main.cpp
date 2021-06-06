@@ -28,6 +28,8 @@
 #include "DS2438.h"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
+#include <Wire.h>
+#include <VL53L0X.h>
 
 /******************************************************************************
  *                                     DEFINES
@@ -82,6 +84,7 @@ unsigned long setupFinishedTimestamp;
 OneWire oneWire(SENSOR_ONEWIRE);
 DallasTemperature sensors(&oneWire);
 DS2438 battery(&oneWire, 0.0333333f, AMOUNT_SENOR_QUERYS);
+VL53L0X tankSensor;
 
 Plant mPlants[MAX_PLANTS] = {
     Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
@@ -211,7 +214,8 @@ void readOneWireSensors(bool withMQTT)
       }
     }
 
-    if(!valid){
+    if (!valid)
+    {
       //wrong family or crc errors on each retry
       continue;
     }
@@ -230,7 +234,7 @@ void readOneWireSensors(bool withMQTT)
     if (valid)
     {
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
-      if (strcmp(lipoSensorAddr.get(),buf) == 0)
+      if (strcmp(lipoSensorAddr.get(), buf) == 0)
       {
         if (withMQTT)
         {
@@ -238,7 +242,7 @@ void readOneWireSensors(bool withMQTT)
         }
         Serial << "Lipo Temperatur " << temp << " °C " << endl;
       }
-      if (strcmp(waterSensorAddr.get(),buf) == 0)
+      if (strcmp(waterSensorAddr.get(), buf) == 0)
       {
         if (withMQTT)
         {
@@ -281,33 +285,44 @@ void readPowerSwitchedSensors()
     delay(2);
   }
 
-  /* Read the distance and give the temperature sensors some time */
+  Wire.setPins(SENSOR_TANK_TRG, SENSOR_TANK_ECHO);
+  Wire.begin();
+  tankSensor.setTimeout(500);
+  long start = millis();
+  bool distanceReady = false;
+  while (start + 500 > millis())
   {
-    for (int i = 0; i < AMOUNT_SENOR_QUERYS; i++)
+    if (tankSensor.init())
     {
-      unsigned long duration = 0;
-
-      digitalWrite(SENSOR_TANK_TRG, HIGH);
-      delayMicroseconds(20);
-      cli();
-      digitalWrite(SENSOR_TANK_TRG, LOW);
-      //10ms is > 2m tank depth
-      duration = pulseIn(SENSOR_TANK_ECHO, HIGH, 10);
-      sei();
-
-      int mmDis = duration * 0.3432 / 2;
-      if (mmDis > MAX_TANK_DEPTH)
-      {
-        waterRawSensor.add(0);
-      }
-      else
-      {
-        waterRawSensor.add(mmDis);
-      }
+      distanceReady = true;
+      break;
+    }
+    else
+    {
+      delay(20);
     }
   }
+  if (distanceReady)
+  {
+    tankSensor.setSignalRateLimit(0.1);
+    // increase laser pulse periods (defaults are 14 and 10 PCLKs)
+    tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
+    tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
+    tankSensor.setMeasurementTimingBudget(200000);
 
-  Serial << "Distance sensor " << waterRawSensor.getAverage() << " cm" << endl;
+    for (int readCnt = 0; readCnt < 5; readCnt++)
+    {
+      if(!tankSensor.timeoutOccurred()){
+        waterRawSensor.add(tankSensor.readRangeSingleMillimeters());
+      }
+      delay(10);
+    }
+    Serial << "Distance sensor " << waterRawSensor.getMedian() << " mm" << endl;
+  }
+  else
+  {
+    Serial.println("Failed to detect and initialize distance sensor!");
+  }
 
   /* deactivate the sensors */
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
@@ -612,8 +627,7 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
-                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -633,8 +647,6 @@ void setup()
   mConfigured = Homie.isConfigured();
   if (mConfigured)
   {
-    Serial << "Wifi mode set to " << WIFI_STA << endl;
-    WiFi.mode(WIFI_STA);
 
     for (int i = 0; i < MAX_PLANTS; i++)
     {
@@ -675,10 +687,11 @@ void setup()
   else
   {
     readOneWireSensors(false);
+    //prevent BOD to be paranoid
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
     delay(100);
-    Serial << "Wifi mode set to " << WIFI_AP_STA << endl;
-    WiFi.mode(WIFI_AP_STA);
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
     Serial.println("Initial Setup. Start Accesspoint...");
     mDownloadMode = true;
   }
@@ -796,6 +809,7 @@ void plantcontrol(bool withHomie)
   if (withHomie)
   {
     sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
+    sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
     sensorLipo.setProperty("current").send(String(battery.getCurrent()));
