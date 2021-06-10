@@ -2577,8 +2577,6 @@ Connection ~ 3250 5850
 Wire Wire Line
 	3450 6150 3250 6150
 Connection ~ 3250 6150
-Text Notes 16600 7300 0    207  ~ 0
-TODO: Richtige Shot-Diode bestellen
 Wire Wire Line
 	15050 5750 15050 6100
 Connection ~ 14750 6100
@@ -3496,23 +3494,23 @@ Wire Wire Line
 	8650 2800 8650 2900
 Connection ~ 8800 2800
 $Comp
-L Jumper:SolderJumper_2_Open JP1
+L Jumper:SolderJumper_2_Open VCC1
 U 1 1 610AC96D
 P 8800 3000
-F 0 "JP1" V 8754 3068 50  0000 L CNN
+F 0 "VCC1" V 8754 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 8845 3068 50  0000 L CNN
-F 2 "" H 8800 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 8800 3000 50  0001 C CNN
 F 3 "~" H 8800 3000 50  0001 C CNN
 	1    8800 3000
 	0    1    1    0   
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP2
+L Jumper:SolderJumper_2_Open 3_3V1
 U 1 1 610AE5E6
 P 9050 3000
-F 0 "JP2" V 9004 3068 50  0000 L CNN
+F 0 "3_3V1" V 9004 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 9095 3068 50  0000 L CNN
-F 2 "" H 9050 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 9050 3000 50  0001 C CNN
 F 3 "~" H 9050 3000 50  0001 C CNN
 	1    9050 3000
 	0    1    1    0   
@@ -3531,12 +3529,12 @@ Wire Wire Line
 Wire Wire Line
 	8800 2800 9000 2800
 $Comp
-L Jumper:SolderJumper_2_Open JP3
+L Jumper:SolderJumper_2_Open 12V1
 U 1 1 6118BFB0
 P 9250 3000
-F 0 "JP3" V 9204 3068 50  0000 L CNN
+F 0 "12V1" V 9204 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 9295 3068 50  0000 L CNN
-F 2 "" H 9250 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 9250 3000 50  0001 C CNN
 F 3 "~" H 9250 3000 50  0001 C CNN
 	1    9250 3000
 	0    1    1    0   
@@ -3666,23 +3664,23 @@ Wire Wire Line
 	10700 2800 10700 2900
 Connection ~ 10850 2800
 $Comp
-L Jumper:SolderJumper_2_Open JP4
+L Jumper:SolderJumper_2_Open VCC2
 U 1 1 61373E9C
 P 10850 3000
-F 0 "JP4" V 10804 3068 50  0000 L CNN
+F 0 "VCC2" V 10804 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 10895 3068 50  0000 L CNN
-F 2 "" H 10850 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 10850 3000 50  0001 C CNN
 F 3 "~" H 10850 3000 50  0001 C CNN
 	1    10850 3000
 	0    1    1    0   
 $EndComp
 $Comp
-L Jumper:SolderJumper_2_Open JP5
+L Jumper:SolderJumper_2_Open 3_3V2
 U 1 1 61373EA2
 P 11100 3000
-F 0 "JP5" V 11054 3068 50  0000 L CNN
+F 0 "3_3V2" V 11054 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 11145 3068 50  0000 L CNN
-F 2 "" H 11100 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 11100 3000 50  0001 C CNN
 F 3 "~" H 11100 3000 50  0001 C CNN
 	1    11100 3000
 	0    1    1    0   
@@ -3701,12 +3699,12 @@ Wire Wire Line
 Wire Wire Line
 	10850 2800 11050 2800
 $Comp
-L Jumper:SolderJumper_2_Open JP6
+L Jumper:SolderJumper_2_Open 12V2
 U 1 1 61373EAF
 P 11300 3000
-F 0 "JP6" V 11254 3068 50  0000 L CNN
+F 0 "12V2" V 11254 3068 50  0000 L CNN
 F 1 "SolderJumper_2_Open" H 11345 3068 50  0000 L CNN
-F 2 "" H 11300 3000 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 11300 3000 50  0001 C CNN
 F 3 "~" H 11300 3000 50  0001 C CNN
 	1    11300 3000
 	0    1    1    0   
@@ -3790,12 +3788,12 @@ Wire Wire Line
 Wire Wire Line
 	10850 1600 10850 2400
 $Comp
-L Connector_Generic:Conn_02x04_Counter_Clockwise J2
+L Connector_Generic:Conn_02x04_Odd_Even J2
 U 1 1 615C6B39
 P 11750 1400
 F 0 "J2" H 11800 1717 50  0000 C CNN
 F 1 "Conn_02x04_Counter_Clockwise" H 11800 1626 50  0000 C CNN
-F 2 "" H 11750 1400 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 11750 1400 50  0001 C CNN
 F 3 "~" H 11750 1400 50  0001 C CNN
 	1    11750 1400
 	1    0    0    -1  
