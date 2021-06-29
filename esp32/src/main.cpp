@@ -13,6 +13,7 @@
 /******************************************************************************
  *                                     INCLUDES
 ******************************************************************************/
+#include "FileUtils.h"
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "HomieConfiguration.h"
@@ -39,6 +40,8 @@
 #define TEST_TOPIC "roundtrip\0"
 #define BACKUP_TOPIC "$implementation/config/backup/set\0"
 #define BACKUP_STATUS_TOPIC "$implementation/config/backup\0"
+#define CONFIG_FILE "/homie/config.json"
+#define CONFIG_FILE_BACKUP "/homie/config.json.bak"
 
 #define getTopic(test, topic)                                                                                                                 \
   char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(test) + 1]; \
@@ -328,55 +331,6 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
-bool copyFile(const char *source, const char *target)
-{
-  Serial << "copy started " << source << " -> " << target << endl;
-  byte buffer[512];
-  if (!SPIFFS.begin())
-  {
-    return false;
-  }
-
-  File file = SPIFFS.open(source, FILE_READ);
-  File file2 = SPIFFS.open(target, FILE_WRITE);
-  Serial.flush();
-  if (!file)
-  {
-    Serial << "There was an error opening " << source << " for reading" << endl;
-    SPIFFS.end();
-    return false;
-  }
-  if (!file2)
-  {
-    Serial << "There was an error opening " << target << " for reading" << endl;
-    file.close();
-    SPIFFS.end();
-    return false;
-  }
-  while (file.available())
-  {
-    int read = file.read(buffer, 512);
-    if (read < 0)
-    {
-      Serial << "copy file is fucked" << endl;
-      file.close();
-      file2.close();
-      SPIFFS.end();
-      return false;
-    }
-    else
-    {
-      file.write(buffer, read);
-    }
-  }
-  file2.flush();
-  Serial << "copy finished " << source << " -> " << target << endl;
-  file.close();
-  file2.close();
-  SPIFFS.end();
-  return true;
-}
-
 void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
   getTopic(TEST_TOPIC, testTopic);
@@ -388,10 +342,14 @@ void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties p
   getTopic(BACKUP_TOPIC, backupTopic);
   if (strcmp(incoming, backupTopic) == 0)
   {
-    bool backupSucessful = copyFile("/homie/config.json", "/homie/config.old");
-    getTopic(BACKUP_STATUS_TOPIC, backupStatusTopic);
-    Homie.getMqttClient().publish(backupStatusTopic, 2, true, backupSucessful ? "true" : "false");
-    delete backupStatusTopic;
+    if(strcmp(payload, "true") == 0){
+      bool backupSucessful = copyFile(CONFIG_FILE, CONFIG_FILE_BACKUP);
+      printFile(CONFIG_FILE_BACKUP);
+      getTopic(BACKUP_STATUS_TOPIC, backupStatusTopic);
+      Homie.getMqttClient().publish(backupStatusTopic, 2, true, backupSucessful ? "true" : "false");
+      delete backupStatusTopic;
+      Homie.getMqttClient().publish(backupTopic, 2, true, "false");
+    }
   }
   delete backupTopic;
 }
@@ -623,7 +581,8 @@ void setup()
   Serial.flush();
   /************************* Start Homie Framework ***************/
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
-
+  Homie.disableLedFeedback();
+  Homie_setBrand("PlantControl");
   // Set default values
 
   //in seconds
@@ -641,6 +600,7 @@ void setup()
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
+
 
   Homie.setup();
 
@@ -686,6 +646,21 @@ void setup()
   }
   else
   {
+    printFile("/homie/Readme.md");
+    if (doesFileExist(CONFIG_FILE)){
+      printFile(CONFIG_FILE);
+    }
+    if (doesFileExist(CONFIG_FILE_BACKUP)){
+      printFile(CONFIG_FILE_BACKUP);
+      bool restoredConfig = copyFile(CONFIG_FILE_BACKUP, CONFIG_FILE);
+      if(restoredConfig){
+         deleteFile(CONFIG_FILE_BACKUP);
+         espDeepSleepFor(1,false,false);
+         return;
+      }
+    }
+
+    
     readOneWireSensors(false);
     //prevent BOD to be paranoid
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
