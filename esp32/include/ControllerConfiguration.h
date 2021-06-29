@@ -78,7 +78,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "sw 1.2 hw 0.9"
+#define FIRMWARE_VERSION "sw 1.3 hw 0.10"
 
 #define MOIST_SENSOR_MAX_ADC                (85 * 4095 / 100)
 #define MOIST_SENSOR_MIN_ADC                (25 * 4095 / 100)
@@ -94,7 +94,8 @@
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
 #define VOLT_MAX_BATT               4.2f
 
-#define MAX_CONFIG_SETTING_ITEMS 50 /**< Parameter, that can be configured in Homie */
+#define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
+#define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */

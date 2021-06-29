@@ -60,9 +60,6 @@ void Plant::addSenseValue(void)
     int raw = analogRead(this->mPinSensor);
     if(raw < MOIST_SENSOR_MAX_ADC && raw > MOIST_SENSOR_MIN_ADC){
         this->moistureRaw.add(raw);
-    } else {
-        int plantId = this->mPlantId;
-        Serial << "ignoring sensor " << plantId << " value due to being strange " << raw  << endl;
     }
 }
 

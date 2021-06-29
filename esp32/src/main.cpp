@@ -548,10 +548,17 @@ void setup()
 
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
   {
-    //increase the config settings to 50 and the json to 3000
+    //increase the config settings
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
+  if (HomieInternals::MAX_JSON_CONFIG_FILE_SIZE < MAX_JSON_CONFIG_FILE_SIZE_CUSTOM)
+  {
+    //increase the config settings
+    Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
+    return;
+  }
+  
 
   /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -607,7 +614,6 @@ void setup()
   mConfigured = Homie.isConfigured();
   if (mConfigured)
   {
-
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].advertise();
