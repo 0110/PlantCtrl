@@ -38,7 +38,7 @@
     0, /* Voltage */ \
     0, /* Current */ \
     0, /* Current */ \
-    0 /* Threashold */ \
+    0b10000000 /* Threshold to 4LSB */ \
 }
 
 typedef struct PageOne {
