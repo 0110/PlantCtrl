@@ -55,7 +55,7 @@
 ******************************************************************************/
 
 int determineNextPump();
-void plantcontrol(boolean withHomie);
+void plantcontrol();
 void readPowerSwitchedSensors();
 
 /******************************************************************************
@@ -117,14 +117,14 @@ int getCurrentHour()
   return info.tm_hour;
 }
 
-void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
+void espDeepSleepFor(long seconds, bool activatePump)
 {
   if (mDownloadMode)
   {
     Serial << "abort deepsleep, DownloadMode active" << endl;
     return;
   }
-  if (withHomieShutdown)
+  if (mAliveWasRead)
   {
     for (int i = 0; i < 10; i++)
     {
@@ -175,7 +175,7 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
   Serial.println(" seconds");
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
   Serial.flush();
-  if (withHomieShutdown)
+  if (mAliveWasRead)
   {
     Homie.prepareToSleep();
   }
@@ -188,7 +188,7 @@ void espDeepSleepFor(long seconds, bool activatePump, bool withHomieShutdown)
 }
 
 //requires homie being started
-void readOneWireSensors(bool withMQTT)
+void readOneWireSensors()
 {
 
   Serial << "Read OneWire" << endl;
@@ -239,7 +239,7 @@ void readOneWireSensors(bool withMQTT)
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (strcmp(lipoSensorAddr.get(), buf) == 0)
       {
-        if (withMQTT)
+        if (mAliveWasRead)
         {
           sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
         }
@@ -247,14 +247,14 @@ void readOneWireSensors(bool withMQTT)
       }
       if (strcmp(waterSensorAddr.get(), buf) == 0)
       {
-        if (withMQTT)
+        if (mAliveWasRead)
         {
           sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
         }
         Serial << "Water Temperatur " << temp << " °C " << endl;
       }
       /* Always send the sensor address with the temperatur value */
-      if (withMQTT)
+      if (mAliveWasRead)
       {
         sensorTemp.setProperty(String(buf)).send(String(temp));
       }
@@ -519,7 +519,7 @@ void homieLoop()
   {
     Serial.println("received alive & mqtt is ready");
     notStarted = false;
-    plantcontrol(true);
+    plantcontrol();
   }
 }
 
@@ -681,13 +681,13 @@ void setup()
       bool restoredConfig = copyFile(CONFIG_FILE_BACKUP, CONFIG_FILE);
       if(restoredConfig){
          deleteFile(CONFIG_FILE_BACKUP);
-         espDeepSleepFor(1,false,false);
+         espDeepSleepFor(1,false);
          return;
       }
     }
 
     
-    readOneWireSensors(false);
+    readOneWireSensors();
     //prevent BOD to be paranoid
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
@@ -750,7 +750,7 @@ void loop()
       WiFi.mode(WIFI_OFF);
       Serial << "Wifi mode set to " << WIFI_OFF << " mqqt was no reached within " << timeSinceSetup << "ms , fallback to offline mode " << endl;
       Serial.flush();
-      plantcontrol(false);
+      plantcontrol();
     }
   }
 
@@ -767,7 +767,7 @@ void loop()
  * @fn plantcontrol
  * Main function, doing the logic
  */
-void plantcontrol(bool withHomie)
+void plantcontrol()
 {
   if (lastPumpRunning != -1)
   {
@@ -777,7 +777,7 @@ void plantcontrol(bool withHomie)
     Serial << "Plant" << lastPumpRunning << ": Water diff " << waterDiff << " mm" << endl;
   }
 
-  readOneWireSensors(true);
+  readOneWireSensors();
 
   for (int i = 0; i < MAX_PLANTS; i++)
   {
@@ -807,7 +807,7 @@ void plantcontrol(bool withHomie)
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
-  if (withHomie)
+  if (mAliveWasRead)
   {
     sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
     sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
@@ -860,18 +860,18 @@ void plantcontrol(bool withHomie)
     {
       Serial.print(mSolarVoltage);
       Serial.println("V! No pumps to activate and low light, deepSleepNight");
-      espDeepSleepFor(deepSleepNightTime.get(), false, withHomie);
+      espDeepSleepFor(deepSleepNightTime.get(), false);
     }
     else
     {
       Serial.println("No pumps to activate, deepSleep");
-      espDeepSleepFor(deepSleepTime.get(), false, withHomie);
+      espDeepSleepFor(deepSleepTime.get(), false);
     }
   }
   else
   {
     Serial.println("Running pump, watering deepsleep");
-    espDeepSleepFor(wateringDeepSleep.get(), true, withHomie);
+    espDeepSleepFor(wateringDeepSleep.get(), true);
   }
 }
 
