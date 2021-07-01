@@ -65,10 +65,10 @@ void readPowerSwitchedSensors();
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-RTC_SLOW_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
-RTC_SLOW_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
+RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
+RTC_DATA_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
 
-RTC_SLOW_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
+RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
 
 /******************************************************************************
  *                            LOCAL VARIABLES
@@ -105,7 +105,6 @@ Plant mPlants[MAX_PLANTS] = {
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
 
-
 void espDeepSleepFor(long seconds, bool activatePump)
 {
   if (mDownloadMode)
@@ -124,15 +123,18 @@ void espDeepSleepFor(long seconds, bool activatePump)
       }
       else
       {
-        log(LOG_LEVEL_DEBUG, "NTP timeout before deepsleep", LOG_DEBUG_CODE);
         break;
       }
+    }
+    if (getCurrentTime() < 100000)
+    {
+      log(LOG_LEVEL_DEBUG, "NTP timeout before deepsleep", LOG_DEBUG_CODE);
     }
   }
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
   if (activatePump)
   {
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
@@ -162,6 +164,7 @@ void espDeepSleepFor(long seconds, bool activatePump)
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
   if (mAliveWasRead)
   {
+    delay(1000);
     Homie.prepareToSleep();
   }
   else
@@ -314,7 +317,7 @@ void readPowerSwitchedSensors()
   }
   else
   {
-    log(LOG_LEVEL_WARN,LOG_TANKSENSOR_FAIL_DETECT,LOG_TANKSENSOR_FAIL_DETECT_CODE);
+    log(LOG_LEVEL_WARN, LOG_TANKSENSOR_FAIL_DETECT, LOG_TANKSENSOR_FAIL_DETECT_CODE);
   }
 
   /* deactivate the sensors */
@@ -336,10 +339,13 @@ void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties p
     {
       bool backupSucessful = copyFile(CONFIG_FILE, CONFIG_FILE_BACKUP);
       printFile(CONFIG_FILE_BACKUP);
-      if(backupSucessful){
-        log(LOG_LEVEL_INFO,LOG_BACKUP_SUCCESSFUL, LOG_BACKUP_SUCCESSFUL_CODE);
-      }else {
-        log(LOG_LEVEL_INFO,LOG_BACKUP_FAILED, LOG_BACKUP_FAILED_CODE);
+      if (backupSucessful)
+      {
+        log(LOG_LEVEL_INFO, LOG_BACKUP_SUCCESSFUL, LOG_BACKUP_SUCCESSFUL_CODE);
+      }
+      else
+      {
+        log(LOG_LEVEL_INFO, LOG_BACKUP_FAILED, LOG_BACKUP_FAILED_CODE);
       }
       Homie.getMqttClient().publish(backupTopic, 2, true, "false");
     }
@@ -433,7 +439,7 @@ int determineNextPump()
     if (plant.getCurrentMoisture() == MISSING_SENSOR)
     {
       plant.publishState("nosensor");
-      log(LOG_LEVEL_DEBUG, String(String(i) + " No pump possible: missing sensor"), LOG_DEBUG_CODE);
+      log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
       continue;
     }
     if (plant.isPumpRequired())
@@ -476,10 +482,11 @@ int determineNextPump()
  */
 bool aliveHandler(const HomieRange &range, const String &value)
 {
-  if (range.isRange) {
+  if (range.isRange)
+  {
     return false; // only one controller is present
   }
-  
+
   if (value.equals("ON") || value.equals("On") || value.equals("1"))
   {
     mDownloadMode = true;

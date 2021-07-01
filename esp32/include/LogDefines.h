@@ -22,4 +22,5 @@
 
 #define LOG_DEBUG_CODE 1001
 #define LOG_NOPUMP_LOWLIGHT 100
-#define LOG_NOPUMPS         101
+#define LOG_NOPUMPS 101
+#define LOG_MISSING_PUMP -4
