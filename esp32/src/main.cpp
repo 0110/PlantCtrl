@@ -415,25 +415,25 @@ int determineNextPump()
     if (!plant.isPumpTriggerActive())
     {
       plant.publishState("deactivated");
-      log(LOG_LEVEL_DEBUG, String(i + " Skip deactivated pump"), LOG_DEBUG_CODE);
+      log(LOG_LEVEL_DEBUG, String(String(i) + " Skip deactivated pump"), LOG_DEBUG_CODE);
       continue;
     }
     if ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) > getCurrentTime())
     {
       plant.publishState("cooldown");
-      log(LOG_LEVEL_DEBUG, String(i+" Skipping due to cooldown " + (rtcLastWateringPlant[i] + plant.getCooldownInSeconds())), LOG_DEBUG_CODE);
+      log(LOG_LEVEL_DEBUG, String(String(i) + " Skipping due to cooldown " + String(rtcLastWateringPlant[i] + plant.getCooldownInSeconds())), LOG_DEBUG_CODE);
       continue;
     }
     if (!isLowLight && plant.isAllowedOnlyAtLowLight())
     {
       plant.publishState("sunny");
-      log(LOG_LEVEL_DEBUG, String(i+" No pump required: due to light"), LOG_DEBUG_CODE);
+      log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
     if (plant.getCurrentMoisture() == MISSING_SENSOR)
     {
       plant.publishState("nosensor");
-      log(LOG_LEVEL_DEBUG, String(i+" No pump possible: missing sensor"), LOG_DEBUG_CODE);
+      log(LOG_LEVEL_DEBUG, String(String(i) + " No pump possible: missing sensor"), LOG_DEBUG_CODE);
       continue;
     }
     if (plant.isPumpRequired())
@@ -448,13 +448,13 @@ int determineNextPump()
           (getCurrentTime() < 10000))
       {
         plant.publishState("active");
-        log(LOG_LEVEL_DEBUG, String(i+" Requested pumping"), LOG_DEBUG_CODE);
+        log(LOG_LEVEL_DEBUG, String(String(i) + " Requested pumping"), LOG_DEBUG_CODE);
         pumpToUse = i;
       }
       else
       {
         plant.publishState("after-work");
-        log(LOG_LEVEL_DEBUG, String(i+" ignored due to time boundary: " + String(plant.getHoursStart()) + " to " + plant.getHoursEnd() + " ( current " + getCurrentHour() + " )"), LOG_DEBUG_CODE);
+        log(LOG_LEVEL_DEBUG, String(String(i) + " ignored due to time boundary: " + String(plant.getHoursStart()) + " to " + String(plant.getHoursEnd()) + " ( current " + String(getCurrentHour()) + " )"), LOG_DEBUG_CODE);
       }
       continue;
     }
