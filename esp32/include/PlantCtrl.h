@@ -125,6 +125,9 @@ public:
     {
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
+
+
+    void publishState(String state);
 };
 
 #endif

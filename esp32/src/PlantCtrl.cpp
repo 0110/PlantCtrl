@@ -87,6 +87,13 @@ void Plant::deactivatePump(void)
     }
 }
 
+void Plant::publishState(String state) {
+    if (this->mConnected)
+    {
+        this->mPlant->setProperty("state").send(state);
+    }
+}
+
 void Plant::activatePump(void)
 {
     int plantId = this->mPlantId;
@@ -108,6 +115,7 @@ void Plant::advertise(void)
     //FIXME add .settable(this->switchHandler)
     this->mPlant->advertise("moist").setName("Percent").setDatatype("number").setUnit("%");
     this->mPlant->advertise("moistraw").setName("adc").setDatatype("number").setUnit("3.3/4096V");
+    this->mPlant->advertise("state").setName("state").setDatatype("string");
 }
 
 /* FIXME
