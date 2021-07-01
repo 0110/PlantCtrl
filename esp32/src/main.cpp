@@ -13,7 +13,9 @@
 /******************************************************************************
  *                                     INCLUDES
 ******************************************************************************/
+#include "LogDefines.h"
 #include "FileUtils.h"
+#include "TimeUtils.h"
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "HomieConfiguration.h"
@@ -38,8 +40,8 @@
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 2000
 #define TEST_TOPIC "roundtrip\0"
+#define LOG_TOPIC "log\0"
 #define BACKUP_TOPIC "$implementation/config/backup/set\0"
-#define BACKUP_STATUS_TOPIC "$implementation/config/backup\0"
 #define CONFIG_FILE "/homie/config.json"
 #define CONFIG_FILE_BACKUP "/homie/config.json.bak"
 
@@ -54,6 +56,7 @@
  *                            FUNCTION PROTOTYPES
 ******************************************************************************/
 
+void log(int level, String message, int code);
 int determineNextPump();
 void plantcontrol();
 void readPowerSwitchedSensors();
@@ -101,21 +104,7 @@ Plant mPlants[MAX_PLANTS] = {
 /******************************************************************************
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
-long getCurrentTime()
-{
-  struct timeval tv_now;
-  gettimeofday(&tv_now, NULL);
-  return tv_now.tv_sec;
-}
 
-int getCurrentHour()
-{
-  struct tm info;
-  time_t now;
-  time(&now);
-  localtime_r(&now, &info);
-  return info.tm_hour;
-}
 
 void espDeepSleepFor(long seconds, bool activatePump)
 {
@@ -321,10 +310,12 @@ void readPowerSwitchedSensors()
 
     for (int readCnt = 0; readCnt < 5; readCnt++)
     {
-      if(!tankSensor.timeoutOccurred()){
+      if (!tankSensor.timeoutOccurred())
+      {
         uint16_t distance = tankSensor.readRangeSingleMillimeters();
-        if(distance < MAX_TANK_DEPTH){
-           waterRawSensor.add(distance);
+        if (distance < MAX_TANK_DEPTH)
+        {
+          waterRawSensor.add(distance);
         }
       }
       delay(10);
@@ -333,7 +324,7 @@ void readPowerSwitchedSensors()
   }
   else
   {
-    Serial.println("Failed to detect and initialize distance sensor!");
+    log(LOG_LEVEL_WARN,LOG_TANKSENSOR_FAIL_DETECT,LOG_TANKSENSOR_FAIL_DETECT_CODE);
   }
 
   /* deactivate the sensors */
@@ -351,12 +342,15 @@ void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties p
   getTopic(BACKUP_TOPIC, backupTopic);
   if (strcmp(incoming, backupTopic) == 0)
   {
-    if(strcmp(payload, "true") == 0){
+    if (strcmp(payload, "true") == 0)
+    {
       bool backupSucessful = copyFile(CONFIG_FILE, CONFIG_FILE_BACKUP);
       printFile(CONFIG_FILE_BACKUP);
-      getTopic(BACKUP_STATUS_TOPIC, backupStatusTopic);
-      Homie.getMqttClient().publish(backupStatusTopic, 2, true, backupSucessful ? "true" : "false");
-      delete backupStatusTopic;
+      if(backupSucessful){
+        log(LOG_LEVEL_INFO,LOG_BACKUP_SUCCESSFUL, LOG_BACKUP_SUCCESSFUL_CODE);
+      }else {
+        log(LOG_LEVEL_INFO,LOG_BACKUP_FAILED, LOG_BACKUP_FAILED_CODE);
+      }
       Homie.getMqttClient().publish(backupTopic, 2, true, "false");
     }
   }
@@ -557,8 +551,6 @@ void setup()
   // read button
   pinMode(BUTTON, INPUT);
 
-
-
   // Power pins
   pinMode(OUTPUT_ENABLE_PUMP, OUTPUT);
 
@@ -578,7 +570,6 @@ void setup()
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
-  
 
   /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -613,7 +604,8 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
+                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -627,7 +619,6 @@ void setup()
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
   //Homie.disableLogging();
-
 
   Homie.setup();
 
@@ -673,20 +664,22 @@ void setup()
   else
   {
     printFile("/homie/Readme.md");
-    if (doesFileExist(CONFIG_FILE)){
+    if (doesFileExist(CONFIG_FILE))
+    {
       printFile(CONFIG_FILE);
     }
-    if (doesFileExist(CONFIG_FILE_BACKUP)){
+    if (doesFileExist(CONFIG_FILE_BACKUP))
+    {
       printFile(CONFIG_FILE_BACKUP);
       bool restoredConfig = copyFile(CONFIG_FILE_BACKUP, CONFIG_FILE);
-      if(restoredConfig){
-         deleteFile(CONFIG_FILE_BACKUP);
-         espDeepSleepFor(1,false);
-         return;
+      if (restoredConfig)
+      {
+        deleteFile(CONFIG_FILE_BACKUP);
+        espDeepSleepFor(1, false);
+        return;
       }
     }
 
-    
     readOneWireSensors();
     //prevent BOD to be paranoid
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -876,3 +869,23 @@ void plantcontrol()
 }
 
 /** @}*/
+
+void log(int level, String message, int statusCode)
+{
+  String buffer;
+  StaticJsonDocument<200> doc;
+  doc["level"] = level;
+  doc["message"] = message;
+  doc["statusCode"] = statusCode;
+  serializeJson(doc, buffer);
+  if (mAliveWasRead)
+  {
+    getTopic(LOG_TOPIC, logTopic)
+        Homie.getMqttClient()
+            .subscribe(logTopic, 2);
+
+    Homie.getMqttClient().publish(logTopic, 2, false, buffer.c_str());
+    delete logTopic;
+  }
+  Serial << statusCode << "@" << level << " : " << message << endl;
+}

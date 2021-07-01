@@ -12,6 +12,7 @@
 
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
+#include "TimeUtils.h"
 
 Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
 {
@@ -95,6 +96,7 @@ void Plant::activatePump(void)
     {
         const String OFF = String("ON");
         this->mPlant->setProperty("switch").send(OFF);
+        this->mPlant->setProperty("lastPump").send(String(getCurrentTime()));
     }
 }
 
@@ -102,6 +104,7 @@ void Plant::advertise(void)
 {
     // Advertise topics
     this->mPlant->advertise("switch").setName("Pump 1").setDatatype("boolean");
+    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("number").setUnit("unixtime");
     //FIXME add .settable(this->switchHandler)
     this->mPlant->advertise("moist").setName("Percent").setDatatype("number").setUnit("%");
     this->mPlant->advertise("moistraw").setName("adc").setDatatype("number").setUnit("3.3/4096V");
