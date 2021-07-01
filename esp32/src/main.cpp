@@ -36,7 +36,7 @@
  *                                     DEFINES
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
-#define MAX_TANK_DEPTH 1000
+#define MAX_TANK_DEPTH 2000
 #define TEST_TOPIC "roundtrip\0"
 #define BACKUP_TOPIC "$implementation/config/backup/set\0"
 #define BACKUP_STATUS_TOPIC "$implementation/config/backup\0"
@@ -279,6 +279,11 @@ void readPowerSwitchedSensors()
 {
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
   delay(10);
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    mPlants[i].clearMoisture();
+  }
+
   for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
   {
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -288,6 +293,7 @@ void readPowerSwitchedSensors()
     delay(2);
   }
 
+  waterRawSensor.clear();
   Wire.setPins(SENSOR_TANK_TRG, SENSOR_TANK_ECHO);
   Wire.begin();
   tankSensor.setTimeout(500);
@@ -316,7 +322,10 @@ void readPowerSwitchedSensors()
     for (int readCnt = 0; readCnt < 5; readCnt++)
     {
       if(!tankSensor.timeoutOccurred()){
-        waterRawSensor.add(tankSensor.readRangeSingleMillimeters());
+        uint16_t distance = tankSensor.readRangeSingleMillimeters();
+        if(distance < MAX_TANK_DEPTH){
+           waterRawSensor.add(distance);
+        }
       }
       delay(10);
     }
@@ -430,7 +439,7 @@ int determineNextPump()
       Serial.printf("%d Skip deactivated pump\r\n", i);
       continue;
     }
-    if ((rtcLastWateringPlant[i] > 0) && ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) < getCurrentTime()))
+    if ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) > getCurrentTime())
     {
       Serial.printf("%d Skipping due to cooldown %ld / %ld \r\n", i, rtcLastWateringPlant[i], plant.getCooldownInSeconds());
       continue;
@@ -529,6 +538,15 @@ void setup()
   WiFi.mode(WIFI_OFF);
   Serial.flush();
 
+  gpio_hold_dis(OUTPUT_PUMP0);
+  gpio_hold_dis(OUTPUT_PUMP1);
+  gpio_hold_dis(OUTPUT_PUMP2);
+  gpio_hold_dis(OUTPUT_PUMP3);
+  gpio_hold_dis(OUTPUT_PUMP4);
+  gpio_hold_dis(OUTPUT_PUMP5);
+  gpio_hold_dis(OUTPUT_PUMP6);
+  gpio_hold_dis(OUTPUT_ENABLE_PUMP);
+
   /* Intialize Plant */
   for (int i = 0; i < MAX_PLANTS; i++)
   {
@@ -538,6 +556,8 @@ void setup()
   Serial.flush();
   // read button
   pinMode(BUTTON, INPUT);
+
+
 
   // Power pins
   pinMode(OUTPUT_ENABLE_PUMP, OUTPUT);

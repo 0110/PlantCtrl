@@ -55,6 +55,10 @@ void Plant::init(void)
     digitalWrite(this->mPinPump, LOW);
 }
 
+void Plant::clearMoisture(void){
+    this->moistureRaw.clear();
+}
+
 void Plant::addSenseValue(void)
 {   
     int raw = analogRead(this->mPinSensor);

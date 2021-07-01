@@ -48,6 +48,7 @@ public:
      * 
      */
     void addSenseValue(void);
+    void clearMoisture(void);
 
     void deactivatePump(void);
 
