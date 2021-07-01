@@ -16,6 +16,7 @@ mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "1" -r
 echo "Waiting ..."
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
 set -e
+sleep 30
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/\$implementation/config/set" -m "{
 	\"settings\": {
 		\"sleep\":600,
@@ -64,11 +65,12 @@ mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/\$implementation/config/s
 		\"lowLight6\": false,
 		\"delay6\": 10
 	}
-}" -r
+}"
 echo "Waiting for reboot"
 sleep 1
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
+sleep 20
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/config/backup/set" -m "true" -r
-
+sleep 5
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "0" -r
 exit 0
