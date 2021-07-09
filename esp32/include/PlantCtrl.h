@@ -13,7 +13,9 @@
 #define PLANT_CTRL_H
 
 #include "HomieTypes.h"
+#include "ControllerConfiguration.h"
 #include "RunningMedian.h"
+#include "MathUtils.h"
 
 class Plant
 {
@@ -62,14 +64,15 @@ public:
      */
     bool isPumpRequired()
     {
-        bool isDry = getCurrentMoisture() > getSettingsMoisture();
+        bool isDry = getCurrentMoisture() > getSetting2Moisture();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
     }
 
     bool isPumpTriggerActive()
     {
-        return this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT;
+        long current = this->mSetting->pSensorDry->get();
+        return !equalish(current,DEACTIVATED_PLANT);
     }
 
     float getCurrentMoisture()
@@ -79,11 +82,13 @@ public:
         }
         return this->moistureRaw.getMedian();
     }
-    long getSettingsMoisture()
+
+    long getSetting2Moisture()
     {
         if (this->mSetting->pSensorDry != NULL)
         {
-            return this->mSetting->pSensorDry->get();
+            float percent = (this->mSetting->pSensorDry->get());
+            return MOIST_SENSOR_MIN_ADC + ((MOIST_SENSOR_MAX_ADC - MOIST_SENSOR_MIN_ADC) * percent);
         }
         else
         {

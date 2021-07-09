@@ -13,12 +13,12 @@
 
 #include <Homie.h>
 
-#define DEACTIVATED_PLANT 5000
-#define MISSING_SENSOR 5001
+#define DEACTIVATED_PLANT -1
+#define MISSING_SENSOR -2
 
 typedef struct PlantSettings_t
 {
-    HomieSetting<long> *pSensorDry;
+    HomieSetting<double> *pSensorDry;
     HomieSetting<long> *pPumpAllowedHourRangeStart;
     HomieSetting<long> *pPumpAllowedHourRangeEnd;
     HomieSetting<bool> *pPumpOnlyWhenLowLight;

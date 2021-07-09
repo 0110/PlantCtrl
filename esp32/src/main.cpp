@@ -260,7 +260,7 @@ void readOneWireSensors()
 void readPowerSwitchedSensors()
 {
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
-  delay(10);
+  delay(500);
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     mPlants[i].clearMoisture();
@@ -272,7 +272,7 @@ void readPowerSwitchedSensors()
     {
       mPlants[i].addSenseValue();
     }
-    delay(2);
+    delay(20);
   }
 
   waterRawSensor.clear();
@@ -372,10 +372,6 @@ void onHomieEvent(const HomieEvent &event)
 
     configTime(0, 0, ntpServer.get());
 
-    for (int i = 0; i < MAX_PLANTS; i++)
-    {
-      mPlants[i].postMQTTconnection();
-    }
     {
       getTopic(TEST_TOPIC, testopic)
           Homie.getMqttClient()
@@ -436,7 +432,7 @@ int determineNextPump()
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
-    if (plant.getCurrentMoisture() == MISSING_SENSOR)
+    if (equalish(plant.getCurrentMoisture(),MISSING_SENSOR))
     {
       plant.publishState("nosensor");
       log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
@@ -599,8 +595,7 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
-                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -764,28 +759,15 @@ void plantcontrol()
     Serial << "Plant" << lastPumpRunning << ": Water diff " << waterDiff << " mm" << endl;
   }
 
-  readOneWireSensors();
-
-  for (int i = 0; i < MAX_PLANTS; i++)
+  if (mAliveWasRead)
   {
-    long raw = mPlants[i].getCurrentMoisture();
-    long pct = 100 - map(raw, MOIST_SENSOR_MIN_ADC, MOIST_SENSOR_MAX_ADC, 0, 100);
-    if (raw == MISSING_SENSOR)
+    for (int i = 0; i < MAX_PLANTS; i++)
     {
-      pct = 0;
+      mPlants[i].postMQTTconnection();
     }
-    if (pct < 0)
-    {
-      pct = 0;
-    }
-    if (pct > 100)
-    {
-      pct = 100;
-    }
-
-    mPlants[i].setProperty("moist").send(String(pct));
-    mPlants[i].setProperty("moistraw").send(String(raw));
   }
+
+  readOneWireSensors();
 
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
   lastWaterValue = waterRawSensor.getAverage();

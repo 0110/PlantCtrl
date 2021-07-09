@@ -18,6 +18,7 @@
 
 #define MAX_PLANTS 7
 
+
 /**
  * @name Homie Attributes
  * generated Information
@@ -88,7 +89,7 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
  **/
 
 #define GENERATE_PLANT(plant, strplant)                                                                                                                                                                        \
-        HomieSetting<long> mSensorDry##plant = HomieSetting<long>("dry" strplant, "Plant " strplant "- Moist sensor dry threshold");                                                                      \
+        HomieSetting<double> mSensorDry##plant = HomieSetting<double>("dry" strplant, "Plant " strplant "- Moist sensor dry %");                                                                      \
         HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("hourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)");                                      \
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("hourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("lowLight" strplant, "Plant" strplant " - Enable the Pump only, when there is no sunlight"); \

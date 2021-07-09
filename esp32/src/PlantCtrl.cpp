@@ -13,6 +13,12 @@
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "TimeUtils.h"
+#include "MathUtils.h"
+
+double mapf(double x, double in_min, double in_max, double out_min, double out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
 {
@@ -27,8 +33,8 @@ void Plant::init(void)
 {
     /* Initialize Home Settings validator */
     this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
-    this->mSetting->pSensorDry->setValidator([](long candidate) {
-        return (((candidate >= 0) && (candidate <= 4095)) || candidate == DEACTIVATED_PLANT);
+    this->mSetting->pSensorDry->setValidator([](double candidate) {
+        return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate,DEACTIVATED_PLANT));
     });
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate) {
@@ -63,6 +69,7 @@ void Plant::clearMoisture(void){
 void Plant::addSenseValue(void)
 {   
     int raw = analogRead(this->mPinSensor);
+    Serial << "plant bla " << raw << endl;
     if(raw < MOIST_SENSOR_MAX_ADC && raw > MOIST_SENSOR_MIN_ADC){
         this->moistureRaw.add(raw);
     }
@@ -73,6 +80,25 @@ void Plant::postMQTTconnection(void)
     const String OFF = String("OFF");
     this->mConnected = true;
     this->mPlant->setProperty("switch").send(OFF);
+
+    long raw = getCurrentMoisture();
+    double pct = 100 - mapf(raw, MOIST_SENSOR_MIN_ADC, MOIST_SENSOR_MAX_ADC, 0, 100);
+    if (equalish(raw, MISSING_SENSOR))
+    {
+      pct = 0;
+    }
+    if (pct < 0)
+    {
+      pct = 0;
+    }
+    if (pct > 100)
+    {
+      pct = 100;
+    }
+
+    this->mPlant->setProperty("moist").send(String(round(pct*10)/10));
+    this->mPlant->setProperty("moistraw").send(String(raw));
+
 }
 
 void Plant::deactivatePump(void)
