@@ -742,7 +742,7 @@ void loop()
   }
 
   /** Timeout always stopping the ESP -> no endless power consumption */
-  if (millis() > 60000 && !mDownloadMode)
+  if (millis() > ESP_STALE_TIMEOUT && !mDownloadMode)
   {
     Serial << (millis() / 1000) << "not terminated watchdog reset" << endl;
     Serial.flush();

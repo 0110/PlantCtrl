@@ -80,14 +80,15 @@
  */
 #define FIRMWARE_VERSION "sw 1.3 hw 0.10"
 
-#define MOIST_SENSOR_MAX_ADC                (85 * 4095 / 100)
-#define MOIST_SENSOR_MIN_ADC                (25 * 4095 / 100)
+#define MOIST_SENSOR_MAX_ADC                1200 //swamp earth - 50 margin
+#define MOIST_SENSOR_MIN_ADC                1800 //dry earth + 1500 margin
 
 #define SOLAR_VOLT_FACTOR           11
 #define BATTSENSOR_INDEX_SOLAR      0
 #define BATTSENSOR_INDEX_BATTERY    1
 
-#define MQTT_TIMEOUT                (1000 * 10) /**< After 10 seconds, MQTT is expected to be connected */
+#define MQTT_TIMEOUT                (1000 * 60) /**< After 10 seconds, MQTT is expected to be connected */
+#define ESP_STALE_TIMEOUT           (MQTT_TIMEOUT+(30*1000))
 
 #define MAX_PLANTS          7
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
