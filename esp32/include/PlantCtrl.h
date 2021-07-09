@@ -13,6 +13,7 @@
 #define PLANT_CTRL_H
 
 #include "HomieTypes.h"
+#include <HomieNode.hpp>
 #include "ControllerConfiguration.h"
 #include "RunningMedian.h"
 #include "MathUtils.h"
@@ -23,6 +24,7 @@ class Plant
 private:
     RunningMedian moistureRaw = RunningMedian(5);
     HomieNode *mPlant = NULL;
+    HomieInternals::PropertyInterface mPump;
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
@@ -100,7 +102,6 @@ public:
     {
         return mPlant->setProperty(property);
     }
-    bool switchHandler(const HomieRange &range, const String &value);
 
     void init(void);
 
@@ -131,8 +132,11 @@ public:
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
 
-
     void publishState(String state);
+
+    bool switchHandler(const HomieRange& range, const String& value);
+
+    void setSwitchHandler(HomieInternals::PropertyInputHandler f);
 };
 
 #endif

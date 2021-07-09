@@ -133,31 +133,32 @@ void Plant::activatePump(void)
     }
 }
 
+bool Plant::switchHandler(const HomieRange& range, const String& value) {
+    if (range.isRange) {
+         return false;  // only one switch is present
+    }
+
+    if ((value.equals("ON")) || (value.equals("On")) || (value.equals("on")) || (value.equals("true"))) {
+        this->activatePump();
+        return true;
+    } else if ((value.equals("OFF")) || (value.equals("Off")) || (value.equals("off")) || (value.equals("false")) ) {
+        this->deactivatePump();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Plant::setSwitchHandler(HomieInternals::PropertyInputHandler f) {
+    this->mPump.settable(f);
+}
+
 void Plant::advertise(void)
 {
     // Advertise topics
-    this->mPlant->advertise("switch").setName("Pump 1").setDatatype("boolean");
+    mPump = this->mPlant->advertise("switch").setName("Pump").setDatatype("boolean");    
     this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("number").setUnit("unixtime");
-    //FIXME add .settable(this->switchHandler)
     this->mPlant->advertise("moist").setName("Percent").setDatatype("number").setUnit("%");
     this->mPlant->advertise("moistraw").setName("adc").setDatatype("number").setUnit("3.3/4096V");
     this->mPlant->advertise("state").setName("state").setDatatype("string");
 }
-
-/* FIXME
-bool Plant::switchHandler(const HomieRange& range, const String& value) {
-  if (range.isRange) return false;  // only one switch is present
-  
-
-    if ((value.equals("ON")) || (value.equals("On")) || (value.equals("on")) || (value.equals("true"))) {
-      this->activatePump();
-      return true;
-    } else if ((value.equals("OFF")) || (value.equals("Off")) || (value.equals("off")) || (value.equals("false")) ) {
-      this->deactivatePump();
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-*/

@@ -510,6 +510,34 @@ void homieLoop()
   }
 }
 
+bool switch1(const HomieRange& range, const String& value) {
+  return mPlants[0].switchHandler(range, value);
+}
+
+bool switch2(const HomieRange& range, const String& value) {
+  return mPlants[1].switchHandler(range, value);
+}
+
+bool switch3(const HomieRange& range, const String& value) {
+  return mPlants[2].switchHandler(range, value);
+}
+
+bool switch4(const HomieRange& range, const String& value) {
+  return mPlants[3].switchHandler(range, value);
+}
+
+bool switch5(const HomieRange& range, const String& value) {
+  return mPlants[4].switchHandler(range, value);
+}
+
+bool switch6(const HomieRange& range, const String& value) {
+  return mPlants[5].switchHandler(range, value);
+}
+
+bool switch7(const HomieRange& range, const String& value) {
+  return mPlants[6].switchHandler(range, value);
+}
+
 /**
  * @brief Startup function
  * Is called once, the controller is started
@@ -619,6 +647,14 @@ void setup()
     {
       mPlants[i].advertise();
     }
+    mPlants[0].setSwitchHandler(switch1);
+    mPlants[1].setSwitchHandler(switch2);
+    mPlants[2].setSwitchHandler(switch3);
+    mPlants[3].setSwitchHandler(switch4);
+    mPlants[4].setSwitchHandler(switch5);
+    mPlants[5].setSwitchHandler(switch6);
+    mPlants[6].setSwitchHandler(switch7);
+
     sensorTemp.advertise(TEMPERATUR_SENSOR_LIPO)
         .setName(TEMPERATURE_NAME)
         .setDatatype(NUMBER_TYPE)
