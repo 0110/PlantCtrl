@@ -23,13 +23,17 @@ mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "1" -r
 echo "Waiting ..."
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
 set -e
+echo "Waiting 30 seconds ..."
 sleep 30
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/\$implementation/config/set" -f $settingsFile
-echo "Waiting for reboot"
+echo "Waiting for reboot ..."
 sleep 1
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
+echo "Alive"
 sleep 20
+echo "Create Backup ..."
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/config/backup/set" -m "true" -r
 sleep 5
+echo "Shutdown ..."
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "0" -r
 exit 0
