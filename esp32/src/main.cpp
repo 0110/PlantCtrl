@@ -636,7 +636,6 @@ void setup()
   waterSensorAddr.setDefaultValue("");
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
-  //Homie.disableLogging();
 
   Homie.setup();
 
@@ -814,8 +813,13 @@ void plantcontrol()
 
   if (mAliveWasRead)
   {
-    sensorWater.setProperty("remaining").send(String(waterLevelMax.get() - waterRawSensor.getAverage()));
-    sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
+    float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
+    if (! isnan(remaining)) {
+      sensorWater.setProperty("remaining").send(String(remaining));
+    }
+    if (! isnan(waterRawSensor.getAverage())) {
+      sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
+    }
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
     sensorLipo.setProperty("current").send(String(battery.getCurrent()));
