@@ -25,7 +25,7 @@
  * @{
  **/
 
-#define NUMBER_TYPE                     "number"        /**< numberic information, published or read in Homie */
+#define NUMBER_TYPE                     "Number"        /**< numberic information, published or read in Homie */
 
 /**
  * @name Temperatur Node

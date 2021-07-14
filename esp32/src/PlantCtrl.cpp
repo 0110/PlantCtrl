@@ -156,8 +156,8 @@ void Plant::advertise(void)
 {
     // Advertise topics
     mPump = this->mPlant->advertise("switch").setName("Pump").setDatatype("boolean");    
-    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("number").setUnit("unixtime");
-    this->mPlant->advertise("moist").setName("Percent").setDatatype("number").setUnit("%");
-    this->mPlant->advertise("moistraw").setName("adc").setDatatype("number").setUnit("3.3/4096V");
+    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("Number").setUnit("unixtime");
+    this->mPlant->advertise("moist").setName("Percent").setDatatype("Number").setUnit("%");
+    this->mPlant->advertise("moistraw").setName("adc").setDatatype("Number").setUnit("3.3/4096V");
     this->mPlant->advertise("state").setName("state").setDatatype("string");
 }
