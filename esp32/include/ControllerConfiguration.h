@@ -80,8 +80,8 @@
  */
 #define FIRMWARE_VERSION "sw 1.3 hw 0.10"
 
-#define MOIST_SENSOR_MAX_ADC                2800 //swamp earth - 50 margin
-#define MOIST_SENSOR_MIN_ADC                1200 //dry earth + 1500 margin
+#define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
+#define MOIST_SENSOR_MIN_FRQ                1000 // 1kHz (500Hz margin)
 
 #define SOLAR_VOLT_FACTOR           11
 #define BATTSENSOR_INDEX_SOLAR      0

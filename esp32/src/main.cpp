@@ -34,6 +34,7 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 
+
 /******************************************************************************
  *                                     DEFINES
 ******************************************************************************/
@@ -260,19 +261,16 @@ void readOneWireSensors()
 void readPowerSwitchedSensors()
 {
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
-  delay(500);
+  delay(50);
   for (int i = 0; i < MAX_PLANTS; i++)
   {
-    mPlants[i].clearMoisture();
+    mPlants[i].startMoistureMeasurement();
   }
 
-  for (int readCnt = 0; readCnt < AMOUNT_SENOR_QUERYS; readCnt++)
+  delay(MOISTURE_MEASUREMENT_DURATION);
+  for (int i = 0; i < MAX_PLANTS; i++)
   {
-    for (int i = 0; i < MAX_PLANTS; i++)
-    {
-      mPlants[i].addSenseValue();
-    }
-    delay(20);
+    mPlants[i].stopMoistureMeasurement();
   }
 
   waterRawSensor.clear();

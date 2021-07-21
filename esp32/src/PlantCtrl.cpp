@@ -14,6 +14,7 @@
 #include "ControllerConfiguration.h"
 #include "TimeUtils.h"
 #include "MathUtils.h"
+#include "driver/pcnt.h" 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
 {
@@ -56,22 +57,44 @@ void Plant::init(void)
     pinMode(this->mPinPump, OUTPUT);
     Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
     Serial.flush();
-    pinMode(this->mPinSensor, ANALOG);
+    pinMode(this->mPinSensor, INPUT);
     Serial.println("Set GPIO " + String(mPinPump) + "=" + String(LOW));
     Serial.flush();
     digitalWrite(this->mPinPump, LOW);
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
+
+    pcnt_config.pulse_gpio_num = this->mPinSensor;                         // Configura GPIO para entrada dos pulsos
+    pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED;                         // Configura GPIO para controle da contagem
+    pcnt_config.unit = unit;      // Unidade de contagem PCNT - 0
+    pcnt_config.channel = PCNT_CHANNEL_0;                               // Canal de contagem PCNT - 0
+    pcnt_config.counter_h_lim = INT16_MAX;                             // Limite maximo de contagem - 20000
+    pcnt_config.pos_mode = PCNT_COUNT_INC;                                  // Incrementa contagem na subida do pulso
+    pcnt_config.neg_mode = PCNT_COUNT_DIS;                                  // Incrementa contagem na descida do pulso
+    pcnt_config.lctrl_mode = PCNT_MODE_KEEP;                             // PCNT - modo lctrl desabilitado
+    pcnt_config.hctrl_mode = PCNT_MODE_KEEP;                                // PCNT - modo hctrl - se HIGH conta incrementando
+    pcnt_unit_config(&pcnt_config);                                         // Configura o contador PCNT
+
+
+    pcnt_counter_pause(unit);    // Pausa o contador PCNT
+    pcnt_counter_clear(unit);    // Zera o contador PCNT
+
+    Serial.println("Setup Counter " + String(mPinPump) + "=" + String(LOW));
 }
 
-void Plant::clearMoisture(void){
-    this->moistureRaw.clear();
+void Plant::startMoistureMeasurement(void) {
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_counter_resume(unit);
 }
 
-void Plant::addSenseValue(void)
-{   
-    int raw = analogRead(this->mPinSensor);
-    if(raw < MOIST_SENSOR_MAX_ADC && raw > MOIST_SENSOR_MIN_ADC){
-        this->moistureRaw.add(raw);
-    }
+void Plant::stopMoistureMeasurement(void) {
+    int16_t pulses;
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_counter_pause(unit); 
+    pcnt_get_counter_value(unit, &pulses);
+    pcnt_counter_clear(unit);
+    
+    this->mMoisture_freq = pulses * (1000 / MOISTURE_MEASUREMENT_DURATION);
 }
 
 void Plant::postMQTTconnection(void)
@@ -81,7 +104,7 @@ void Plant::postMQTTconnection(void)
     this->mPlant->setProperty("switch").send(OFF);
 
     long raw = getCurrentMoisture();
-    double pct = 100 - mapf(raw, MOIST_SENSOR_MIN_ADC, MOIST_SENSOR_MAX_ADC, 0, 100);
+    double pct = mapf(raw, MOIST_SENSOR_MIN_FRQ, MOIST_SENSOR_MAX_FRQ, 100, 0);
     if (equalish(raw, MISSING_SENSOR))
     {
       pct = 0;

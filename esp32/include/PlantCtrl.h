@@ -18,13 +18,16 @@
 #include "RunningMedian.h"
 #include "MathUtils.h"
 
+#define MOISTURE_MEASUREMENT_DURATION  500  /** ms */
+
+
 class Plant
 {
 
 private:
-    RunningMedian moistureRaw = RunningMedian(5);
     HomieNode *mPlant = NULL;
     HomieInternals::PropertyInterface mPump;
+    int32_t mMoisture_freq = 0;
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
@@ -51,8 +54,8 @@ public:
      * @brief Measure a new analog moister value
      * 
      */
-    void addSenseValue(void);
-    void clearMoisture(void);
+    void startMoistureMeasurement(void);
+    void stopMoistureMeasurement(void);
 
     void deactivatePump(void);
 
@@ -79,10 +82,7 @@ public:
 
     float getCurrentMoisture()
     {   
-        if(moistureRaw.getCount()==0){
-            return MISSING_SENSOR;
-        }
-        return this->moistureRaw.getMedian();
+        return mMoisture_freq;
     }
 
     long getSetting2Moisture()
@@ -90,7 +90,7 @@ public:
         if (this->mSetting->pSensorDry != NULL)
         {
             float percent = (this->mSetting->pSensorDry->get());
-            return MOIST_SENSOR_MIN_ADC + ((MOIST_SENSOR_MAX_ADC - MOIST_SENSOR_MIN_ADC) * percent);
+            return (((MOIST_SENSOR_MAX_FRQ - MOIST_SENSOR_MIN_FRQ) * percent) + MOIST_SENSOR_MIN_FRQ);
         }
         else
         {
