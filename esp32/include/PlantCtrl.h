@@ -82,6 +82,9 @@ public:
 
     float getCurrentMoisture()
     {   
+        if(mMoisture_freq < MOIST_SENSOR_MIN_FRQ){
+            return MISSING_SENSOR;
+        }
         return mMoisture_freq;
     }
 

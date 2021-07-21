@@ -273,6 +273,11 @@ void readPowerSwitchedSensors()
     mPlants[i].stopMoistureMeasurement();
   }
 
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoisture() << " hz" << endl;
+  }
+
   waterRawSensor.clear();
   Wire.setPins(SENSOR_TANK_TRG, SENSOR_TANK_ECHO);
   Wire.begin();
