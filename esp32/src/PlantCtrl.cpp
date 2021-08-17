@@ -120,6 +120,7 @@ void Plant::postMQTTconnection(void)
 
     this->mPlant->setProperty("moist").send(String(round(pct*10)/10));
     this->mPlant->setProperty("moistraw").send(String(raw));
+    this->mPlant->setProperty("moisttrigger").send(String(getSetting2Moisture()));
 
 }
 

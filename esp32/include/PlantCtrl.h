@@ -92,8 +92,9 @@ public:
     {
         if (this->mSetting->pSensorDry != NULL)
         {
-            float percent = (this->mSetting->pSensorDry->get());
-            return (((MOIST_SENSOR_MAX_FRQ - MOIST_SENSOR_MIN_FRQ) * percent) + MOIST_SENSOR_MIN_FRQ);
+            //1 is totally wet, 0 is try, 0 is MOIST_SENSOR_MAX_FRQ, 1 is MOIST_SENSOR_MIN_FRQ
+            float factor = (this->mSetting->pSensorDry->get());
+            return map(factor,0,100,MOIST_SENSOR_MAX_FRQ,MOIST_SENSOR_MIN_FRQ);
         }
         else
         {
