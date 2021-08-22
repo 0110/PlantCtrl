@@ -69,7 +69,7 @@ HomieNode stayAlive("stay", "alive", "alive");  /**< Necessary for Mqtt Active C
 HomieSetting<long> deepSleepTime("sleep", "time in seconds to sleep");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in seconds to sleep (0 uses same setting: deepsleep at night, too)");
 HomieSetting<long> wateringDeepSleep("pumpsleep", "time seconds to sleep, while a pump is running");
-
+HomieSetting<long> pumpIneffectiveWarning("pumpConsecutiveWarn", "if the pump was triggered this amount directly after each cooldown, without resolving dryness, warn");
 HomieSetting<long> waterLevelMax("tankmax", "distance (mm) at maximum water level");
 HomieSetting<long> waterLevelMin("tankmin", "distance (mm) at minimum water level (pumps still covered)");
 HomieSetting<long> waterLevelWarn("tankwarn", "warn (mm) if below this water level %");

@@ -34,7 +34,6 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 
-
 /******************************************************************************
  *                                     DEFINES
 ******************************************************************************/
@@ -70,6 +69,7 @@ RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plan
 RTC_DATA_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
 
 RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
+RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 
 /******************************************************************************
  *                            LOCAL VARIABLES
@@ -416,6 +416,11 @@ int determineNextPump()
   int pumpToUse = -1;
   for (int i = 0; i < MAX_PLANTS; i++)
   {
+    bool wateralarm = consecutiveWateringPlant[i] >= pumpIneffectiveWarning.get();
+    if (wateralarm)
+    {
+      log(LOG_LEVEL_ERROR, String(String(i) + " Plant still dry after " + String(consecutiveWateringPlant[i]) + " watering attempts"), LOG_PUMP_INEFFECTIVE);
+    }
     Plant plant = mPlants[i];
     if (!plant.isPumpTriggerActive())
     {
@@ -425,17 +430,32 @@ int determineNextPump()
     }
     if ((rtcLastWateringPlant[i] + plant.getCooldownInSeconds()) > getCurrentTime())
     {
-      plant.publishState("cooldown");
+      if (wateralarm)
+      {
+        plant.publishState("cooldown+alarm");
+      }
+      else
+      {
+        plant.publishState("cooldown");
+      }
       log(LOG_LEVEL_DEBUG, String(String(i) + " Skipping due to cooldown " + String(rtcLastWateringPlant[i] + plant.getCooldownInSeconds())), LOG_DEBUG_CODE);
       continue;
     }
     if (!isLowLight && plant.isAllowedOnlyAtLowLight())
     {
-      plant.publishState("sunny");
+      if (wateralarm)
+      {
+        plant.publishState("sunny+alarm");
+      }
+      else
+      {
+        plant.publishState("sunny");
+      }
+
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
-    if (equalish(plant.getCurrentMoisture(),MISSING_SENSOR))
+    if (equalish(plant.getCurrentMoisture(), MISSING_SENSOR))
     {
       plant.publishState("nosensor");
       log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
@@ -452,13 +472,29 @@ int determineNextPump()
           /* no time from NTP received */
           (getCurrentTime() < 10000))
       {
-        plant.publishState("active");
+        if (wateralarm)
+        {
+          plant.publishState("active+alarm");
+        }
+        else
+        {
+          plant.publishState("active");
+        }
+
+        consecutiveWateringPlant[i]++;
         log(LOG_LEVEL_DEBUG, String(String(i) + " Requested pumping"), LOG_DEBUG_CODE);
         pumpToUse = i;
       }
       else
       {
-        plant.publishState("after-work");
+        if (wateralarm)
+        {
+          plant.publishState("after-work+alarm");
+        }
+        else
+        {
+          plant.publishState("after-work");
+        }
         log(LOG_LEVEL_DEBUG, String(String(i) + " ignored due to time boundary: " + String(plant.getHoursStart()) + " to " + String(plant.getHoursEnd()) + " ( current " + String(getCurrentHour()) + " )"), LOG_DEBUG_CODE);
       }
       continue;
@@ -466,6 +502,8 @@ int determineNextPump()
     else
     {
       plant.publishState("wet");
+      //plant was detected as wet, remove consecutive count
+      consecutiveWateringPlant[i] = 0;
     }
   }
   return pumpToUse;
@@ -513,31 +551,38 @@ void homieLoop()
   }
 }
 
-bool switch1(const HomieRange& range, const String& value) {
+bool switch1(const HomieRange &range, const String &value)
+{
   return mPlants[0].switchHandler(range, value);
 }
 
-bool switch2(const HomieRange& range, const String& value) {
+bool switch2(const HomieRange &range, const String &value)
+{
   return mPlants[1].switchHandler(range, value);
 }
 
-bool switch3(const HomieRange& range, const String& value) {
+bool switch3(const HomieRange &range, const String &value)
+{
   return mPlants[2].switchHandler(range, value);
 }
 
-bool switch4(const HomieRange& range, const String& value) {
+bool switch4(const HomieRange &range, const String &value)
+{
   return mPlants[3].switchHandler(range, value);
 }
 
-bool switch5(const HomieRange& range, const String& value) {
+bool switch5(const HomieRange &range, const String &value)
+{
   return mPlants[4].switchHandler(range, value);
 }
 
-bool switch6(const HomieRange& range, const String& value) {
+bool switch6(const HomieRange &range, const String &value)
+{
   return mPlants[5].switchHandler(range, value);
 }
 
-bool switch7(const HomieRange& range, const String& value) {
+bool switch7(const HomieRange &range, const String &value)
+{
   return mPlants[6].switchHandler(range, value);
 }
 
@@ -626,7 +671,8 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
+                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   wateringDeepSleep.setDefaultValue(5);
   ntpServer.setDefaultValue("pool.ntp.org");
@@ -637,6 +683,9 @@ void setup()
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
   lipoSensorAddr.setDefaultValue("");
   waterSensorAddr.setDefaultValue("");
+  pumpIneffectiveWarning.setDefaultValue(600).setValidator([](long candidate)
+                                                           { return (candidate > 0) && (candidate < (20)); });
+  pumpIneffectiveWarning.setDefaultValue(5);
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
 
@@ -802,6 +851,7 @@ void plantcontrol()
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].postMQTTconnection();
+      mPlants[i].setProperty("consecutivePumps").send(String(consecutiveWateringPlant[i]));
     }
   }
 
@@ -817,10 +867,12 @@ void plantcontrol()
   if (mAliveWasRead)
   {
     float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
-    if (! isnan(remaining)) {
+    if (!isnan(remaining))
+    {
       sensorWater.setProperty("remaining").send(String(remaining));
     }
-    if (! isnan(waterRawSensor.getAverage())) {
+    if (!isnan(waterRawSensor.getAverage()))
+    {
       sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
     }
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));

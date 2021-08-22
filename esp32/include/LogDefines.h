@@ -20,6 +20,9 @@
 #define LOG_PUMP_AND_DOWNLOADMODE "Download mode, ignoring pump request"
 #define LOG_PUMP_AND_DOWNLOADMODE_CODE 2
 
+//msg is dynamic defined
+#define LOG_PUMP_INEFFECTIVE -4
+
 #define LOG_DEBUG_CODE 1001
 #define LOG_NOPUMP_LOWLIGHT 100
 #define LOG_NOPUMPS 101
