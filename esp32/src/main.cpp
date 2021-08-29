@@ -57,9 +57,10 @@
 ******************************************************************************/
 
 void log(int level, String message, int code);
-int determineNextPump();
+int determineNextPump(bool lowLight);
 void plantcontrol();
 void readPowerSwitchedSensors();
+bool determineTimedLightState(bool lowLight);
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
@@ -67,6 +68,10 @@ void readPowerSwitchedSensors();
 
 RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plant */
 RTC_DATA_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
+#if defined(TIMED_LIGHT_PIN)
+  RTC_DATA_ATTR bool timedLightOn = false; /**< allow fast recovery after poweron */
+#endif // TIMED_LIGHT_PIN
+
 
 RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
 RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
@@ -132,6 +137,9 @@ void espDeepSleepFor(long seconds, bool activatePump)
       log(LOG_LEVEL_DEBUG, "NTP timeout before deepsleep", LOG_DEBUG_CODE);
     }
   }
+  
+  //allo hold for all digital pins
+  gpio_deep_sleep_hold_en();
 
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
@@ -139,13 +147,12 @@ void espDeepSleepFor(long seconds, bool activatePump)
   if (activatePump)
   {
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
-    gpio_deep_sleep_hold_en();
+    
     gpio_hold_en(OUTPUT_ENABLE_PUMP); //pump pwr
   }
   else
   {
     gpio_hold_dis(OUTPUT_ENABLE_PUMP); //pump pwr
-    gpio_deep_sleep_hold_dis();
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -160,7 +167,10 @@ void espDeepSleepFor(long seconds, bool activatePump)
   gpio_hold_en(OUTPUT_PUMP4);
   gpio_hold_en(OUTPUT_PUMP5);
   gpio_hold_en(OUTPUT_PUMP6);
-  //FIXME fix for outher outputs
+  #if defined(TIMED_LIGHT_PIN)
+    gpio_hold_en(TIMED_LIGHT_PIN);
+  #endif // TIMED_LIGHT_PIN
+
 
   esp_sleep_enable_timer_wakeup((seconds * 1000U * 1000U));
   if (mAliveWasRead)
@@ -410,9 +420,8 @@ void onHomieEvent(const HomieEvent &event)
   }
 }
 
-int determineNextPump()
+int determineNextPump(bool isLowLight)
 {
-  bool isLowLight = (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE);
   int pumpToUse = -1;
   for (int i = 0; i < MAX_PLANTS; i++)
   {
@@ -601,6 +610,13 @@ void setup()
   WiFi.mode(WIFI_OFF);
   Serial.flush();
 
+  //restore state before releasing pin, to prevent flickering
+  #if defined(TIMED_LIGHT_PIN)
+    pinMode(TIMED_LIGHT_PIN, OUTPUT);
+    digitalWrite(TIMED_LIGHT_PIN, timedLightOn);
+    gpio_hold_dis(TIMED_LIGHT_PIN);
+  #endif // TIMED_LIGHT_PIN
+
   gpio_hold_dis(OUTPUT_PUMP0);
   gpio_hold_dis(OUTPUT_PUMP1);
   gpio_hold_dis(OUTPUT_PUMP2);
@@ -683,9 +699,20 @@ void setup()
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
   lipoSensorAddr.setDefaultValue("");
   waterSensorAddr.setDefaultValue("");
-  pumpIneffectiveWarning.setDefaultValue(600).setValidator([](long candidate)
+  pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate)
                                                            { return (candidate > 0) && (candidate < (20)); });
-  pumpIneffectiveWarning.setDefaultValue(5);
+
+  #if defined(TIMED_LIGHT_PIN)
+    timedLightStart.setDefaultValue(18).setValidator([](long candidate)
+                                                           { return (candidate > 0) && (candidate < (25)); });
+    timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
+                                                           { return (candidate > 0) && (candidate < (22)); });
+    timedLightOnlyWhenDark.setDefaultValue(true);
+    timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
+                                                           { return (candidate > 3.3) && (candidate < (4.2)); });
+  #endif // TIMED_LIGHT_PIN
+    
+
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
 
@@ -891,9 +918,10 @@ void plantcontrol()
     Serial.flush();
   }
 
+  bool isLowLight = (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE);
   bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
   //FIXME no water warning message
-  lastPumpRunning = determineNextPump();
+  lastPumpRunning = determineNextPump(isLowLight);
   if (lastPumpRunning != -1 && !hasWater)
   {
     log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
@@ -917,6 +945,13 @@ void plantcontrol()
     }
   }
 
+  #if defined(TIMED_LIGHT_PIN)
+    bool shouldLight = determineTimedLightState(isLowLight);
+    timedLightOn = shouldLight;
+    digitalWrite(TIMED_LIGHT_PIN, shouldLight);
+  #endif // TIMED_LIGHT_PIN
+  
+
   /* Always handle one of the deep sleep duration */
   if (lastPumpRunning == -1 || !hasWater)
   {
@@ -938,6 +973,42 @@ void plantcontrol()
 }
 
 /** @}*/
+
+
+bool determineTimedLightState(bool lowLight){
+  bool onlyAllowedWhenDark = timedLightOnlyWhenDark.get();
+  long hoursStart = timedLightStart.get();
+  long hoursEnd = timedLightEnd.get();
+
+  //ntp missing
+  if(getCurrentTime() < 10000){
+    timedLightNode.setProperty("state").send(String("Off, missing ntp"));
+    return false;
+  }
+  if(onlyAllowedWhenDark && !lowLight){
+    timedLightNode.setProperty("state").send(String("Off, not dark"));
+    return false;
+  }
+
+  if (((hoursStart > hoursEnd) &&
+           (getCurrentHour() >= hoursStart || getCurrentHour() <= hoursEnd)) ||
+          /* Handle e.g. start = 8, end = 21 */
+          ((hoursStart < hoursEnd) &&
+           (getCurrentHour() >= hoursStart && getCurrentHour() <= hoursEnd)))
+      {
+        if(battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get() ){
+          timedLightNode.setProperty("state").send(String("On"));
+          return true;
+        }else {
+          timedLightNode.setProperty("state").send(String("Off, due to missing voltage"));
+          return false;
+        }
+
+      } else {
+        timedLightNode.setProperty("state").send(String("Off, outside worktime"));
+        return false;
+      }
+}
 
 void log(int level, String message, int statusCode)
 {

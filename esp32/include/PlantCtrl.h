@@ -18,7 +18,7 @@
 #include "RunningMedian.h"
 #include "MathUtils.h"
 
-#define MOISTURE_MEASUREMENT_DURATION  500  /** ms */
+#define MOISTURE_MEASUREMENT_DURATION  400  /** ms */
 
 
 class Plant

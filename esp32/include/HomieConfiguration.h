@@ -51,6 +51,11 @@ HomieNode plant4("plant4", "Plant 4", "Plant"); /**< dynamic Homie information f
 HomieNode plant5("plant5", "Plant 5", "Plant"); /**< dynamic Homie information for sixth plant */
 HomieNode plant6("plant6", "Plant 6", "Plant"); /**< dynamic Homie information for seventh plant */
 
+#if defined(TIMED_LIGHT_PIN)
+        HomieNode timedLightNode("timedLight", "TimedLight", "Status");
+#endif // TIMED_LIGHT_PIN
+ 
+
 HomieNode sensorLipo("lipo", "Battery Status", "Lipo");
 HomieNode sensorSolar("solar", "Solar Status", "Solarpanel");
 HomieNode sensorWater("water", "WaterSensor", "Water");
@@ -77,6 +82,14 @@ HomieSetting<long> waterLevelVol("tankVolume", "(ml) between minimum and maximum
 HomieSetting<const char *> lipoSensorAddr("lipoDSAddr", "1wire address for lipo temperature sensor");
 HomieSetting<const char *> waterSensorAddr("tankDSAddr", "1wire address for water temperature sensor");
 HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as default)");
+
+#if defined(TIMED_LIGHT_PIN)
+        HomieSetting<double> timedLightVoltageCutoff("LightVoltageCutoff", "voltage at wich to disable light");
+        HomieSetting<long> timedLightStart("LightStart", "hour to start light");
+        HomieSetting<long> timedLightEnd("LightEnd", "hour to end light");
+        HomieSetting<bool> timedLightOnlyWhenDark("LightOnlyDark", "only enable light, if solar is low");
+#endif // TIMED_LIGHT_PIN
+
 
 /**
  * @}

@@ -69,8 +69,12 @@
 #define SENSOR_TANK_ECHO    GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
 #define SENSOR_TANK_TRG     GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
 #define BUTTON              GPIO_NUM_0  /**< GPIO 0 - Fix button of NodeMCU */
-#define CUSTOM1_PIN3        GPIO_NUM_2   /**< GPIO 2 - Custom GPIO controlling a MOSFET, connected to GND */
-#define CUSTOM1_PIN2        GPIO_NUM_12   /**< GPIO 4 - custom GPIO directly connected to GPIO header */
+
+#define CUSTOM1_PIN1        GPIO_NUM_34   /** direct gpio */
+#define CUSTOM1_PIN3        GPIO_NUM_35   /** direct gpio */
+#define CUSTOM1_PIN5        GPIO_NUM_2   /** mosfet controlled */
+#define CUSTOM1_PIN7        GPIO_NUM_12   /** mosfet controlled */
+
 #define I2C1_SDA          GPIO_NUM_34   /**< GPIO 34 - I2C */
 #define I2C1_SCL          GPIO_NUM_35   /**< GPIO 35 - I2C */
 /* @} */
@@ -79,6 +83,8 @@
  *  @{
  */
 #define FIRMWARE_VERSION "sw 1.3 hw 0.10"
+
+#define TIMED_LIGHT_PIN CUSTOM1_PIN5
 
 #define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
 #define MOIST_SENSOR_MIN_FRQ                1000 // 1kHz (500Hz margin)
