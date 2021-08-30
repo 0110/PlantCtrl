@@ -706,7 +706,7 @@ void setup()
     timedLightStart.setDefaultValue(18).setValidator([](long candidate)
                                                            { return (candidate > 0) && (candidate < (25)); });
     timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
-                                                           { return (candidate > 0) && (candidate < (22)); });
+                                                           { return (candidate > 0) && (candidate < (24)); });
     timedLightOnlyWhenDark.setDefaultValue(true);
     timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
                                                            { return (candidate > 3.3) && (candidate < (4.2)); });
