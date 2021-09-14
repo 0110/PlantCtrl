@@ -70,6 +70,7 @@ RTC_DATA_ATTR int lastPumpRunning = -1; /**< store last successfully waterd plan
 RTC_DATA_ATTR long lastWaterValue = 0;  /**< to calculate the used water per plant */
 #if defined(TIMED_LIGHT_PIN)
   RTC_DATA_ATTR bool timedLightOn = false; /**< allow fast recovery after poweron */
+  RTC_DATA_ATTR bool timedLightLowVoltageTriggered = false; /**remember if it was shut down due to voltage level */
 #endif // TIMED_LIGHT_PIN
 
 
@@ -987,6 +988,7 @@ bool determineTimedLightState(bool lowLight){
   }
   if(onlyAllowedWhenDark && !lowLight){
     timedLightNode.setProperty("state").send(String("Off, not dark"));
+    timedLightLowVoltageTriggered = false;
     return false;
   }
 
@@ -996,11 +998,12 @@ bool determineTimedLightState(bool lowLight){
           ((hoursStart < hoursEnd) &&
            (getCurrentHour() >= hoursStart && getCurrentHour() <= hoursEnd)))
       {
-        if(battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get() ){
+        if(!timedLightLowVoltageTriggered && battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get() ){
           timedLightNode.setProperty("state").send(String("On"));
           return true;
         }else {
           timedLightNode.setProperty("state").send(String("Off, due to missing voltage"));
+          timedLightLowVoltageTriggered = true;
           return false;
         }
 

@@ -82,7 +82,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "sw 1.3 hw 0.10"
+#define FIRMWARE_VERSION "sw 1.4 hw 0.10"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
 
