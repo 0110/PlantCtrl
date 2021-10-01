@@ -13,14 +13,21 @@
 #define PLANT_CTRL_H
 
 #include "HomieTypes.h"
+#include <HomieNode.hpp>
+#include "ControllerConfiguration.h"
 #include "RunningMedian.h"
+#include "MathUtils.h"
+
+#define MOISTURE_MEASUREMENT_DURATION  400  /** ms */
+
 
 class Plant
 {
 
 private:
-    RunningMedian moistureRaw = RunningMedian(5);
     HomieNode *mPlant = NULL;
+    HomieInternals::PropertyInterface mPump;
+    int32_t mMoisture_freq = 0;
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
@@ -47,7 +54,8 @@ public:
      * @brief Measure a new analog moister value
      * 
      */
-    void addSenseValue(void);
+    void startMoistureMeasurement(void);
+    void stopMoistureMeasurement(void);
 
     void deactivatePump(void);
 
@@ -61,28 +69,32 @@ public:
      */
     bool isPumpRequired()
     {
-        bool isDry = getCurrentMoisture() > getSettingsMoisture();
+        bool isDry = getCurrentMoisture() > getSetting2Moisture();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
     }
 
     bool isPumpTriggerActive()
     {
-        return this->mSetting->pSensorDry->get() != DEACTIVATED_PLANT;
+        long current = this->mSetting->pSensorDry->get();
+        return !equalish(current,DEACTIVATED_PLANT);
     }
 
     float getCurrentMoisture()
     {   
-        if(moistureRaw.getCount()==0){
+        if(mMoisture_freq < MOIST_SENSOR_MIN_FRQ){
             return MISSING_SENSOR;
         }
-        return this->moistureRaw.getMedian();
+        return mMoisture_freq;
     }
-    long getSettingsMoisture()
+
+    long getSetting2Moisture()
     {
         if (this->mSetting->pSensorDry != NULL)
         {
-            return this->mSetting->pSensorDry->get();
+            //1 is totally wet, 0 is try, 0 is MOIST_SENSOR_MAX_FRQ, 1 is MOIST_SENSOR_MIN_FRQ
+            float factor = (this->mSetting->pSensorDry->get());
+            return map(factor,0,100,MOIST_SENSOR_MAX_FRQ,MOIST_SENSOR_MIN_FRQ);
         }
         else
         {
@@ -94,7 +106,6 @@ public:
     {
         return mPlant->setProperty(property);
     }
-    bool switchHandler(const HomieRange &range, const String &value);
 
     void init(void);
 
@@ -124,6 +135,12 @@ public:
     {
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
+
+    void publishState(String state);
+
+    bool switchHandler(const HomieRange& range, const String& value);
+
+    void setSwitchHandler(HomieInternals::PropertyInputHandler f);
 };
 
 #endif

@@ -7,3 +7,4 @@
 doc/
 custom_platformio.ini
 cppcheck-build-dir
+host/settings.json

@@ -12,6 +12,14 @@
 
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
+#include "TimeUtils.h"
+#include "MathUtils.h"
+#include "driver/pcnt.h" 
+
+double mapf(double x, double in_min, double in_max, double out_min, double out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
 {
@@ -26,8 +34,8 @@ void Plant::init(void)
 {
     /* Initialize Home Settings validator */
     this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
-    this->mSetting->pSensorDry->setValidator([](long candidate) {
-        return (((candidate >= 0) && (candidate <= 4095)) || candidate == DEACTIVATED_PLANT);
+    this->mSetting->pSensorDry->setValidator([](double candidate) {
+        return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate,DEACTIVATED_PLANT));
     });
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate) {
@@ -49,21 +57,44 @@ void Plant::init(void)
     pinMode(this->mPinPump, OUTPUT);
     Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
     Serial.flush();
-    pinMode(this->mPinSensor, ANALOG);
+    pinMode(this->mPinSensor, INPUT);
     Serial.println("Set GPIO " + String(mPinPump) + "=" + String(LOW));
     Serial.flush();
     digitalWrite(this->mPinPump, LOW);
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
+
+    pcnt_config.pulse_gpio_num = this->mPinSensor;                         // Configura GPIO para entrada dos pulsos
+    pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED;                         // Configura GPIO para controle da contagem
+    pcnt_config.unit = unit;      // Unidade de contagem PCNT - 0
+    pcnt_config.channel = PCNT_CHANNEL_0;                               // Canal de contagem PCNT - 0
+    pcnt_config.counter_h_lim = INT16_MAX;                             // Limite maximo de contagem - 20000
+    pcnt_config.pos_mode = PCNT_COUNT_INC;                                  // Incrementa contagem na subida do pulso
+    pcnt_config.neg_mode = PCNT_COUNT_DIS;                                  // Incrementa contagem na descida do pulso
+    pcnt_config.lctrl_mode = PCNT_MODE_KEEP;                             // PCNT - modo lctrl desabilitado
+    pcnt_config.hctrl_mode = PCNT_MODE_KEEP;                                // PCNT - modo hctrl - se HIGH conta incrementando
+    pcnt_unit_config(&pcnt_config);                                         // Configura o contador PCNT
+
+
+    pcnt_counter_pause(unit);    // Pausa o contador PCNT
+    pcnt_counter_clear(unit);    // Zera o contador PCNT
+
+    Serial.println("Setup Counter " + String(mPinPump) + "=" + String(LOW));
 }
 
-void Plant::addSenseValue(void)
-{   
-    int raw = analogRead(this->mPinSensor);
-    if(raw < MOIST_SENSOR_MAX_ADC && raw > MOIST_SENSOR_MIN_ADC){
-        this->moistureRaw.add(raw);
-    } else {
-        int plantId = this->mPlantId;
-        Serial << "ignoring sensor " << plantId << " value due to being strange " << raw  << endl;
-    }
+void Plant::startMoistureMeasurement(void) {
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_counter_resume(unit);
+}
+
+void Plant::stopMoistureMeasurement(void) {
+    int16_t pulses;
+    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+    pcnt_counter_pause(unit); 
+    pcnt_get_counter_value(unit, &pulses);
+    pcnt_counter_clear(unit);
+    
+    this->mMoisture_freq = pulses * (1000 / MOISTURE_MEASUREMENT_DURATION);
 }
 
 void Plant::postMQTTconnection(void)
@@ -71,6 +102,25 @@ void Plant::postMQTTconnection(void)
     const String OFF = String("OFF");
     this->mConnected = true;
     this->mPlant->setProperty("switch").send(OFF);
+
+    long raw = getCurrentMoisture();
+    double pct = mapf(raw, MOIST_SENSOR_MIN_FRQ, MOIST_SENSOR_MAX_FRQ, 100, 0);
+    if (equalish(raw, MISSING_SENSOR))
+    {
+      pct = 0;
+    }
+    if (pct < 0)
+    {
+      pct = 0;
+    }
+    if (pct > 100)
+    {
+      pct = 100;
+    }
+
+    this->mPlant->setProperty("moist").send(String(round(pct*10)/10));
+    this->mPlant->setProperty("moistraw").send(String(raw));
+    this->mPlant->setProperty("moisttrigger").send(String(getSetting2Moisture()));
 }
 
 void Plant::deactivatePump(void)
@@ -85,6 +135,13 @@ void Plant::deactivatePump(void)
     }
 }
 
+void Plant::publishState(String state) {
+    if (this->mConnected)
+    {
+        this->mPlant->setProperty("state").send(state);
+    }
+}
+
 void Plant::activatePump(void)
 {
     int plantId = this->mPlantId;
@@ -94,32 +151,36 @@ void Plant::activatePump(void)
     {
         const String OFF = String("ON");
         this->mPlant->setProperty("switch").send(OFF);
+        this->mPlant->setProperty("lastPump").send(String(getCurrentTime()));
     }
+}
+
+bool Plant::switchHandler(const HomieRange& range, const String& value) {
+    if (range.isRange) {
+         return false;  // only one switch is present
+    }
+
+    if ((value.equals("ON")) || (value.equals("On")) || (value.equals("on")) || (value.equals("true"))) {
+        this->activatePump();
+        return true;
+    } else if ((value.equals("OFF")) || (value.equals("Off")) || (value.equals("off")) || (value.equals("false")) ) {
+        this->deactivatePump();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Plant::setSwitchHandler(HomieInternals::PropertyInputHandler f) {
+    this->mPump.settable(f);
 }
 
 void Plant::advertise(void)
 {
     // Advertise topics
-    this->mPlant->advertise("switch").setName("Pump 1").setDatatype("boolean");
-    //FIXME add .settable(this->switchHandler)
-    this->mPlant->advertise("moist").setName("Percent").setDatatype("number").setUnit("%");
-    this->mPlant->advertise("moistraw").setName("adc").setDatatype("number").setUnit("3.3/4096V");
+    mPump = this->mPlant->advertise("switch").setName("Pump").setDatatype("boolean");    
+    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("Number").setUnit("unixtime");
+    this->mPlant->advertise("moist").setName("Percent").setDatatype("Number").setUnit("%");
+    this->mPlant->advertise("moistraw").setName("adc").setDatatype("Number").setUnit("3.3/4096V");
+    this->mPlant->advertise("state").setName("state").setDatatype("string");
 }
-
-/* FIXME
-bool Plant::switchHandler(const HomieRange& range, const String& value) {
-  if (range.isRange) return false;  // only one switch is present
-  
-
-    if ((value.equals("ON")) || (value.equals("On")) || (value.equals("on")) || (value.equals("true"))) {
-      this->activatePump();
-      return true;
-    } else if ((value.equals("OFF")) || (value.equals("Off")) || (value.equals("off")) || (value.equals("false")) ) {
-      this->deactivatePump();
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-*/
