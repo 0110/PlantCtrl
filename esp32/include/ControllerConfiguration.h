@@ -84,7 +84,7 @@
  */
 #define FIRMWARE_VERSION "sw 1.4 hw 0.10"
 
-#define TIMED_LIGHT_PIN CUSTOM1_PIN5
+#define TIMED_LIGHT_PIN CUSTOM1_PIN5 
 
 #define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
 #define MOIST_SENSOR_MIN_FRQ                1000 // 1kHz (500Hz margin)
