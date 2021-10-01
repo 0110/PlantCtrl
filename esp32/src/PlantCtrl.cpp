@@ -51,6 +51,12 @@ void Plant::init(void)
         return ((candidate >= 0) && (candidate <= 1024));
     });
 
+    this->mSetting->pPumpDuration->setDefaultValue(5);
+        this->mSetting->pPumpDuration->setValidator([](long candidate) {
+        return ((candidate >= 0) && (candidate <= 1000));
+    });
+
+
     /* Initialize Hardware */
     Serial.println("Set GPIO mode " + String(mPinPump) + "=" + String(OUTPUT));
     Serial.flush();

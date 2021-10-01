@@ -141,6 +141,10 @@ public:
     bool switchHandler(const HomieRange& range, const String& value);
 
     void setSwitchHandler(HomieInternals::PropertyInputHandler f);
+
+    long getPumpDuration() {
+        return this->mSetting->pPumpDuration->get();
+    }
 };
 
 #endif

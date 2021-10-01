@@ -73,7 +73,6 @@ HomieNode stayAlive("stay", "alive", "alive");  /**< Necessary for Mqtt Active C
  */
 HomieSetting<long> deepSleepTime("sleep", "time in seconds to sleep");
 HomieSetting<long> deepSleepNightTime("nightsleep", "time in seconds to sleep (0 uses same setting: deepsleep at night, too)");
-HomieSetting<long> wateringDeepSleep("pumpsleep", "time seconds to sleep, while a pump is running");
 HomieSetting<long> pumpIneffectiveWarning("pumpConsecutiveWarn", "if the pump was triggered this amount directly after each cooldown, without resolving dryness, warn");
 HomieSetting<long> waterLevelMax("tankmax", "distance (mm) at maximum water level");
 HomieSetting<long> waterLevelMin("tankmin", "distance (mm) at minimum water level (pumps still covered)");
@@ -107,7 +106,8 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("hourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("lowLight" strplant, "Plant" strplant " - Enable the Pump only, when there is no sunlight"); \
         HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
-        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant}; \
+        HomieSetting<long> pPumpDuration##plant = HomieSetting<long>("pumpDuration" strplant, "Plant" strplant " - time seconds or ml (if using flowmeter) to water when pump is active");                      \
+        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant, &pPumpDuration##plant}; \
         /**< Generate all settings for one plant \
          * \
          * Feature to start pumping only at morning: @link{SOLAR_CHARGE_MIN_VOLTAGE} and @link{SOLAR_CHARGE_MAX_VOLTAGE} \

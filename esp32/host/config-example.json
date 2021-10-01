@@ -20,7 +20,6 @@
   "settings": {
     "deepsleep"  : 60000,
     "nightsleep" : 60000,
-    "pumpdeepsleep": 1000,
     "watermaxlevel": 50,
     "watermin" : 5, 
     "plants" : 3,
@@ -44,6 +43,13 @@
     "plant3MinPumpIdle": 10000,
     "plant4MinPumpIdle": 10000,
     "plant5MinPumpIdle": 10000,
-    "plant6MinPumpIdle": 10000
+    "plant6MinPumpIdle": 10000,
+    "plant0PumpDuration": 5,
+    "plant1PumpDuration": 5,
+    "plant2PumpDuration": 5,
+    "plant3PumpDuration": 5,
+    "plant4PumpDuration": 5,
+    "plant5PumpDuration": 5,
+    "plant6PumpDuration": 5
   }
 }
