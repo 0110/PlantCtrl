@@ -974,7 +974,7 @@ void plantcontrol()
 
 /** @}*/
 
-
+#ifdef TIMED_LIGHT_PIN
 bool determineTimedLightState(bool lowLight){
   bool onlyAllowedWhenDark = timedLightOnlyWhenDark.get();
   long hoursStart = timedLightStart.get();
@@ -1009,6 +1009,8 @@ bool determineTimedLightState(bool lowLight){
         return false;
       }
 }
+
+#endif
 
 void log(int level, String message, int statusCode)
 {
