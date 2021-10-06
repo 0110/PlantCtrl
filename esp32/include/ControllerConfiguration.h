@@ -107,6 +107,9 @@
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
 
+#define UTC_OFFSET_DE                   3600    /* UTC offset in seconds for Germany */
+#define UTF_OFFSET_DE_DST               3600    /* offset in seconds if daylight saving time is active */
+
 /* @} */
 
 #endif

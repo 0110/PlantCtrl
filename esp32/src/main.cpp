@@ -66,7 +66,6 @@ bool determineTimedLightState(bool lowLight);
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
 
-RTC_DATA_ATTR long lastWaterValue = 0; /**< to calculate the used water per plant */
 #if defined(TIMED_LIGHT_PIN)
 RTC_DATA_ATTR bool timedLightOn = false;                  /**< allow fast recovery after poweron */
 RTC_DATA_ATTR bool timedLightLowVoltageTriggered = false; /**remember if it was shut down due to voltage level */
@@ -90,6 +89,12 @@ long nextBlink = 0; /**< Time needed in main loop to support expected blink code
 RunningMedian waterRawSensor = RunningMedian(5);
 float mSolarVoltage = 0.0f; /**< Voltage from solar panels */
 unsigned long setupFinishedTimestamp;
+
+bool pumpStarted = false;
+long pumpTarget = -1;
+#ifdef FLOWMETER
+long pumpTargetMl = -1;
+#endif
 
 /*************************** Hardware abstraction *****************************/
 
@@ -154,12 +159,12 @@ void espDeepSleep()
 
   if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
   {
-    log(LOG_LEVEL_INFO, String(String(mSolarVoltage) + "V! No pumps to activate and low light, deepSleepNight"), LOG_NOPUMP_LOWLIGHT);
-    secondsToSleep = deepSleepTime.get();
+    log(LOG_LEVEL_INFO, String(String(mSolarVoltage) + "V! Low light -> deepSleepNight"), LOG_SLEEP_NIGHT);
+    secondsToSleep = deepSleepNightTime.get();
   }
   else
   {
-    log(LOG_LEVEL_INFO, "No pumps to activate, deepSleep", LOG_NOPUMPS);
+    log(LOG_LEVEL_INFO, "Sunny -> deepSleep", LOG_SLEEP_DAY);
     secondsToSleep = deepSleepTime.get();
   }
 
@@ -374,7 +379,7 @@ void onHomieEvent(const HomieEvent &event)
     }
     mSensorsRead = true; // MQTT is working, deactivate timeout logic
 
-    configTime(3600, 3600, ntpServer.get());
+    configTime(UTC_OFFSET_DE, UTF_OFFSET_DE_DST, ntpServer.get());
 
     {
       getTopic(TEST_TOPIC, testopic)
@@ -586,14 +591,10 @@ bool switch7(const HomieRange &range, const String &value)
   return mPlants[6].switchHandler(range, value);
 }
 
-bool pumpStarted = false;
-long pumpTarget = -1;
-#ifdef FLOWMETER
-long pumpTargetMl = -1;
-#endif
 
 void pumpActiveLoop()
 {
+  bool targetReached = false;
 
   if (!pumpStarted)
   {
@@ -612,7 +613,6 @@ void pumpActiveLoop()
     pumpStarted = true;
   }
 
-  bool targetReached = false;
 #ifdef FLOWMETER
   long pumped = //readFlowMeterCounter * ratio;
   if(pumped >= pumpTargetMl))
@@ -620,12 +620,12 @@ void pumpActiveLoop()
     targetReached = true;
   }
   mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
-#endif
-
+#else
   if (millis() > pumpTarget)
   {
     targetReached = true;
   }
+#endif
 
   if (targetReached)
   {
@@ -922,8 +922,7 @@ void plantcontrol()
   readOneWireSensors();
 
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
-  lastWaterValue = waterRawSensor.getAverage();
-
+  
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
@@ -956,7 +955,7 @@ void plantcontrol()
   }
 
   bool isLowLight = (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE);
-  bool hasWater = true; //FIXMEmWaterGone > waterLevelMin.get();
+  bool hasWater = true; //FIXME remaining > waterLevelMin.get();
   //FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
   //early aborts
