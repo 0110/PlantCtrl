@@ -34,30 +34,19 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 #include "driver/pcnt.h"
+#include "MQTTUtils.h"
 
 /******************************************************************************
  *                                     DEFINES
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 2000
-#define TEST_TOPIC "roundtrip\0"
-#define LOG_TOPIC "log\0"
-#define BACKUP_TOPIC "$implementation/config/backup/set\0"
-#define CONFIG_FILE "/homie/config.json"
-#define CONFIG_FILE_BACKUP "/homie/config.json.bak"
 
-#define getTopic(test, topic)                                                                                                                 \
-  char *topic = new char[strlen(Homie.getConfiguration().mqtt.baseTopic) + strlen(Homie.getConfiguration().deviceId) + 1 + strlen(test) + 1]; \
-  strcpy(topic, Homie.getConfiguration().mqtt.baseTopic);                                                                                     \
-  strcat(topic, Homie.getConfiguration().deviceId);                                                                                           \
-  strcat(topic, "/");                                                                                                                         \
-  strcat(topic, test);
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
 ******************************************************************************/
 
-void log(int level, String message, int code);
 int determineNextPump(bool lowLight);
 void plantcontrol();
 void readPowerSwitchedSensors();
@@ -80,8 +69,6 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
-bool volatile mAliveWasRead = false;
-bool volatile mMQTTReady = false;
 int volatile pumpToRun = -1; /** pump to run  at the end of the cycle */
 
 bool mConfigured = false;
@@ -124,7 +111,7 @@ void espDeepSleep()
     log(LOG_LEVEL_DEBUG, "abort deepsleep, DownloadMode active", LOG_DEBUG_CODE);
     return;
   }
-  if (mAliveWasRead)
+  if (aliveWasRead())
   {
     for (int i = 0; i < 10; i++)
     {
@@ -170,7 +157,7 @@ void espDeepSleep()
   }
 
   esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
-  if (mAliveWasRead)
+  if (aliveWasRead())
   {
     delay(1000);
     Homie.prepareToSleep();
@@ -229,25 +216,16 @@ void readOneWireSensors()
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (strcmp(lipoSensorAddr.get(), buf) == 0)
       {
-        if (mAliveWasRead)
-        {
-          sensorTemp.setProperty(TEMPERATUR_SENSOR_LIPO).send(String(temp));
-        }
+        mqttWrite(&sensorTemp,TEMPERATUR_SENSOR_LIPO,String(temp));
         Serial << "Lipo Temperatur " << temp << " °C " << endl;
       }
       if (strcmp(waterSensorAddr.get(), buf) == 0)
       {
-        if (mAliveWasRead)
-        {
-          sensorTemp.setProperty(TEMPERATUR_SENSOR_WATER).send(String(temp));
-        }
+        mqttWrite(&sensorTemp,TEMPERATUR_SENSOR_WATER,String(temp));
         Serial << "Water Temperatur " << temp << " °C " << endl;
       }
       /* Always send the sensor address with the temperatur value */
-      if (mAliveWasRead)
-      {
-        sensorTemp.setProperty(String(buf)).send(String(temp));
-      }
+      mqttWrite(&sensorTemp,String(buf),String(temp));
     }
     else
     {
@@ -334,35 +312,6 @@ void readPowerSwitchedSensors()
   digitalWrite(OUTPUT_ENABLE_SENSOR, LOW);
 }
 
-void onMessage(char *incoming, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
-{
-  getTopic(TEST_TOPIC, testTopic);
-  if (strcmp(incoming, testTopic) == 0)
-  {
-    mAliveWasRead = true;
-  }
-  delete testTopic;
-  getTopic(BACKUP_TOPIC, backupTopic);
-  if (strcmp(incoming, backupTopic) == 0)
-  {
-    if (strcmp(payload, "true") == 0)
-    {
-      bool backupSucessful = copyFile(CONFIG_FILE, CONFIG_FILE_BACKUP);
-      printFile(CONFIG_FILE_BACKUP);
-      if (backupSucessful)
-      {
-        log(LOG_LEVEL_INFO, LOG_BACKUP_SUCCESSFUL, LOG_BACKUP_SUCCESSFUL_CODE);
-      }
-      else
-      {
-        log(LOG_LEVEL_INFO, LOG_BACKUP_FAILED, LOG_BACKUP_FAILED_CODE);
-      }
-      Homie.getMqttClient().publish(backupTopic, 2, true, "false");
-    }
-  }
-  delete backupTopic;
-}
-
 void onHomieEvent(const HomieEvent &event)
 {
   switch (event.type)
@@ -381,20 +330,7 @@ void onHomieEvent(const HomieEvent &event)
     mSensorsRead = true; // MQTT is working, deactivate timeout logic
 
     configTime(UTC_OFFSET_DE, UTF_OFFSET_DE_DST, ntpServer.get());
-
-    {
-      getTopic(TEST_TOPIC, testopic)
-          Homie.getMqttClient()
-              .subscribe(testopic, 2);
-      Homie.getMqttClient().publish(testopic, 2, false, "ping");
-      Homie.getMqttClient().onMessage(onMessage);
-
-      getTopic(BACKUP_TOPIC, backupTopic)
-          Homie.getMqttClient()
-              .subscribe(backupTopic, 2);
-    }
-    mMQTTReady = true;
-
+    startMQTTRoundtripTest();
     break;
   case HomieEventType::OTA_STARTED:
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -549,7 +485,7 @@ bool aliveHandler(const HomieRange &range, const String &value)
 bool notStarted = true;
 void homieLoop()
 {
-  if (mMQTTReady && mAliveWasRead && notStarted)
+  if (aliveWasRead() && notStarted)
   {
     Serial.println("received alive & mqtt is ready");
     notStarted = false;
@@ -941,7 +877,7 @@ void loop()
  */
 void plantcontrol()
 {
-  if (mAliveWasRead)
+  if (aliveWasRead())
   {
     for (int i = 0; i < MAX_PLANTS; i++)
     {
@@ -958,7 +894,7 @@ void plantcontrol()
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
-  if (mAliveWasRead)
+  if (aliveWasRead())
   {
     float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
     if (!isnan(remaining))
@@ -1069,22 +1005,3 @@ bool determineTimedLightState(bool lowLight)
 
 #endif
 
-void log(int level, String message, int statusCode)
-{
-  String buffer;
-  StaticJsonDocument<200> doc;
-  doc["level"] = level;
-  doc["message"] = message;
-  doc["statusCode"] = statusCode;
-  serializeJson(doc, buffer);
-  if (mAliveWasRead)
-  {
-    getTopic(LOG_TOPIC, logTopic)
-        Homie.getMqttClient()
-            .subscribe(logTopic, 2);
-
-    Homie.getMqttClient().publish(logTopic, 2, false, buffer.c_str());
-    delete logTopic;
-  }
-  Serial << statusCode << "@" << level << " : " << message << endl;
-}

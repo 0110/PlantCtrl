@@ -18,7 +18,6 @@
 
 #define MAX_PLANTS 7
 
-
 /**
  * @name Homie Attributes
  * generated Information
@@ -125,4 +124,7 @@ GENERATE_PLANT(4, "4"); /**< Homie settings for fifth plant */
 GENERATE_PLANT(5, "5"); /**< Homie settings for sixth plant */
 GENERATE_PLANT(6, "6"); /**< Homie settings for seventh plant */
 
+
+
 #endif /* HOMIE_PLANT_CONFIG_H @} */
+
