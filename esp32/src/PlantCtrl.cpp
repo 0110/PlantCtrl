@@ -97,10 +97,17 @@ void Plant::stopMoistureMeasurement(void) {
     int16_t pulses;
     pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
     pcnt_counter_pause(unit); 
-    pcnt_get_counter_value(unit, &pulses);
+    esp_err_t result = pcnt_get_counter_value(unit, &pulses);
     pcnt_counter_clear(unit);
-    
-    this->mMoisture_freq = pulses * (1000 / MOISTURE_MEASUREMENT_DURATION);
+ 
+
+    if(result != ESP_OK){
+      //FIXME log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
+      this -> mMoisture_freq = -1;
+    } else {
+        this->mMoisture_freq = pulses * (1000 / MOISTURE_MEASUREMENT_DURATION);
+    }
+
 }
 
 void Plant::postMQTTconnection(void)

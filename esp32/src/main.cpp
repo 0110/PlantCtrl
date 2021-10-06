@@ -33,6 +33,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include <Wire.h>
 #include <VL53L0X.h>
+#include "driver/pcnt.h"
 
 /******************************************************************************
  *                                     DEFINES
@@ -92,7 +93,7 @@ unsigned long setupFinishedTimestamp;
 
 bool pumpStarted = false;
 long pumpTarget = -1;
-#ifdef FLOWMETER
+#ifdef FLOWMETER_PIN
 long pumpTargetMl = -1;
 #endif
 
@@ -591,6 +592,38 @@ bool switch7(const HomieRange &range, const String &value)
   return mPlants[6].switchHandler(range, value);
 }
 
+void initPumpLogic()
+{
+  //set targets
+  pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
+#ifdef FLOWMETER_PIN
+  pumpTargetMl = mPlants[pumpToRun].getPumpDuration();
+
+  //0-6 are used for moisture measurment
+  pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_7);
+  pcnt_config_t pcnt_config = {};                // Instancia PCNT config
+  pcnt_config.pulse_gpio_num = FLOWMETER_PIN;    // Configura GPIO para entrada dos pulsos
+  pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED; // Configura GPIO para controle da contagem
+  pcnt_config.unit = unit;                       // Unidade de contagem PCNT - 0
+  pcnt_config.channel = PCNT_CHANNEL_0;          // Canal de contagem PCNT - 0
+  pcnt_config.counter_h_lim = INT16_MAX;         // Limite maximo de contagem - 20000
+  pcnt_config.pos_mode = PCNT_COUNT_DIS;         // Incrementa contagem na subida do pulso
+  pcnt_config.neg_mode = PCNT_COUNT_INC;         // Incrementa contagem na descida do pulso
+  pcnt_config.lctrl_mode = PCNT_MODE_KEEP;       // PCNT - modo lctrl desabilitado
+  pcnt_config.hctrl_mode = PCNT_MODE_KEEP;       // PCNT - modo hctrl - se HIGH conta incrementando
+  pcnt_unit_config(&pcnt_config);                // Configura o contador PCNT
+
+  pcnt_counter_clear(unit); // Zera o contador PCNT
+  pcnt_counter_resume(unit);
+#endif
+  //enable power
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+  digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
+  delay(100);
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
+
+  mPlants[pumpToRun].activatePump();
+}
 
 void pumpActiveLoop()
 {
@@ -598,28 +631,30 @@ void pumpActiveLoop()
 
   if (!pumpStarted)
   {
-    //enable power
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
-    delay(100);
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
-
-    mPlants[pumpToRun].activatePump();
-    //set targets
-    pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
-#ifdef FLOWMETER
-    pumpTargetMl = mPlants[pumpToRun].getPumpDuration();
-#endif
+    initPumpLogic();
     pumpStarted = true;
   }
 
-#ifdef FLOWMETER
-  long pumped = //readFlowMeterCounter * ratio;
-  if(pumped >= pumpTargetMl))
-  {
+#ifdef FLOWMETER_PIN
+  int16_t pulses;
+  pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_7);
+  esp_err_t result = pcnt_get_counter_value(unit, &pulses);
+  if(result != ESP_OK){
+    log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
     targetReached = true;
+  } else {
+    /**FLOWMETER_FLOWFACTOR * (L/Min) = F; 
+    given 1L/min -> FLOWMETER_FLOWFACTOR*60 pulses per liter 
+    -> 1000/result -> ml pro pulse;  
+    -> result * pulses ->*/
+    long pumped = (FLOWMETER_FLOWFACTOR * 60) * pulses / 1000;
+    if(pumped >= pumpTargetMl)
+    {
+      targetReached = true;
+      pcnt_counter_pause(unit); 
+    }
+    mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
   }
-  mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
 #else
   if (millis() > pumpTarget)
   {
@@ -629,6 +664,7 @@ void pumpActiveLoop()
 
   if (targetReached)
   {
+
     //disable all
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -724,8 +760,7 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
-                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   ntpServer.setDefaultValue("pool.ntp.org");
 
@@ -735,17 +770,13 @@ void setup()
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
   lipoSensorAddr.setDefaultValue("");
   waterSensorAddr.setDefaultValue("");
-  pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate)
-                                                         { return (candidate > 0) && (candidate < (20)); });
+  pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate) { return (candidate > 0) && (candidate < (20)); });
 
 #if defined(TIMED_LIGHT_PIN)
-  timedLightStart.setDefaultValue(18).setValidator([](long candidate)
-                                                   { return (candidate > 0) && (candidate < (25)); });
-  timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
-                                                 { return (candidate > 0) && (candidate < (24)); });
+  timedLightStart.setDefaultValue(18).setValidator([](long candidate) { return (candidate > 0) && (candidate < (25)); });
+  timedLightEnd.setDefaultValue(23).setValidator([](long candidate) { return (candidate > 0) && (candidate < (24)); });
   timedLightOnlyWhenDark.setDefaultValue(true);
-  timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
-                                                            { return (candidate > 3.3) && (candidate < (4.2)); });
+  timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate) { return (candidate > 3.3) && (candidate < (4.2)); });
 #endif // TIMED_LIGHT_PIN
 
   Homie.setLoopFunction(homieLoop);
@@ -922,7 +953,7 @@ void plantcontrol()
   readOneWireSensors();
 
   Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
-  
+
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;

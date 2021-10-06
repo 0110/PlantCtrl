@@ -17,6 +17,9 @@
 #define LOG_PUMP_BUTNOTANK_MESSAGE "Want to pump but no water"
 #define LOG_PUMP_BUTNOTANK_CODE -3
 
+#define LOG_HARDWARECOUNTER_ERROR_MESSAGE "PCNR returned error"
+#define LOG_HARDWARECOUNTER_ERROR_CODE -4
+
 #define LOG_PUMP_AND_DOWNLOADMODE "Download mode, ignoring pump request"
 #define LOG_PUMP_AND_DOWNLOADMODE_CODE 2
 
