@@ -1,7 +1,17 @@
 # PlantControl
 ## Hardware
 
-Uses ESP32MiniKit
+Main processor
+* ESP32 with 16MB Flash 
+
+One-Wire
+* Temperatur Sensor (DS18B20)
+* Lipo-Monitoring (DS2438)
+
+Lipo Protection
+* Open drain 3.3V detector (CN61CN33 @ jlcpcb parts)
+
+
 
 ### Used Pins:
 * See '''include/ControllerConfiguration.h'''
@@ -16,9 +26,9 @@ Uses ESP32MiniKit
  * 7 Pumps
  * Sensors
   * Solar powered (voltage)
-  * Lipo-Powered (voltage)
+  * Lipo-Powered (DS2438 for monitoring)
   * Temperature
-  * Distance sensor [JSN-SR04T-2.0] (for waterlevel)
+  * Laser distance sensor [VL53L0X]
  * Custom GPIO
 
 ## Documentation of Power-Modes

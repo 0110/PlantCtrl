@@ -12,15 +12,15 @@ Open hardware design (powered by KiCAD).
 The complete PCB is stored in the ***board*** sub directory.
 
 There the following components are connected:
-* ESP32 NodeMCU Module (the one of A-Z Delivery was used)
-* Lipo
+* ESP32 **16MB flash required**
+* Lipo monitoring (DS2438)
 * 7 moist sensors
 * 7 pump
 * DC-DC convert (generating voltage from Lipo for pumps)
 * DS18B20 temperature sensors
-* water tank ultrasonic sensor (via JSN-SR04T-2.0)
+* water level via laser distance sensor (VL53L0X)
 * DS2438 battery monitor
-* general purpose expansion pin
+* general purpose expansion pins
 
 # Software
 The firmware for the controller is stored in ***esp32*** sub directory.
