@@ -42,7 +42,6 @@
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 2000
 
-
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
 ******************************************************************************/
@@ -69,7 +68,7 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
-int volatile pumpToRun = -1; /** pump to run  at the end of the cycle */
+int volatile pumpToRun = -1;         /** pump to run  at the end of the cycle */
 
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
@@ -216,16 +215,16 @@ void readOneWireSensors()
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (strcmp(lipoSensorAddr.get(), buf) == 0)
       {
-        mqttWrite(&sensorTemp,TEMPERATUR_SENSOR_LIPO,String(temp));
+        mqttWrite(&sensorTemp, TEMPERATUR_SENSOR_LIPO, String(temp));
         Serial << "Lipo Temperatur " << temp << " °C " << endl;
       }
       if (strcmp(waterSensorAddr.get(), buf) == 0)
       {
-        mqttWrite(&sensorTemp,TEMPERATUR_SENSOR_WATER,String(temp));
+        mqttWrite(&sensorTemp, TEMPERATUR_SENSOR_WATER, String(temp));
         Serial << "Water Temperatur " << temp << " °C " << endl;
       }
       /* Always send the sensor address with the temperatur value */
-      mqttWrite(&sensorTemp,String(buf),String(temp));
+      mqttWrite(&sensorTemp, String(buf), String(temp));
     }
     else
     {
@@ -397,22 +396,26 @@ int determineNextPump(bool isLowLight)
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
-    if (equalish(plant.getCurrentMoisture(), MISSING_SENSOR))
+    if (!plant.isHydroponic())
     {
-      plant.publishState("nosensor");
-      log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
-      continue;
+      if (equalish(plant.getCurrentMoisture(), MISSING_SENSOR))
+      {
+        plant.publishState("nosensor");
+        log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
+        continue;
+      }
     }
+
     if (plant.isPumpRequired())
     {
       /* Handle e.g. start = 21, end = 8 */
-      if (((plant.getHoursStart() > plant.getHoursEnd()) &&
+      if ( plant.isHydroponic() || (((plant.getHoursStart() > plant.getHoursEnd()) &&
            (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd())) ||
           /* Handle e.g. start = 8, end = 21 */
           ((plant.getHoursStart() < plant.getHoursEnd()) &&
            (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd())) ||
           /* no time from NTP received */
-          (getCurrentTime() < 10000))
+          (getCurrentTime() < 10000)))
       {
         if (wateralarm)
         {
@@ -423,7 +426,10 @@ int determineNextPump(bool isLowLight)
           plant.publishState("active");
         }
 
-        consecutiveWateringPlant[i]++;
+        if(!plant.isHydroponic()){
+          consecutiveWateringPlant[i]++;
+        }
+
         log(LOG_LEVEL_DEBUG, String(String(i) + " Requested pumping"), LOG_DEBUG_CODE);
         pumpToUse = i;
       }
@@ -573,21 +579,24 @@ void pumpActiveLoop()
 
 #ifdef FLOWMETER_PIN
   int16_t pulses;
-  pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_7);
+  pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_7);
   esp_err_t result = pcnt_get_counter_value(unit, &pulses);
-  if(result != ESP_OK){
+  if (result != ESP_OK)
+  {
     log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
     targetReached = true;
-  } else {
+  }
+  else
+  {
     /**FLOWMETER_FLOWFACTOR * (L/Min) = F; 
     given 1L/min -> FLOWMETER_FLOWFACTOR*60 pulses per liter 
     -> 1000/result -> ml pro pulse;  
     -> result * pulses ->*/
     long pumped = (FLOWMETER_FLOWFACTOR * 60) * pulses / 1000;
-    if(pumped >= pumpTargetMl)
+    if (pumped >= pumpTargetMl)
     {
       targetReached = true;
-      pcnt_counter_pause(unit); 
+      pcnt_counter_pause(unit);
     }
     mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
   }
@@ -696,7 +705,8 @@ void setup()
   // Set default values
 
   //in seconds
-  deepSleepTime.setDefaultValue(600).setValidator([](long candidate) { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
+  deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
+                                                  { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
   ntpServer.setDefaultValue("pool.ntp.org");
 
@@ -706,13 +716,17 @@ void setup()
   waterLevelVol.setDefaultValue(5000); /* 5l in ml */
   lipoSensorAddr.setDefaultValue("");
   waterSensorAddr.setDefaultValue("");
-  pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate) { return (candidate > 0) && (candidate < (20)); });
+  pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate)
+                                                         { return (candidate > 0) && (candidate < (20)); });
 
 #if defined(TIMED_LIGHT_PIN)
-  timedLightStart.setDefaultValue(18).setValidator([](long candidate) { return (candidate > 0) && (candidate < (25)); });
-  timedLightEnd.setDefaultValue(23).setValidator([](long candidate) { return (candidate > 0) && (candidate < (24)); });
+  timedLightStart.setDefaultValue(18).setValidator([](long candidate)
+                                                   { return (candidate > 0) && (candidate < (25)); });
+  timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
+                                                 { return (candidate > 0) && (candidate < (24)); });
   timedLightOnlyWhenDark.setDefaultValue(true);
-  timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate) { return (candidate > 3.3) && (candidate < (4.2)); });
+  timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
+                                                            { return (candidate > 3.3) && (candidate < (4.2)); });
 #endif // TIMED_LIGHT_PIN
 
   Homie.setLoopFunction(homieLoop);
@@ -888,7 +902,7 @@ void plantcontrol()
 
   readOneWireSensors();
 
-  Serial << "W : " << waterRawSensor.getMedian() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getMedian ()) << "%)" << endl;
+  Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
 
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
@@ -896,14 +910,14 @@ void plantcontrol()
 
   if (aliveWasRead())
   {
-    float remaining = waterLevelMax.get() - waterRawSensor.getMedian();
+    float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
     if (!isnan(remaining))
     {
       sensorWater.setProperty("remaining").send(String(remaining));
     }
-    if (!isnan(waterRawSensor.getMedian()))
+    if (!isnan(waterRawSensor.getAverage()))
     {
-      sensorWater.setProperty("distance").send(String(waterRawSensor.getMedian()));
+      sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
     }
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
@@ -1004,4 +1018,3 @@ bool determineTimedLightState(bool lowLight)
 }
 
 #endif
-

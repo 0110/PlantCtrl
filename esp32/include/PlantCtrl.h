@@ -61,6 +61,12 @@ public:
 
     void activatePump(void);
 
+
+    bool isHydroponic(){
+        long current = this->mSetting->pSensorDry->get();
+        return !equalish(current,HYDROPONIC_MODE);
+    }
+
     /**
      * @brief Check if a plant is too dry and needs some water.
      * 
@@ -69,10 +75,16 @@ public:
      */
     bool isPumpRequired()
     {
+        if(isHydroponic()){
+            //hydroponic only uses timer based controll
+            return true;
+        }
         bool isDry = getCurrentMoisture() > getSetting2Moisture();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
     }
+
+    
 
     bool isPumpTriggerActive()
     {
@@ -110,7 +122,7 @@ public:
     void init(void);
 
     long getCooldownInSeconds() {
-        return this->mSetting->pPumpCooldownInHours->get()*60*60;
+        return this->mSetting->pPumpCooldownInMinutes->get()*60;
     }
 
     /**

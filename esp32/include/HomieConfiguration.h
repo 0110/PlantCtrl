@@ -104,9 +104,9 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("hourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)");                                      \
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("hourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("lowLight" strplant, "Plant" strplant " - Enable the Pump only, when there is no sunlight"); \
-        HomieSetting<long> mPumpCooldownInHours##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
+        HomieSetting<long> mPumpCooldownInMinutes##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
         HomieSetting<long> pPumpDuration##plant = HomieSetting<long>("pumpDuration" strplant, "Plant" strplant " - time seconds or ml (if using flowmeter) to water when pump is active");                      \
-        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInHours##plant, &pPumpDuration##plant}; \
+        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInMinutes##plant, &pPumpDuration##plant}; \
         /**< Generate all settings for one plant \
          * \
          * Feature to start pumping only at morning: @link{SOLAR_CHARGE_MIN_VOLTAGE} and @link{SOLAR_CHARGE_MAX_VOLTAGE} \

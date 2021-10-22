@@ -46,9 +46,9 @@ void Plant::init(void)
         return ((candidate >= 0) && (candidate <= 23));
     });
     this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
-    this->mSetting->pPumpCooldownInHours->setDefaultValue(20); // minutes
-    this->mSetting->pPumpCooldownInHours->setValidator([](long candidate) {
-        return ((candidate >= 0) && (candidate <= 1024));
+    this->mSetting->pPumpCooldownInMinutes->setDefaultValue(20); // minutes
+    this->mSetting->pPumpCooldownInMinutes->setValidator([](long candidate) {
+        return ((candidate >= 0) && (candidate <= 60*24*7));
     });
 
     this->mSetting->pPumpDuration->setDefaultValue(5);
