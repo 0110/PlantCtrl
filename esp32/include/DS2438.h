@@ -9,6 +9,7 @@
 
 #include <Arduino.h>
 #include <OneWire.h>
+#include "RunningMedian.h"
 
 #define DS2438_TEMPERATURE_CONVERSION_COMMAND 0x44
 #define DS2438_VOLTAGE_CONVERSION_COMMAND 0xb4
@@ -29,6 +30,9 @@
 
 #define DS2438_TEMPERATURE_DELAY 10
 #define DS2438_VOLTAGE_CONVERSION_DELAY 8
+
+#define DS2438_MEDIAN_COUNT 5
+#define DS2438_MEDIAN_DELAY 50
 
 #define DEFAULT_PAGE0(var) uint8_t var[8] { \
     0b00001011 /* X, ADB=0, NVB=0, TB=0, AD=1, EE=0, CA=1, IAD=1 */, \
@@ -70,7 +74,7 @@ class DS2438 {
         DS2438(OneWire *ow, float currentShunt, int retryOnCRCError);
     
         void begin();
-        void update();
+        void updateMultiple();
         double getTemperature();
         float getVoltage(int channel=DS2438_CHA);
         float getCurrent();
@@ -83,15 +87,15 @@ class DS2438 {
     private:
         bool validAddress(const uint8_t*);
         bool validFamily(const uint8_t* deviceAddress);
-        
+        void update(bool firstIteration);
         bool deviceFound = false;
         OneWire *_ow;
         DeviceAddress _address;
         uint8_t _mode;
-        double _temperature;
-        float _voltageA;
-        float _voltageB;
-        float _current;
+        RunningMedian _temperature = RunningMedian(DS2438_MEDIAN_COUNT*2);
+        RunningMedian _voltageA = RunningMedian(DS2438_MEDIAN_COUNT);
+        RunningMedian _voltageB = RunningMedian(DS2438_MEDIAN_COUNT);
+        RunningMedian _current = RunningMedian(DS2438_MEDIAN_COUNT);
         float _currentShunt;
         int _retryOnCRCError;
         long _CCA;

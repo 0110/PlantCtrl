@@ -233,7 +233,7 @@ void readOneWireSensors()
     }
   }
 
-  battery.update();
+  battery.updateMultiple();
   mSolarVoltage = battery.getVoltage(BATTSENSOR_INDEX_SOLAR) * SOLAR_VOLT_FACTOR;
 
   Serial.flush();
@@ -888,7 +888,7 @@ void plantcontrol()
 
   readOneWireSensors();
 
-  Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
+  Serial << "W : " << waterRawSensor.getMedian() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getMedian ()) << "%)" << endl;
 
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
@@ -896,14 +896,14 @@ void plantcontrol()
 
   if (aliveWasRead())
   {
-    float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
+    float remaining = waterLevelMax.get() - waterRawSensor.getMedian();
     if (!isnan(remaining))
     {
       sensorWater.setProperty("remaining").send(String(remaining));
     }
-    if (!isnan(waterRawSensor.getAverage()))
+    if (!isnan(waterRawSensor.getMedian()))
     {
-      sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
+      sensorWater.setProperty("distance").send(String(waterRawSensor.getMedian()));
     }
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));

@@ -35,9 +35,9 @@ void DS2438::begin(){
 
 	_ow->reset_search();
     memset(searchDeviceAddress,0, 8);
-    _temperature = 0;
-    _voltageA = 0.0;
-    _voltageB = 0.0;
+    _temperature.clear();
+    _voltageA.clear();
+    _voltageB.clear();
     _error = true;
     _mode = (DS2438_MODE_CHA | DS2438_MODE_CHB | DS2438_MODE_TEMPERATURE);
 
@@ -72,10 +72,20 @@ bool DS2438::validFamily(const uint8_t* deviceAddress) {
 	}
 }
 
-void DS2438::update() {
-    uint8_t data[9];
+void DS2438::updateMultiple(){
+    for(int i = 0;i< DS2438_MEDIAN_COUNT; i++){
+        update(i==0);
+        if(_error){
+            return;
+        }
+        delay(DS2438_MEDIAN_DELAY);
+    }
+}
 
+void DS2438::update(bool firstIteration) {
+    uint8_t data[9];
     _error = true;
+    
     if(!isFound()){
         return;
     }
@@ -93,10 +103,10 @@ void DS2438::update() {
         }
             
         if (doTemperature) {
-            _temperature = (double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125;
+            _temperature.add((double)(((((int16_t)data[2]) << 8) | (data[1] & 0x0ff)) >> 3) * 0.03125);
         }
         if (_mode & DS2438_MODE_CHA) {
-            _voltageA = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+            _voltageA.add((((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0);
         }
     }
     if (_mode & DS2438_MODE_CHB) {
@@ -113,33 +123,35 @@ void DS2438::update() {
             int16_t upperByte = ((int16_t)data[2]) << 8;
             int16_t lowerByte = data[1] >> 3;
             int16_t fullByte = (upperByte | lowerByte);
-            _temperature = ((double)fullByte) * 0.03125;
+            _temperature.add(((double)fullByte) * 0.03125);
         }
-        _voltageB = (((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0;
+        _voltageB.add((((data[4] << 8) & 0x00300) | (data[3] & 0x0ff)) / 100.0);
     }
     
     int16_t upperByte = ((int16_t)data[6]) << 8;
     int16_t lowerByte = data[5];
     int16_t fullByte = (int16_t)(upperByte | lowerByte);
     float fullByteb = fullByte;
-    _current = (fullByteb) / ((4096.0f * _currentShunt));
+    _current.add((fullByteb) / ((4096.0f * _currentShunt)));
+
+
+    if(firstIteration){
+        if (readPage(1, data)){
+            PageOne_t *pOne = (PageOne_t *) data;
+            _ICA = pOne->ICA;
+        }
+
+        if (readPage(7, data)){
+            PageSeven_t *pSeven = (PageSeven_t *) data;
+            _CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
+            _DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
+        }
+    }
     _error = false;
-
-    if (readPage(1, data)){
-        PageOne_t *pOne = (PageOne_t *) data;
-        _ICA = pOne->ICA;
-    }
-
-    if (readPage(7, data)){
-        PageSeven_t *pSeven = (PageSeven_t *) data;
-        _CCA = pSeven->CCA0 | ((int16_t) pSeven->CCA1) << 8;
-        _DCA = pSeven->DCA0 | ((int16_t) pSeven->DCA1) << 8;
-    }
-
 }
 
 double DS2438::getTemperature() {
-    return _temperature;
+    return _temperature.getMedian();
 }
 
 float DS2438::getAh(){
@@ -161,16 +173,16 @@ long DS2438::getCCA(){
 
 float DS2438::getVoltage(int channel) {
     if (channel == DS2438_CHA) {
-        return _voltageA;
+        return _voltageA.getMedian();
     } else if (channel == DS2438_CHB) {
-        return _voltageB;
+        return _voltageB.getMedian();
     } else {
         return 0.0;
     }
 }
 
 float DS2438::getCurrent() {
-    return _current;
+    return _current.getMedian();
 }
 
 boolean DS2438::isError() {
