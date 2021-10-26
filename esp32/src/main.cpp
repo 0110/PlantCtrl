@@ -577,6 +577,7 @@ void pumpActiveLoop()
     log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) , LOG_PUMP_STARTED_CODE );
     initPumpLogic();
     pumpStarted = true;
+    rtcLastWateringPlant[pumpToRun] = getCurrentTime();
   }
 
 #ifdef FLOWMETER_PIN
@@ -620,6 +621,8 @@ void pumpActiveLoop()
     }
     //disable loop, to prevent multi processing
     pumpStarted = false;
+    //if runtime is larger than cooldown, else it would run continously
+    rtcLastWateringPlant[pumpToRun] = getCurrentTime();
     espDeepSleep();
   }
 }
