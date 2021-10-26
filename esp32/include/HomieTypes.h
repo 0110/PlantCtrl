@@ -28,6 +28,7 @@ typedef struct PlantSettings_t
     HomieSetting<bool> *pPumpOnlyWhenLowLight;
     HomieSetting<long> *pPumpCooldownInMinutes;
     HomieSetting<long> *pPumpDuration;
+    HomieSetting<long> *pPumpPowerLevel;
 } PlantSettings_t;
 
 #endif

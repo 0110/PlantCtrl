@@ -19,6 +19,8 @@
 #include "MathUtils.h"
 
 #define MOISTURE_MEASUREMENT_DURATION  400  /** ms */
+#define PWM_FREQ 50000
+#define PWM_BITS 8
 
 
 class Plant

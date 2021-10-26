@@ -55,12 +55,19 @@ void Plant::init(void)
         this->mSetting->pPumpDuration->setValidator([](long candidate) {
         return ((candidate >= 0) && (candidate <= 1000));
     });
+    this->mSetting->pPumpPowerLevel->setDefaultValue(100);
+        this->mSetting->pPumpPowerLevel->setValidator([](long candidate) {
+        return ((candidate >= 0) && (candidate <= 100));
+    });
 
 
     /* Initialize Hardware */
-    Serial.println("Set GPIO mode " + String(mPinPump) + "=" + String(OUTPUT));
+    Serial.println("Init PWM controller for pump " + String(mPinPump) + "=" + String(OUTPUT));  
     Serial.flush();
-    pinMode(this->mPinPump, OUTPUT);
+    ledcSetup(this->mPlantId, PWM_FREQ, PWM_BITS);
+    ledcAttachPin(mPinPump, this->mPlantId);
+    ledcWrite(this->mPlantId, 0);
+
     Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
     Serial.flush();
     pinMode(this->mPinSensor, INPUT);
@@ -140,7 +147,7 @@ void Plant::deactivatePump(void)
 {
     int plantId = this->mPlantId;
     Serial << "deactivating pump " << plantId << endl;
-    digitalWrite(this->mPinPump, LOW);
+    ledcWrite(this->mPlantId, 0);
     if (this->mConnected)
     {
         const String OFF = String("OFF");
@@ -158,8 +165,10 @@ void Plant::publishState(String state) {
 void Plant::activatePump(void)
 {
     int plantId = this->mPlantId;
+    
     Serial << "activating pump " << plantId << endl;
-    digitalWrite(this->mPinPump, HIGH);
+    long desiredPowerLevelPercent = this->mSetting->pPumpPowerLevel->get();
+    ledcWrite(this->mPlantId, desiredPowerLevelPercent*PWM_BITS);
     if (this->mConnected)
     {
         const String OFF = String("ON");
