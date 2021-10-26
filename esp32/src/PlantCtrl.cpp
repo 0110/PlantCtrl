@@ -46,9 +46,9 @@ void Plant::init(void)
         return ((candidate >= 0) && (candidate <= 23));
     });
     this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
-    this->mSetting->pPumpCooldownInMinutes->setDefaultValue(20); // minutes
-    this->mSetting->pPumpCooldownInMinutes->setValidator([](long candidate) {
-        return ((candidate >= 0) && (candidate <= 60*24*7));
+    this->mSetting->pPumpCooldownInSeconds->setDefaultValue(60*60); // 1 hour
+    this->mSetting->pPumpCooldownInSeconds->setValidator([](long candidate) {
+        return (candidate >= 0);
     });
 
     this->mSetting->pPumpDuration->setDefaultValue(5);
@@ -71,9 +71,7 @@ void Plant::init(void)
     Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
     Serial.flush();
     pinMode(this->mPinSensor, INPUT);
-    Serial.println("Set GPIO " + String(mPinPump) + "=" + String(LOW));
-    Serial.flush();
-    digitalWrite(this->mPinPump, LOW);
+
     pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
     pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
 

@@ -122,7 +122,7 @@ public:
     void init(void);
 
     long getCooldownInSeconds() {
-        return this->mSetting->pPumpCooldownInMinutes->get()*60;
+        return this->mSetting->pPumpCooldownInSeconds->get();
     }
 
     /**

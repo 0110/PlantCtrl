@@ -103,7 +103,7 @@ Plant mPlants[MAX_PLANTS] = {
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
 
-void espDeepSleep()
+void espDeepSleep(bool afterPump = false)
 {
   if (mDownloadMode)
   {
@@ -144,15 +144,23 @@ void espDeepSleep()
 
   long secondsToSleep = -1;
 
-  if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
+  if (afterPump)
   {
-    log(LOG_LEVEL_INFO, String(String(mSolarVoltage) + "V! Low light -> deepSleepNight"), LOG_SLEEP_NIGHT);
-    secondsToSleep = deepSleepNightTime.get();
+    log(LOG_LEVEL_INFO, "AfterPump Cycle Resume", LOG_SLEEP_CYCLE);
+    secondsToSleep = 1;
   }
   else
   {
-    log(LOG_LEVEL_INFO, "Sunny -> deepSleep", LOG_SLEEP_DAY);
-    secondsToSleep = deepSleepTime.get();
+    if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
+    {
+      log(LOG_LEVEL_INFO, String(String(mSolarVoltage) + "V! Low light -> deepSleepNight"), LOG_SLEEP_NIGHT);
+      secondsToSleep = deepSleepNightTime.get();
+    }
+    else
+    {
+      log(LOG_LEVEL_INFO, "Sunny -> deepSleep", LOG_SLEEP_DAY);
+      secondsToSleep = deepSleepTime.get();
+    }
   }
 
   esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
@@ -409,13 +417,13 @@ int determineNextPump(bool isLowLight)
     if (plant.isPumpRequired())
     {
       /* Handle e.g. start = 21, end = 8 */
-      if ( plant.isHydroponic() || (((plant.getHoursStart() > plant.getHoursEnd()) &&
-           (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd())) ||
-          /* Handle e.g. start = 8, end = 21 */
-          ((plant.getHoursStart() < plant.getHoursEnd()) &&
-           (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd())) ||
-          /* no time from NTP received */
-          (getCurrentTime() < 10000)))
+      if (plant.isHydroponic() || (((plant.getHoursStart() > plant.getHoursEnd()) &&
+                                    (getCurrentHour() >= plant.getHoursStart() || getCurrentHour() <= plant.getHoursEnd())) ||
+                                   /* Handle e.g. start = 8, end = 21 */
+                                   ((plant.getHoursStart() < plant.getHoursEnd()) &&
+                                    (getCurrentHour() >= plant.getHoursStart() && getCurrentHour() <= plant.getHoursEnd())) ||
+                                   /* no time from NTP received */
+                                   (getCurrentTime() < 10000)))
       {
         if (wateralarm)
         {
@@ -426,13 +434,14 @@ int determineNextPump(bool isLowLight)
           plant.publishState("active");
         }
 
-        if(!plant.isHydroponic()){
+        if (!plant.isHydroponic())
+        {
           consecutiveWateringPlant[i]++;
         }
 
         log(LOG_LEVEL_DEBUG, String(String(i) + " Requested pumping"), LOG_DEBUG_CODE);
         pumpToUse = i;
-        return pumpToUse; 
+        return pumpToUse;
       }
       else
       {
@@ -538,7 +547,7 @@ bool switch7(const HomieRange &range, const String &value)
 void initPumpLogic()
 {
   //set targets
-  pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
+
 #ifdef FLOWMETER_PIN
   pumpTargetMl = mPlants[pumpToRun].getPumpDuration();
 
@@ -558,6 +567,9 @@ void initPumpLogic()
 
   pcnt_counter_clear(unit); // Zera o contador PCNT
   pcnt_counter_resume(unit);
+#else
+  pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
+  log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s", LOG_PUMP_STARTED_CODE);
 #endif
   //enable power
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -574,7 +586,6 @@ void pumpActiveLoop()
 
   if (!pumpStarted)
   {
-    log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) , LOG_PUMP_STARTED_CODE );
     initPumpLogic();
     pumpStarted = true;
     rtcLastWateringPlant[pumpToRun] = getCurrentTime();
@@ -604,7 +615,7 @@ void pumpActiveLoop()
     mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
   }
 #else
-  if (millis() > pumpTarget*1000)
+  if (millis() > pumpTarget)
   {
     targetReached = true;
   }
@@ -623,7 +634,7 @@ void pumpActiveLoop()
     pumpStarted = false;
     //if runtime is larger than cooldown, else it would run continously
     rtcLastWateringPlant[pumpToRun] = getCurrentTime();
-    espDeepSleep();
+    espDeepSleep(true);
   }
 }
 
@@ -819,12 +830,17 @@ void setup()
 
 void selfTest()
 {
+  
   if (pumpToRun >= 0 && pumpToRun < MAX_PLANTS)
   {
+    Serial << "self test mode pump deactivate " << pumpToRun << endl;
+    Serial.flush();
     mPlants[pumpToRun].deactivatePump();
   }
   if (pumpToRun >= MAX_PLANTS)
   {
+    Serial << "self test finished all pumps, proceed to initial wait mode " << pumpToRun << endl;
+    Serial.flush();
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     nextBlink = millis() + 500;
   }
@@ -835,6 +851,8 @@ void selfTest()
   }
   if (pumpToRun < MAX_PLANTS)
   {
+    Serial << "self test activating pump " << pumpToRun << endl;
+    Serial.flush();
     mPlants[pumpToRun].activatePump();
   }
 }
