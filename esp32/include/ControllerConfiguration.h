@@ -82,7 +82,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "sw 2.0 hw 0.10_no_sensor_caps"
+#define FIRMWARE_VERSION "sw 2.0 hw 0.10b"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
 //#define FLOWMETER_PIN CUSTOM1_PIN1
