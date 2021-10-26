@@ -432,6 +432,7 @@ int determineNextPump(bool isLowLight)
 
         log(LOG_LEVEL_DEBUG, String(String(i) + " Requested pumping"), LOG_DEBUG_CODE);
         pumpToUse = i;
+        return pumpToUse; 
       }
       else
       {
@@ -454,7 +455,7 @@ int determineNextPump(bool isLowLight)
       consecutiveWateringPlant[i] = 0;
     }
   }
-  return pumpToUse;
+  return -1;
 }
 
 /**
@@ -573,6 +574,7 @@ void pumpActiveLoop()
 
   if (!pumpStarted)
   {
+    log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) , LOG_PUMP_STARTED_CODE );
     initPumpLogic();
     pumpStarted = true;
   }
@@ -601,7 +603,7 @@ void pumpActiveLoop()
     mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
   }
 #else
-  if (millis() > pumpTarget)
+  if (millis() > pumpTarget*1000)
   {
     targetReached = true;
   }

@@ -5,6 +5,7 @@
 #define LOG_LEVEL_INFO 2
 #define LOG_LEVEL_DEBUG 3
 
+
 #define LOG_TANKSENSOR_FAIL_DETECT "Failed to detect and initialize distance sensor!"
 #define LOG_TANKSENSOR_FAIL_DETECT_CODE -1
 
@@ -25,7 +26,7 @@
 
 //msg is dynamic defined
 #define LOG_PUMP_INEFFECTIVE -4
-
+#define LOG_PUMP_STARTED_CODE 10
 #define LOG_DEBUG_CODE 1001
 #define LOG_SLEEP_NIGHT 100
 #define LOG_SLEEP_DAY 101

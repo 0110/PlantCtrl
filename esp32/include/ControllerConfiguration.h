@@ -82,10 +82,10 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "sw 1.4 hw 0.10"
+#define FIRMWARE_VERSION "sw 2.0 hw 0.10_no_sensor_caps"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
-#define FLOWMETER_PIN CUSTOM1_PIN1
+//#define FLOWMETER_PIN CUSTOM1_PIN1
 #ifdef FLOWMETER_PIN
     #define FLOWMETER_FLOWFACTOR 22 /** F = 22 * Q;Q = L/min */
 #endif

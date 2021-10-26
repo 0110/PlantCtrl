@@ -64,7 +64,7 @@ public:
 
     bool isHydroponic(){
         long current = this->mSetting->pSensorDry->get();
-        return !equalish(current,HYDROPONIC_MODE);
+        return equalish(current,HYDROPONIC_MODE);
     }
 
     /**
@@ -82,9 +82,7 @@ public:
         bool isDry = getCurrentMoisture() > getSetting2Moisture();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
-    }
-
-    
+    }  
 
     bool isPumpTriggerActive()
     {
