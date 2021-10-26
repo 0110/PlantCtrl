@@ -145,6 +145,9 @@ public:
 
     bool isAllowedOnlyAtLowLight(void)
     {
+        if(this->isHydroponic()){
+            return false;
+        }
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
 
