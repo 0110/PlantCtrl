@@ -69,6 +69,7 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
 int volatile pumpToRun = -1;         /** pump to run  at the end of the cycle */
+int volatile selfTestPumpRun = -1;         /** pump to run  at the end of the cycle */
 
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
@@ -831,29 +832,29 @@ void setup()
 void selfTest()
 {
   
-  if (pumpToRun >= 0 && pumpToRun < MAX_PLANTS)
+  if (selfTestPumpRun >= 0 && selfTestPumpRun < MAX_PLANTS)
   {
     Serial << "self test mode pump deactivate " << pumpToRun << endl;
     Serial.flush();
-    mPlants[pumpToRun].deactivatePump();
+    mPlants[selfTestPumpRun].deactivatePump();
   }
-  if (pumpToRun >= MAX_PLANTS)
+  if (selfTestPumpRun >= MAX_PLANTS)
   {
-    Serial << "self test finished all pumps, proceed to initial wait mode " << pumpToRun << endl;
+    Serial << "self test finished all pumps, proceed to initial wait mode " << selfTestPumpRun << endl;
     Serial.flush();
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     nextBlink = millis() + 500;
   }
   else
   {
-    pumpToRun++;
+    selfTestPumpRun++;
     nextBlink = millis() + 5000;
   }
-  if (pumpToRun < MAX_PLANTS)
+  if (selfTestPumpRun < MAX_PLANTS)
   {
-    Serial << "self test activating pump " << pumpToRun << endl;
+    Serial << "self test activating pump " << selfTestPumpRun << endl;
     Serial.flush();
-    mPlants[pumpToRun].activatePump();
+    mPlants[selfTestPumpRun].activatePump();
   }
 }
 
