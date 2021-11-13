@@ -69,7 +69,7 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
 int volatile pumpToRun = -1;         /** pump to run  at the end of the cycle */
-int volatile selfTestPumpRun = -1;         /** pump to run  at the end of the cycle */
+int volatile selfTestPumpRun = -1;   /** pump to run  at the end of the cycle */
 
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
@@ -639,12 +639,9 @@ void pumpActiveLoop()
   }
 }
 
-/**
- * @brief Startup function
- * Is called once, the controller is started
- */
-void setup()
+void safeSetup()
 {
+  throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
@@ -829,9 +826,29 @@ void setup()
   setupFinishedTimestamp = millis();
 }
 
+/**
+ * @brief Startup function
+ * Is called once, the controller is started
+ */
+void setup()
+{
+  try
+  {
+    safeSetup();
+  }
+  catch (const std::exception &e)
+  {
+    Serial.printf("Exception thrown: \"%s\"", e.what());
+  }
+  catch (...)
+  {
+    Serial.println("Other exception thrown.");
+  }
+}
+
 void selfTest()
 {
-  
+
   if (selfTestPumpRun >= 0 && selfTestPumpRun < MAX_PLANTS)
   {
     Serial << "self test mode pump deactivate " << pumpToRun << endl;
