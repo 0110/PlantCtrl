@@ -9,9 +9,19 @@ void log(int level, String message, int statusCode)
 {
   String buffer;
   StaticJsonDocument<200> doc;
+  // Read the current time
+  time_t now; // this is the epoch
+  tm tm;      // the structure tm holds time information in a more convient way
   doc["level"] = level;
   doc["message"] = message;
   doc["statusCode"] = statusCode;
+  time(&now);
+  localtime_r(&now, &tm);
+  if (tm.tm_year > (2021 - 1970)) { /* Only add the time, if we have at least 2021 */
+    doc["time"] =  String(String(1900 + tm.tm_year) + "-" + String(tm.tm_mon + 1) + "-" + String(tm.tm_mday) +
+              " " + String(tm.tm_hour) + ":" + String(tm.tm_min) + ":" + String(tm.tm_sec));
+  }
+
   serializeJson(doc, buffer);
   if (mAliveWasRead)
   {
