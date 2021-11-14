@@ -208,7 +208,7 @@ void readOneWireSensors()
       continue;
     }
 
-    char buf[sizeof(ds18b20Address) * 2];
+    char buf[(sizeof(ds18b20Address) * 2)+1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
