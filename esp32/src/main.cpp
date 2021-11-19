@@ -209,7 +209,7 @@ void readOneWireSensors()
       continue;
     }
 
-    char buf[sizeof(ds18b20Address) * 2];
+    char buf[(sizeof(ds18b20Address) * 2)+1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -658,12 +658,9 @@ void pumpActiveLoop()
   }
 }
 
-/**
- * @brief Startup function
- * Is called once, the controller is started
- */
-void setup()
+void safeSetup()
 {
+  throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
@@ -846,6 +843,26 @@ void setup()
   }
   stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
   setupFinishedTimestamp = millis();
+}
+
+/**
+ * @brief Startup function
+ * Is called once, the controller is started
+ */
+void setup()
+{
+  try
+  {
+    safeSetup();
+  }
+  catch (const std::exception &e)
+  {
+    Serial.printf("Exception thrown: \"%s\"", e.what());
+  }
+  catch (...)
+  {
+    Serial.println("Other exception thrown.");
+  }
 }
 
 void selfTest()
