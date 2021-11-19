@@ -69,7 +69,7 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
 int volatile pumpToRun = -1;         /** pump to run  at the end of the cycle */
-int volatile selfTestPumpRun = -1;         /** pump to run  at the end of the cycle */
+int volatile selfTestPumpRun = -1;   /** pump to run  at the end of the cycle */
 
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
@@ -80,6 +80,7 @@ unsigned long setupFinishedTimestamp;
 
 bool pumpStarted = false;
 long pumpTarget = -1;
+long lastSendPumpUpdate = 0;
 #ifdef FLOWMETER_PIN
 long pumpTargetMl = -1;
 #endif
@@ -568,10 +569,10 @@ void initPumpLogic()
 
   pcnt_counter_clear(unit); // Zera o contador PCNT
   pcnt_counter_resume(unit);
-#else
+#endif
   pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
   log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s", LOG_PUMP_STARTED_CODE);
-#endif
+
   //enable power
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
@@ -590,6 +591,13 @@ void pumpActiveLoop()
     initPumpLogic();
     pumpStarted = true;
     rtcLastWateringPlant[pumpToRun] = getCurrentTime();
+  }
+
+  bool mqttUpdateTick = false;
+  if (lastSendPumpUpdate + 1000 < millis())
+  {
+    lastSendPumpUpdate = millis();
+    mqttUpdateTick = true;
   }
 
 #ifdef FLOWMETER_PIN
@@ -612,14 +620,25 @@ void pumpActiveLoop()
     {
       targetReached = true;
       pcnt_counter_pause(unit);
+      mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
     }
-    mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
+    else if (mqttUpdateTick)
+    {
+      mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
+    }
   }
-#else
+
+  long duration = pumpTarget - millis();
   if (millis() > pumpTarget)
   {
+    mPlants[pumpToRun].setProperty("watertime").send(String(duration));
     targetReached = true;
   }
+  else if (mqttUpdateTick)
+  {
+    mPlants[pumpToRun].setProperty("watertime").send(String(duration));
+  }
+
 #endif
 
   if (targetReached)
@@ -831,7 +850,7 @@ void setup()
 
 void selfTest()
 {
-  
+
   if (selfTestPumpRun >= 0 && selfTestPumpRun < MAX_PLANTS)
   {
     Serial << "self test mode pump deactivate " << pumpToRun << endl;
