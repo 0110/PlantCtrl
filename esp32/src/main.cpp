@@ -641,7 +641,6 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
@@ -832,18 +831,7 @@ void safeSetup()
  */
 void setup()
 {
-  try
-  {
-    safeSetup();
-  }
-  catch (const std::exception &e)
-  {
-    Serial.printf("Exception thrown: \"%s\"", e.what());
-  }
-  catch (...)
-  {
-    Serial.println("Other exception thrown.");
-  }
+  safeSetup();
 }
 
 void selfTest()
