@@ -83,6 +83,7 @@ long pumpTarget = -1;
 #ifdef FLOWMETER_PIN
 long pumpTargetMl = -1;
 #endif
+AsyncWebServer* mHttp = NULL;
 
 /*************************** Hardware abstraction *****************************/
 
@@ -103,6 +104,33 @@ Plant mPlants[MAX_PLANTS] = {
 /******************************************************************************
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
+
+/**
+ * @brief Return JSON structure with all settings
+ * 
+ * @return String with JSON
+ */
+String settingsAsJSON(void) {
+  String buffer;
+  StaticJsonDocument<500> doc;
+
+  
+  doc[String(deepSleepTime.getName())] =          generateJSONofSetting(&deepSleepTime,       String(deepSleepTime.get()));
+  doc[String(deepSleepNightTime.getName())] =     generateJSONofSetting(&deepSleepNightTime,  String(deepSleepNightTime.get()));
+  doc[String(ntpServer.getName())] =              generateJSONofSetting(&ntpServer,           String(ntpServer.get()));
+  doc[String(waterLevelMin.getName())] =          generateJSONofSetting(&waterLevelMin,       String(waterLevelMin.get()));
+  doc[String(waterLevelWarn.getName())] =         generateJSONofSetting(&waterLevelWarn,      String(waterLevelWarn.get()));
+  doc[String(waterLevelVol.getName())] =          generateJSONofSetting(&waterLevelVol,       String(waterLevelVol.get()));
+  doc[String(lipoSensorAddr.getName())] =         generateJSONofSetting(&lipoSensorAddr,      String(lipoSensorAddr.get()));
+  doc[String(lipoSensorAddr.getName())] =         generateJSONofSetting(&lipoSensorAddr,      String(lipoSensorAddr.get()));
+  doc[String(waterSensorAddr.getName())] =        generateJSONofSetting(&waterSensorAddr,     String(waterSensorAddr.get()));
+  doc[String(pumpIneffectiveWarning.getName())] = generateJSONofSetting(&pumpIneffectiveWarning, String(pumpIneffectiveWarning.get()));
+  // FIXME: Add same logic for the settings inside the plant objects
+  
+  serializeJson(doc, buffer);
+  return buffer;
+
+}
 
 void espDeepSleep(bool afterPump = false)
 {
@@ -793,6 +821,18 @@ void safeSetup()
         .setDatatype(NUMBER_TYPE)
         .setUnit("V");
     sensorWater.advertise("remaining").setDatatype(NUMBER_TYPE).setUnit("%");
+
+      mHttp = new AsyncWebServer(80);
+      mHttp->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", String(ESP.getFreeHeap()));
+      });
+      mHttp->on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", settingsAsJSON());
+      });
+      mHttp->serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
+      mHttp->begin();
+      Homie.getLogger() << "Webserver started" << endl;
+
   }
   else
   {
@@ -1047,3 +1087,13 @@ bool determineTimedLightState(bool lowLight)
 }
 
 #endif
+
+String generateJSONofSetting(HomieInternals::IHomieSetting* s, String value) {
+    if (s != NULL) {
+        return String(String("{ 'descr': '") + String(s->getDescription()) +
+                      String("', 'value' : '") + value +
+                      String("', 'type' : '") + String(s->getType()) + String("' }"));
+    } else {
+        return "";
+    }
+}

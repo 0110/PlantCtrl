@@ -26,6 +26,8 @@
 
 #define NUMBER_TYPE                     "Number"        /**< numberic information, published or read in Homie */
 
+String generateJSONofSetting(HomieInternals::IHomieSetting* s, String value);
+
 /**
  * @name Temperatur Node
  * @{
