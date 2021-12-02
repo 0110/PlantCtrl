@@ -740,7 +740,7 @@ void safeSetup()
                                                  { return (candidate > 0) && (candidate < (24)); });
   timedLightOnlyWhenDark.setDefaultValue(true);
   timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
-                                                            { return (candidate > 3.3) && (candidate < (4.2)); });
+                                                            { return ((candidate > 3.3 || candidate == -1) && (candidate < (50))); });
 #endif // TIMED_LIGHT_PIN
 
   Homie.setLoopFunction(homieLoop);
