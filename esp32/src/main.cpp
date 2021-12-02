@@ -641,7 +641,6 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
@@ -1039,7 +1038,8 @@ bool determineTimedLightState(bool lowLight)
       ((hoursStart < hoursEnd) &&
        (getCurrentHour() >= hoursStart && getCurrentHour() <= hoursEnd)))
   {
-    if (!timedLightLowVoltageTriggered && battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get())
+    bool voltageOk = !timedLightLowVoltageTriggered && battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get();
+    if (voltageOk || equalish(timedLightVoltageCutoff.get(), -1))
     {
       timedLightNode.setProperty("state").send(String("On"));
       return true;

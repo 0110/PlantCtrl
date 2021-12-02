@@ -85,7 +85,7 @@
 #define FIRMWARE_VERSION "sw 2.0 hw 0.10b"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
-#define FLOWMETER_PIN CUSTOM1_PIN1
+//#define FLOWMETER_PIN CUSTOM1_PIN1
 #ifdef FLOWMETER_PIN
     #define FLOWMETER_FLOWFACTOR 23 /** F = 22 * Q;Q = L/min */
 #endif
