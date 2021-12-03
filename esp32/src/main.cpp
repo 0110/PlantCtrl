@@ -660,7 +660,6 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  //throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
