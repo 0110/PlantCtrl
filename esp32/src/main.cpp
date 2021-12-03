@@ -601,6 +601,7 @@ void pumpActiveLoop()
   }
 
 #ifdef FLOWMETER_PIN
+
   int16_t pulses;
   pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_7);
   esp_err_t result = pcnt_get_counter_value(unit, &pulses);
@@ -627,8 +628,10 @@ void pumpActiveLoop()
       mPlants[pumpToRun].setProperty("waterusage").send(String(pumped));
     }
   }
+#endif
 
-  long duration = pumpTarget - millis();
+  long pumpStarted = pumpTarget - (mPlants[pumpToRun].getPumpDuration() * 1000);
+  long duration =  millis()-pumpStarted;
   if (millis() > pumpTarget)
   {
     mPlants[pumpToRun].setProperty("watertime").send(String(duration));
@@ -639,11 +642,8 @@ void pumpActiveLoop()
     mPlants[pumpToRun].setProperty("watertime").send(String(duration));
   }
 
-#endif
-
   if (targetReached)
   {
-
     //disable all
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     for (int i = 0; i < MAX_PLANTS; i++)
@@ -660,7 +660,7 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  throw std::runtime_error("Shit happened");
+  //throw std::runtime_error("Shit happened");
   /* reduce power consumption */
   setCpuFrequencyMhz(80);
 

@@ -51,9 +51,13 @@ void Plant::init(void)
         return (candidate >= 0);
     });
 
-    this->mSetting->pPumpDuration->setDefaultValue(5);
+    this->mSetting->pPumpDuration->setDefaultValue(30);
         this->mSetting->pPumpDuration->setValidator([](long candidate) {
         return ((candidate >= 0) && (candidate <= 1000));
+    });
+    this->mSetting->pPumpMl->setDefaultValue(0);
+        this->mSetting->pPumpMl->setValidator([](long candidate) {
+        return ((candidate >= 0) && (candidate <= 5000));
     });
     this->mSetting->pPumpPowerLevel->setDefaultValue(100);
         this->mSetting->pPumpPowerLevel->setValidator([](long candidate) {
