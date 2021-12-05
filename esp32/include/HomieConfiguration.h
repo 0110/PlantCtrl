@@ -86,6 +86,7 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> timedLightStart("LightStart", "hour to start light");
         HomieSetting<long> timedLightEnd("LightEnd", "hour to end light");
         HomieSetting<bool> timedLightOnlyWhenDark("LightOnlyDark", "only enable light, if solar is low");
+        HomieSetting<long> timedLightPowerLevel("LightPowerLevel", "0-255 power level");
 #endif // TIMED_LIGHT_PIN
 
 

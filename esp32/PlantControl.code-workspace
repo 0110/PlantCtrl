@@ -22,7 +22,8 @@
 			"array": "cpp",
 			"tuple": "cpp",
 			"utility": "cpp",
-			"fstream": "cpp"
+			"fstream": "cpp",
+			"system_error": "cpp"
 		}
 	}
 }

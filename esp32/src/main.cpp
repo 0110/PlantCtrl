@@ -35,12 +35,18 @@
 #include <VL53L0X.h>
 #include "driver/pcnt.h"
 #include "MQTTUtils.h"
+#include "esp_ota_ops.h"
+#if defined(TIMED_LIGHT_PIN)
+  #include "ulp-pwm.h"
+#endif
+
 
 /******************************************************************************
  *                                     DEFINES
 ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 2000
+#define REBOOT_LOOP_DETECTION_ERROR 5
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
@@ -54,9 +60,7 @@ bool determineTimedLightState(bool lowLight);
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
 ******************************************************************************/
-
 #if defined(TIMED_LIGHT_PIN)
-RTC_DATA_ATTR bool timedLightOn = false;                  /**< allow fast recovery after poweron */
 RTC_DATA_ATTR bool timedLightLowVoltageTriggered = false; /**remember if it was shut down due to voltage level */
 #endif                                                    // TIMED_LIGHT_PIN
 
@@ -104,11 +108,29 @@ Plant mPlants[MAX_PLANTS] = {
  *                            LOCAL FUNCTIONS
 ******************************************************************************/
 
+void finsihedCycleSucessfully()
+{
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  esp_ota_img_states_t ota_state;
+  if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK)
+  {
+    log(LOG_LEVEL_INFO, "Get State Partition was Successfull", LOG_BOOT_ERROR_DETECTION);
+    if (ota_state == ESP_OTA_IMG_PENDING_VERIFY)
+    {
+      log(LOG_LEVEL_INFO, "Diagnostics completed successfully! Marking as valid", LOG_BOOT_ERROR_DETECTION);
+      esp_ota_mark_app_valid_cancel_rollback();
+    }
+  }
+}
+
 void espDeepSleep(bool afterPump = false)
 {
+
   if (mDownloadMode)
   {
     log(LOG_LEVEL_DEBUG, "abort deepsleep, DownloadMode active", LOG_DEBUG_CODE);
+    //if we manage to get to the download mode, the device can be restored
+    finsihedCycleSucessfully();
     return;
   }
   if (aliveWasRead())
@@ -139,10 +161,6 @@ void espDeepSleep(bool afterPump = false)
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
 
-#if defined(TIMED_LIGHT_PIN)
-  gpio_hold_en(TIMED_LIGHT_PIN);
-#endif // TIMED_LIGHT_PIN
-
   long secondsToSleep = -1;
 
   if (afterPump)
@@ -165,6 +183,7 @@ void espDeepSleep(bool afterPump = false)
   }
 
   esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
+  finsihedCycleSucessfully();
   if (aliveWasRead())
   {
     delay(1000);
@@ -208,7 +227,7 @@ void readOneWireSensors()
       continue;
     }
 
-    char buf[(sizeof(ds18b20Address) * 2)+1]; /* additional byte for trailing terminator */
+    char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -639,22 +658,19 @@ void pumpActiveLoop()
   }
 }
 
-void safeSetup()
+void setup()
 {
-  /* reduce power consumption */
   setCpuFrequencyMhz(80);
 
   Serial.begin(115200);
-
   Serial << "Wifi mode set to " << WIFI_OFF << " to allow analog2 useage " << endl;
   WiFi.mode(WIFI_OFF);
+
   Serial.flush();
 
 //restore state before releasing pin, to prevent flickering
 #if defined(TIMED_LIGHT_PIN)
-  pinMode(TIMED_LIGHT_PIN, OUTPUT);
-  digitalWrite(TIMED_LIGHT_PIN, timedLightOn);
-  gpio_hold_dis(TIMED_LIGHT_PIN);
+  ulp_pwm_init();
 #endif // TIMED_LIGHT_PIN
 
   /* Intialize Plant */
@@ -733,6 +749,8 @@ void safeSetup()
                                                          { return (candidate > 0) && (candidate < (20)); });
 
 #if defined(TIMED_LIGHT_PIN)
+  timedLightPowerLevel.setDefaultValue(25).setValidator([](long candidate)
+                                                   { return (candidate > 0) && (candidate <= (255)); });
   timedLightStart.setDefaultValue(18).setValidator([](long candidate)
                                                    { return (candidate > 0) && (candidate < (25)); });
   timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
@@ -823,26 +841,6 @@ void safeSetup()
   }
   stayAlive.advertise("alive").setName("Alive").setDatatype(NUMBER_TYPE).settable(aliveHandler);
   setupFinishedTimestamp = millis();
-}
-
-/**
- * @brief Startup function
- * Is called once, the controller is started
- */
-void setup()
-{
-  try
-  {
-    safeSetup();
-  }
-  catch (const std::exception &e)
-  {
-    Serial.printf("Exception thrown: \"%s\"", e.what());
-  }
-  catch (...)
-  {
-    Serial.println("Other exception thrown.");
-  }
 }
 
 void selfTest()
@@ -974,8 +972,18 @@ void plantcontrol()
     Serial.println("Skipping MQTT, offline mode");
     Serial.flush();
   }
-
   bool isLowLight = (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE);
+
+#if defined(TIMED_LIGHT_PIN)
+  bool shouldLight = determineTimedLightState(isLowLight);
+  if(shouldLight){
+    ulp_pwm_set_level(timedLightPowerLevel.get());
+  }else {
+    ulp_pwm_set_level(0);
+  }
+  
+#endif // TIMED_LIGHT_PIN
+
   bool hasWater = true; //FIXME remaining > waterLevelMin.get();
   //FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
@@ -1002,12 +1010,6 @@ void plantcontrol()
   {
     espDeepSleep();
   }
-
-#if defined(TIMED_LIGHT_PIN)
-  bool shouldLight = determineTimedLightState(isLowLight);
-  timedLightOn = shouldLight;
-  digitalWrite(TIMED_LIGHT_PIN, shouldLight);
-#endif // TIMED_LIGHT_PIN
 }
 
 /** @}*/
@@ -1032,11 +1034,14 @@ bool determineTimedLightState(bool lowLight)
     return false;
   }
 
-  if (((hoursStart > hoursEnd) &&
-       (getCurrentHour() >= hoursStart || getCurrentHour() <= hoursEnd)) ||
-      /* Handle e.g. start = 8, end = 21 */
+  int curHour = getCurrentHour();
+  bool condition1 = ((hoursStart > hoursEnd) &&
+                     (curHour >= hoursStart || curHour <= hoursEnd));
+  bool condition2 = /* Handle e.g. start = 8, end = 21 */
       ((hoursStart < hoursEnd) &&
-       (getCurrentHour() >= hoursStart && getCurrentHour() <= hoursEnd)))
+       (curHour >= hoursStart && curHour <= hoursEnd));
+  timedLightNode.setProperty("debug").send(String(curHour) + " " + String(hoursStart) + " " + String(hoursEnd) + " " + String(condition1) + " " + String(condition2));
+  if (condition1 || condition2)
   {
     bool voltageOk = !timedLightLowVoltageTriggered && battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get();
     if (voltageOk || equalish(timedLightVoltageCutoff.get(), -1))
