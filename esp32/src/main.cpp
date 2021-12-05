@@ -153,13 +153,7 @@ void espDeepSleep(bool afterPump = false)
     }
   }
 
-  //allo hold for all digital pins
-  gpio_deep_sleep_hold_en();
-
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
 
   long secondsToSleep = -1;
 
@@ -182,8 +176,8 @@ void espDeepSleep(bool afterPump = false)
     }
   }
 
-  esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
   finsihedCycleSucessfully();
+  esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
   if (aliveWasRead())
   {
     delay(1000);
