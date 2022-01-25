@@ -90,7 +90,7 @@
     #define FLOWMETER_FLOWFACTOR 23 /** F = 22 * Q;Q = L/min */
 #endif
 
-#define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
+#define MOIST_SENSOR_MAX_FRQ               10000 // 10kHz (as never more then 3000 was measured)
 #define MOIST_SENSOR_MIN_FRQ                1000 // 1kHz (500Hz margin)
 
 #define SOLAR_VOLT_FACTOR           11
