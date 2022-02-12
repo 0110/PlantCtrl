@@ -13,6 +13,10 @@
 
 #include <Homie.h>
 
+#define SENSOR_NONE 0
+#define SENSOR_CAPACITIVE_FREQUENCY_MOD 1
+#define SENSOR_ANALOG_RESISTANCE_PROBE 2
+
 //plant pump is deactivated, but sensor values are still recorded and published
 #define DEACTIVATED_PLANT -1
 //special value to indicate a missing sensor when the plant is not deactivated but no valid sensor value was read
@@ -23,6 +27,7 @@
 typedef struct PlantSettings_t
 {
     HomieSetting<double> *pSensorDry;
+    HomieSetting<long> *pSensorMode;
     HomieSetting<long> *pPumpAllowedHourRangeStart;
     HomieSetting<long> *pPumpAllowedHourRangeEnd;
     HomieSetting<bool> *pPumpOnlyWhenLowLight;

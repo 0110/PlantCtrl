@@ -209,7 +209,7 @@ void readOneWireSensors()
       continue;
     }
 
-    char buf[(sizeof(ds18b20Address) * 2)+1]; /* additional byte for trailing terminator */
+    char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -269,7 +269,27 @@ void readPowerSwitchedSensors()
 
   for (int i = 0; i < MAX_PLANTS; i++)
   {
-    Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoisture() << " hz" << endl;
+    mPlants[i].blockingMoistureMeasurement();
+  }
+
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    if (mPlants[i].isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
+    {
+      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz" << endl;
+    }
+    else if (mPlants[i].isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE))
+    {
+      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV" << endl;
+    }
+    else if (mPlants[i].isSensorMode(SENSOR_NONE))
+    {
+      Serial << "Plant " << i << " measurement: no sensor configured" << endl;
+    }
+    else
+    {
+      log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+    }
   }
 
   waterRawSensor.clear();
@@ -408,7 +428,7 @@ int determineNextPump(bool isLowLight)
     }
     if (!plant.isHydroponic())
     {
-      if (equalish(plant.getCurrentMoisture(), MISSING_SENSOR))
+      if (equalish(plant.getCurrentMoistureRaw(), MISSING_SENSOR))
       {
         plant.publishState("nosensor");
         log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
@@ -631,7 +651,7 @@ void pumpActiveLoop()
 #endif
 
   long pumpStarted = pumpTarget - (mPlants[pumpToRun].getPumpDuration() * 1000);
-  long duration =  millis()-pumpStarted;
+  long duration = millis() - pumpStarted;
   if (millis() > pumpTarget)
   {
     mPlants[pumpToRun].setProperty("watertime").send(String(duration));
@@ -704,33 +724,7 @@ void safeSetup()
     return;
   }
 
-  /************************* Start One-Wire bus ***************/
-  int tempInitStartTime = millis();
-  uint8_t sensorCount = 0U;
-
-  /* Required to read the temperature at least once */
-  while ((sensorCount == 0 || !battery.isFound()) && millis() < tempInitStartTime + TEMPERATUR_TIMEOUT)
-  {
-    sensors.begin();
-    battery.begin();
-    sensorCount = sensors.getDS18Count();
-    delay(50);
-  }
-
-  Serial << "DS18S20 count: " << sensorCount << " found in " << (millis() - tempInitStartTime) << " ms" << endl;
-  Serial.flush();
-  /* Measure temperature TODO idea: move this into setup */
-  if (sensorCount > 0)
-  {
-    //sensors.setResolution(DS18B20_RESOLUTION);
-    sensors.requestTemperatures();
-  }
-  Serial << "Reading sensors start" << endl;
-  Serial.flush();
-  readPowerSwitchedSensors();
-  Serial << "Reading sensors end" << endl;
-  Serial.flush();
-  /************************* Start Homie Framework ***************/
+   /************************* Start Homie Framework ***************/
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.disableLedFeedback();
   Homie_setBrand("PlantControl");
@@ -766,9 +760,36 @@ void safeSetup()
 
   Homie.setup();
 
+ /************************* Start One-Wire bus ***************/
+  int tempInitStartTime = millis();
+  uint8_t sensorCount = 0U;
+
+  /* Required to read the temperature at least once */
+  while ((sensorCount == 0 || !battery.isFound()) && millis() < tempInitStartTime + TEMPERATUR_TIMEOUT)
+  {
+    sensors.begin();
+    battery.begin();
+    sensorCount = sensors.getDS18Count();
+    delay(50);
+  }
+
+  Serial << "DS18S20 count: " << sensorCount << " found in " << (millis() - tempInitStartTime) << " ms" << endl;
+  Serial.flush();
+  /* Measure temperature TODO idea: move this into setup */
+  if (sensorCount > 0)
+  {
+    //sensors.setResolution(DS18B20_RESOLUTION);
+    sensors.requestTemperatures();
+  }
+
   mConfigured = Homie.isConfigured();
   if (mConfigured)
   {
+    Serial << "Reading sensors start" << endl;
+    Serial.flush();
+    readPowerSwitchedSensors();
+    Serial << "Reading sensors end" << endl;
+    Serial.flush();
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].advertise();

@@ -21,6 +21,9 @@
 #define LOG_HARDWARECOUNTER_ERROR_MESSAGE "PCNR returned error"
 #define LOG_HARDWARECOUNTER_ERROR_CODE -4
 
+#define LOG_SENSORMODE_UNKNOWN "Unknown sensor mode requested"
+#define LOG_SENSORMODE_UNKNOWN_CODE -5
+
 #define LOG_PUMP_AND_DOWNLOADMODE "Download mode, ignoring pump request"
 #define LOG_PUMP_AND_DOWNLOADMODE_CODE 2
 

@@ -17,11 +17,13 @@
 #include "ControllerConfiguration.h"
 #include "RunningMedian.h"
 #include "MathUtils.h"
+#include "MQTTUtils.h"
+#include "LogDefines.h"
 
-#define MOISTURE_MEASUREMENT_DURATION  400  /** ms */
+#define ANALOG_REREADS 5
+#define MOISTURE_MEASUREMENT_DURATION 400 /** ms */
 #define PWM_FREQ 50000
 #define PWM_BITS 8
-
 
 class Plant
 {
@@ -29,7 +31,7 @@ class Plant
 private:
     HomieNode *mPlant = NULL;
     HomieInternals::PropertyInterface mPump;
-    int32_t mMoisture_freq = 0;
+    RunningMedian mMoisture_raw = RunningMedian(ANALOG_REREADS);
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
@@ -52,10 +54,9 @@ public:
 
     void advertise(void);
 
-    /**
-     * @brief Measure a new analog moister value
-     * 
-     */
+    //for sensor that might take any time
+    void blockingMoistureMeasurement(void);
+    //for sensor that need a start and a end in defined timing
     void startMoistureMeasurement(void);
     void stopMoistureMeasurement(void);
 
@@ -63,10 +64,15 @@ public:
 
     void activatePump(void);
 
-
-    bool isHydroponic(){
+    bool isHydroponic()
+    {
         long current = this->mSetting->pSensorDry->get();
-        return equalish(current,HYDROPONIC_MODE);
+        return equalish(current, HYDROPONIC_MODE);
+    }
+
+    long isSensorMode(int sensorMode)
+    {
+        return this->mSetting->pSensorMode->get() == sensorMode;
     }
 
     /**
@@ -77,41 +83,64 @@ public:
      */
     bool isPumpRequired()
     {
-        if(isHydroponic()){
+        if (isHydroponic())
+        {
             //hydroponic only uses timer based controll
             return true;
         }
-        bool isDry = getCurrentMoisture() > getSetting2Moisture();
+        bool isDry = getCurrentMoisturePCT() < getTargetMoisturePCT();
         bool isActive = isPumpTriggerActive();
         return isDry && isActive;
-    }  
+    }
 
     bool isPumpTriggerActive()
     {
         long current = this->mSetting->pSensorDry->get();
-        return !equalish(current,DEACTIVATED_PLANT);
+        return !equalish(current, DEACTIVATED_PLANT);
     }
 
-    float getCurrentMoisture()
-    {   
-        if(mMoisture_freq < MOIST_SENSOR_MIN_FRQ){
-            return MISSING_SENSOR;
-        }
-        return mMoisture_freq;
-    }
-
-    long getSetting2Moisture()
+    float getTargetMoisturePCT()
     {
-        if (this->mSetting->pSensorDry != NULL)
+        if (isPumpTriggerActive())
         {
-            //1 is totally wet, 0 is try, 0 is MOIST_SENSOR_MAX_FRQ, 1 is MOIST_SENSOR_MIN_FRQ
-            float factor = (this->mSetting->pSensorDry->get());
-            return map(factor,0,100,MOIST_SENSOR_MAX_FRQ,MOIST_SENSOR_MIN_FRQ);
+            return this->mSetting->pSensorDry->get();
         }
         else
         {
             return DEACTIVATED_PLANT;
         }
+    }
+
+    float getCurrentMoisturePCT()
+    {
+        if (isSensorMode(SENSOR_NONE))
+        {
+            return DEACTIVATED_PLANT;
+        }
+        if (isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
+        {
+              return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
+        }
+        else if (isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE))
+        {
+            return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MAX_MV, ANALOG_SENSOR_MIN_MV, 0, 100);
+        } else {
+            log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+            return DEACTIVATED_PLANT;
+        }
+    }
+
+    float getCurrentMoistureRaw()
+    {
+        if (isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
+        {
+            if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
+            {
+                return MISSING_SENSOR;
+            }
+        }
+
+        return mMoisture_raw.getMedian();
     }
 
     HomieInternals::SendingPromise &setProperty(const String &property) const
@@ -121,7 +150,8 @@ public:
 
     void init(void);
 
-    long getCooldownInSeconds() {
+    long getCooldownInSeconds()
+    {
         return this->mSetting->pPumpCooldownInSeconds->get();
     }
 
@@ -130,7 +160,8 @@ public:
      * 
      * @return hour 
      */
-    int getHoursStart() {
+    int getHoursStart()
+    {
         return this->mSetting->pPumpAllowedHourRangeStart->get();
     }
 
@@ -139,13 +170,15 @@ public:
      * 
      * @return hour 
      */
-    int getHoursEnd() {
+    int getHoursEnd()
+    {
         return this->mSetting->pPumpAllowedHourRangeEnd->get();
     }
 
     bool isAllowedOnlyAtLowLight(void)
     {
-        if(this->isHydroponic()){
+        if (this->isHydroponic())
+        {
             return false;
         }
         return this->mSetting->pPumpOnlyWhenLowLight->get();
@@ -153,11 +186,12 @@ public:
 
     void publishState(String state);
 
-    bool switchHandler(const HomieRange& range, const String& value);
+    bool switchHandler(const HomieRange &range, const String &value);
 
     void setSwitchHandler(HomieInternals::PropertyInputHandler f);
 
-    long getPumpDuration() {
+    long getPumpDuration()
+    {
         return this->mSetting->pPumpDuration->get();
     }
 };

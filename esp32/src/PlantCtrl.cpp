@@ -9,17 +9,10 @@
  * 
 
  */
-
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "TimeUtils.h"
-#include "MathUtils.h"
 #include "driver/pcnt.h" 
-
-double mapf(double x, double in_min, double in_max, double out_min, double out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
 {
@@ -37,6 +30,12 @@ void Plant::init(void)
     this->mSetting->pSensorDry->setValidator([](long candidate) {
         return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate,DEACTIVATED_PLANT) || equalish(candidate,HYDROPONIC_MODE));
     });
+
+    this->mSetting->pSensorMode->setDefaultValue(SENSOR_NONE);
+    this->mSetting->pSensorMode->setValidator([](long candidate) {
+        return candidate == SENSOR_NONE || candidate == SENSOR_CAPACITIVE_FREQUENCY_MOD || candidate == SENSOR_ANALOG_RESISTANCE_PROBE;
+    });
+
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate) {
         return ((candidate >= 0) && (candidate <= 23));
@@ -76,47 +75,82 @@ void Plant::init(void)
     Serial.flush();
     pinMode(this->mPinSensor, INPUT);
 
-    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
-    pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
-
-    pcnt_config.pulse_gpio_num = this->mPinSensor;                         // Configura GPIO para entrada dos pulsos
-    pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED;                         // Configura GPIO para controle da contagem
-    pcnt_config.unit = unit;      // Unidade de contagem PCNT - 0
-    pcnt_config.channel = PCNT_CHANNEL_0;                               // Canal de contagem PCNT - 0
-    pcnt_config.counter_h_lim = INT16_MAX;                             // Limite maximo de contagem - 20000
-    pcnt_config.pos_mode = PCNT_COUNT_INC;                                  // Incrementa contagem na subida do pulso
-    pcnt_config.neg_mode = PCNT_COUNT_DIS;                                  // Incrementa contagem na descida do pulso
-    pcnt_config.lctrl_mode = PCNT_MODE_KEEP;                             // PCNT - modo lctrl desabilitado
-    pcnt_config.hctrl_mode = PCNT_MODE_KEEP;                                // PCNT - modo hctrl - se HIGH conta incrementando
-    pcnt_unit_config(&pcnt_config);                                         // Configura o contador PCNT
+    if(isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD)){
 
 
-    pcnt_counter_pause(unit);    // Pausa o contador PCNT
-    pcnt_counter_clear(unit);    // Zera o contador PCNT
+        pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+        pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
 
-    Serial.println("Setup Counter " + String(mPinPump) + "=" + String(LOW));
+        pcnt_config.pulse_gpio_num = this->mPinSensor;                         // Configura GPIO para entrada dos pulsos
+        pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED;                         // Configura GPIO para controle da contagem
+        pcnt_config.unit = unit;      // Unidade de contagem PCNT - 0
+        pcnt_config.channel = PCNT_CHANNEL_0;                               // Canal de contagem PCNT - 0
+        pcnt_config.counter_h_lim = INT16_MAX;                             // Limite maximo de contagem - 20000
+        pcnt_config.pos_mode = PCNT_COUNT_INC;                                  // Incrementa contagem na subida do pulso
+        pcnt_config.neg_mode = PCNT_COUNT_DIS;                                  // Incrementa contagem na descida do pulso
+        pcnt_config.lctrl_mode = PCNT_MODE_KEEP;                             // PCNT - modo lctrl desabilitado
+        pcnt_config.hctrl_mode = PCNT_MODE_KEEP;                                // PCNT - modo hctrl - se HIGH conta incrementando
+        pcnt_unit_config(&pcnt_config);                                         // Configura o contador PCNT
+
+
+        pcnt_counter_pause(unit);    // Pausa o contador PCNT
+        pcnt_counter_clear(unit);    // Zera o contador PCNT
+
+        Serial.println("Setup Counter " + String(mPinPump) + "=" + String(LOW));
+    } else if (isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE)){
+        adcAttachPin(this->mPinSensor);
+    } else if (isSensorMode(SENSOR_NONE)){
+        //nothing to do here
+    } else {
+        log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+    }
+   
 }
 
+void Plant::blockingMoistureMeasurement(void) {
+    if(isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE)){
+        for(int i = 0;i<ANALOG_REREADS;i++){
+            this->mMoisture_raw.add(analogReadMilliVolts(this->mPinSensor));    
+            delay(5);
+        }
+    }else if(isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD) || isSensorMode(SENSOR_NONE)){
+        //nothing to do here
+    } else {
+        log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+    }
+}
+
+
 void Plant::startMoistureMeasurement(void) {
-    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
-    pcnt_counter_resume(unit);
+    if(isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD)){
+        pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+        pcnt_counter_resume(unit);
+    } else if (isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE) || isSensorMode(SENSOR_NONE)){
+        //nothing to do here
+    } else {
+        log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+    }
 }
 
 void Plant::stopMoistureMeasurement(void) {
-    int16_t pulses;
-    pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
-    pcnt_counter_pause(unit); 
-    esp_err_t result = pcnt_get_counter_value(unit, &pulses);
-    pcnt_counter_clear(unit);
- 
-
-    if(result != ESP_OK){
-      //FIXME log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
-      this -> mMoisture_freq = -1;
-    } else {
-        this->mMoisture_freq = pulses * (1000 / MOISTURE_MEASUREMENT_DURATION);
+    if(isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD)){
+        int16_t pulses;
+        pcnt_unit_t unit = (pcnt_unit_t) (PCNT_UNIT_0 + this->mPlantId);
+        pcnt_counter_pause(unit); 
+        esp_err_t result = pcnt_get_counter_value(unit, &pulses);
+        pcnt_counter_clear(unit);
+        if(result != ESP_OK){
+            log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
+            this-> mMoisture_raw.clear();
+            this -> mMoisture_raw.add(-1);
+        } else {
+            this->mMoisture_raw.add(pulses * (1000 / MOISTURE_MEASUREMENT_DURATION));
+        }
+    }else if (isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE) || isSensorMode(SENSOR_NONE)){
+        //nothing to do here
+    }  else {
+        log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
     }
-
 }
 
 void Plant::postMQTTconnection(void)
@@ -125,8 +159,10 @@ void Plant::postMQTTconnection(void)
     this->mConnected = true;
     this->mPlant->setProperty("switch").send(OFF);
 
-    long raw = getCurrentMoisture();
-    double pct = mapf(raw, MOIST_SENSOR_MIN_FRQ, MOIST_SENSOR_MAX_FRQ, 100, 0);
+    float pct = getCurrentMoisturePCT();
+    float raw = getCurrentMoistureRaw();
+    Serial.println(pct);
+    Serial.println("..................");
     if (equalish(raw, MISSING_SENSOR))
     {
       pct = 0;
@@ -140,9 +176,9 @@ void Plant::postMQTTconnection(void)
       pct = 100;
     }
 
-    this->mPlant->setProperty("moist").send(String(round(pct*10)/10));
+    this->mPlant->setProperty("moist").send(String(pct));
     this->mPlant->setProperty("moistraw").send(String(raw));
-    this->mPlant->setProperty("moisttrigger").send(String(getSetting2Moisture()));
+    this->mPlant->setProperty("moisttrigger").send(String(getTargetMoisturePCT()));
 }
 
 void Plant::deactivatePump(void)
