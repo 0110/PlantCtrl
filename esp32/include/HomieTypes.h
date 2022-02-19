@@ -13,9 +13,21 @@
 
 #include <Homie.h>
 
-#define SENSOR_NONE 0
-#define SENSOR_CAPACITIVE_FREQUENCY_MOD 1
-#define SENSOR_ANALOG_RESISTANCE_PROBE 2
+#define FOREACH_SENSOR(SENSOR) \
+        SENSOR(NONE)   \
+        SENSOR(CAPACITIVE_FREQUENCY)  \
+        SENSOR(ANALOG_RESISTANCE_PROBE)   \
+
+#define GENERATE_ENUM(ENUM) ENUM,
+#define GENERATE_STRING(STRING) #STRING,
+
+enum SENSOR_MODE {
+    FOREACH_SENSOR(GENERATE_ENUM)
+};
+
+static const char *SENSOR_STRING[] = {
+    FOREACH_SENSOR(GENERATE_STRING)
+};
 
 //plant pump is deactivated, but sensor values are still recorded and published
 #define DEACTIVATED_PLANT -1

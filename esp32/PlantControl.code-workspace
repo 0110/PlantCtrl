@@ -22,7 +22,9 @@
 			"array": "cpp",
 			"tuple": "cpp",
 			"utility": "cpp",
-			"fstream": "cpp"
+			"fstream": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp"
 		}
 	}
 }

@@ -1,51 +1,6 @@
-/**
- * @file ControllerConfiguration.h
- * @author your name (you@domain.com)
- * @brief 
- * @version 0.1
- * @date 2020-05-30
- * 
- * @copyright Copyright (c) 2020
- * 
- * \mainpage Configuration of the controller
- * @{
- * Describe the used PINs of the controller
- *  
- * @subpage Controller
- * 
- * @subpage Homie
- * 
- * @subpage Configuration
- * 
- * There are several modes in the controller
- * \dot
- *  digraph Operationmode {
- *      ranksep=.75;
- *      poweroff [ label="off" ];
- *      mode1 [ label="Mode 1 - Sensor only", shape=box, width=2 ];
- *      mode2 [ label="Mode 2 - Wifi enabled", shape=box ];
- *      mode3 [ label="Mode 3 - Stay alive", shape=box ];
- *      mode1 -> mode2 [ label="wakeup reason", fontsize=10 ];
- *      mode1 -> mode2 [ label="Time duration", fontsize=10 ];
- *      mode2 -> mode3 [ label="Over the Air Update", fontsize=10 ];
- *      mode3 -> mode2 [ label="Over the Air Finished", fontsize=10 ];
- *      mode3 -> mode2 [ label="Mqtt Command", fontsize=10 ];
- *      mode2 -> mode3 [ label="Mqtt Command", fontsize=10 ];
- *      poweroff -> mode1 [ label="deep sleep wakeup", fontsize=10 ];
- *      mode1 -> poweroff [ label="enter deep sleep", fontsize=10 ];
- *      mode2 -> poweroff [ label="Mqtt queue empty", fontsize=10 ];
- *  }
- *  \enddot
- * 
- * Before entering Deep sleep the controller is configured with an wakeup time.
- * 
- * @}
- */
 #ifndef CONTROLLER_CONFIG_H
 #define CONTROLLER_CONFIG_H
-/** \addtogroup GPIO Settings
- *  @{
- */
+
 #define SENSOR_PLANT0 GPIO_NUM_32 /**< GPIO 32 (ADC1) */
 #define SENSOR_PLANT1 GPIO_NUM_33 /**< GPIO 33 (ADC1) */
 #define SENSOR_PLANT2 GPIO_NUM_25 /**< GPIO 25 (ADC2) */
@@ -77,12 +32,8 @@
 
 #define I2C1_SDA          GPIO_NUM_34   /**< GPIO 34 - I2C */
 #define I2C1_SCL          GPIO_NUM_35   /**< GPIO 35 - I2C */
-/* @} */
 
-/** \addtogroup Configuration
- *  @{
- */
-#define FIRMWARE_VERSION "sw 2.1 hw 0.10b"
+#define FIRMWARE_VERSION "sw 2.2 hw 0.10b"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
 #define FLOWMETER_PIN CUSTOM1_PIN1

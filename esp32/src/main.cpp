@@ -254,6 +254,10 @@ void readOneWireSensors()
  */
 void readPowerSwitchedSensors()
 {
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    Serial << "Sensor " << i << " mode:  " << mPlants[i].getSensorModeString() << endl;
+  }
   digitalWrite(OUTPUT_ENABLE_SENSOR, HIGH);
   delay(50);
   for (int i = 0; i < MAX_PLANTS; i++)
@@ -274,21 +278,20 @@ void readPowerSwitchedSensors()
 
   for (int i = 0; i < MAX_PLANTS; i++)
   {
-    if (mPlants[i].isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
+    Plant plant = mPlants[i];
+    switch (plant.getSensorMode())
     {
-      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz" << endl;
-    }
-    else if (mPlants[i].isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE))
-    {
-      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV" << endl;
-    }
-    else if (mPlants[i].isSensorMode(SENSOR_NONE))
-    {
-      Serial << "Plant " << i << " measurement: no sensor configured" << endl;
-    }
-    else
-    {
-      log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
+      case CAPACITIVE_FREQUENCY: {
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz " << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
+        break;
+      }
+      case ANALOG_RESISTANCE_PROBE : {
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV" << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
+        break;
+      }
+      case NONE : {
+
+      }
     }
   }
 
@@ -759,6 +762,12 @@ void safeSetup()
   Homie.onEvent(onHomieEvent);
 
   Homie.setup();
+
+    /* Intialize Plant */
+  for (int i = 0; i < MAX_PLANTS; i++)
+  {
+    mPlants[i].initSensors();
+  }
 
  /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();

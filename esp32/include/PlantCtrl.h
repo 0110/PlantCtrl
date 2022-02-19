@@ -64,15 +64,22 @@ public:
 
     void activatePump(void);
 
+    String getSensorModeString(){
+        SENSOR_MODE mode = getSensorMode();
+        return SENSOR_STRING[mode];
+    }
+
     bool isHydroponic()
     {
         long current = this->mSetting->pSensorDry->get();
         return equalish(current, HYDROPONIC_MODE);
     }
 
-    long isSensorMode(int sensorMode)
+    SENSOR_MODE getSensorMode()
     {
-        return this->mSetting->pSensorMode->get() == sensorMode;
+        int raw_mode = this->mSetting->pSensorMode->get();
+        SENSOR_MODE sensorType = static_cast<SENSOR_MODE>(raw_mode);
+        return sensorType;
     }
 
     /**
@@ -113,18 +120,14 @@ public:
 
     float getCurrentMoisturePCT()
     {
-        if (isSensorMode(SENSOR_NONE))
-        {
+        switch (getSensorMode()){
+        case NONE:
             return DEACTIVATED_PLANT;
-        }
-        if (isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
-        {
-              return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
-        }
-        else if (isSensorMode(SENSOR_ANALOG_RESISTANCE_PROBE))
-        {
+        case CAPACITIVE_FREQUENCY:
+            return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
+        case ANALOG_RESISTANCE_PROBE:
             return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MAX_MV, ANALOG_SENSOR_MIN_MV, 0, 100);
-        } else {
+        default:
             log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
             return DEACTIVATED_PLANT;
         }
@@ -132,14 +135,13 @@ public:
 
     float getCurrentMoistureRaw()
     {
-        if (isSensorMode(SENSOR_CAPACITIVE_FREQUENCY_MOD))
-        {
-            if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
+        if(getSensorMode() == CAPACITIVE_FREQUENCY){
+if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
             {
                 return MISSING_SENSOR;
             }
         }
-
+        
         return mMoisture_raw.getMedian();
     }
 
@@ -149,6 +151,7 @@ public:
     }
 
     void init(void);
+    void initSensors(void);
 
     long getCooldownInSeconds()
     {
