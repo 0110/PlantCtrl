@@ -190,8 +190,6 @@ void Plant::postMQTTconnection(void)
 
     float pct = getCurrentMoisturePCT();
     float raw = getCurrentMoistureRaw();
-    Serial.println(pct);
-    Serial.println("..................");
     if (equalish(raw, MISSING_SENSOR))
     {
         pct = 0;
@@ -206,6 +204,7 @@ void Plant::postMQTTconnection(void)
     }
 
     this->mPlant->setProperty("moist").send(String(pct));
+    this->mPlant->setProperty("sensormode").send(getSensorModeString());
     this->mPlant->setProperty("moistraw").send(String(raw));
     this->mPlant->setProperty("moisttrigger").send(String(getTargetMoisturePCT()));
 }
