@@ -93,13 +93,13 @@ DS2438 battery(&oneWire, 0.0333333f, AMOUNT_SENOR_QUERYS);
 VL53L0X tankSensor;
 
 Plant mPlants[MAX_PLANTS] = {
-    Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0),
-    Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1, &plant1, &mSetting1),
-    Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2, &plant2, &mSetting2),
-    Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3, &plant3, &mSetting3),
-    Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4),
-    Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5),
-    Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6)};
+    Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0, SHT20),
+    Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1, &plant1, &mSetting1, ANALOG_RESISTANCE_PROBE),
+    Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2, &plant2, &mSetting2, CAPACITIVE_FREQUENCY),
+    Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3, &plant3, &mSetting3, CAPACITIVE_FREQUENCY),
+    Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4, CAPACITIVE_FREQUENCY),
+    Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5, CAPACITIVE_FREQUENCY),
+    Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6, CAPACITIVE_FREQUENCY)};
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
@@ -264,7 +264,6 @@ void readPowerSwitchedSensors()
   {
     mPlants[i].startMoistureMeasurement();
   }
-
   delay(MOISTURE_MEASUREMENT_DURATION);
   for (int i = 0; i < MAX_PLANTS; i++)
   {
@@ -286,18 +285,26 @@ void readPowerSwitchedSensors()
         break;
       }
       case ANALOG_RESISTANCE_PROBE : {
-        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV" << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV " << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
         break;
       }
+      case SHT20:{
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentTemperature() << "°C " << mPlants[i].getCurrentMoisturePCT() << "rH%" <<  endl;
+        break;
+      }
+
       case NONE : {
 
       }
     }
   }
 
-  waterRawSensor.clear();
-  Wire.setPins(SENSOR_TANK_TRG, SENSOR_TANK_ECHO);
+  //do not assume valid i2c state, force release of hardware
+  Wire = TwoWire(0);
+  Wire.setPins(SENSOR_TANK_SDA, SHARED_SCL);
   Wire.begin();
+
+  waterRawSensor.clear();
   tankSensor.setTimeout(500);
   long start = millis();
   bool distanceReady = false;
@@ -761,13 +768,17 @@ void safeSetup()
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
 
-  Homie.setup();
-
-    /* Intialize Plant */
+  /* Intialize Plant */
   for (int i = 0; i < MAX_PLANTS; i++)
   {
     mPlants[i].initSensors();
   }
+  readPowerSwitchedSensors();
+
+
+  Homie.setup();
+
+
 
  /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -794,14 +805,13 @@ void safeSetup()
   mConfigured = Homie.isConfigured();
   if (mConfigured)
   {
-    Serial << "Reading sensors start" << endl;
-    Serial.flush();
-    readPowerSwitchedSensors();
-    Serial << "Reading sensors end" << endl;
-    Serial.flush();
     for (int i = 0; i < MAX_PLANTS; i++)
     {
       mPlants[i].advertise();
+      //write to temperature node instead
+      if(!equalish(mPlants[i].getCurrentTemperature(),PLANT_WITHOUT_TEMPSENSOR)){
+        mqttWrite(&sensorTemp, "Plant" + String(i), String(mPlants[i].getCurrentTemperature()));
+      }
     }
     mPlants[0].setSwitchHandler(switch1);
     mPlants[1].setSwitchHandler(switch2);

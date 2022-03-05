@@ -17,6 +17,7 @@
         SENSOR(NONE)   \
         SENSOR(CAPACITIVE_FREQUENCY)  \
         SENSOR(ANALOG_RESISTANCE_PROBE)   \
+        SENSOR(SHT20)
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -39,7 +40,6 @@ static const char *SENSOR_STRING[] = {
 typedef struct PlantSettings_t
 {
     HomieSetting<double> *pSensorDry;
-    HomieSetting<long> *pSensorMode;
     HomieSetting<long> *pPumpAllowedHourRangeStart;
     HomieSetting<long> *pPumpAllowedHourRangeEnd;
     HomieSetting<bool> *pPumpOnlyWhenLowLight;

@@ -1,26 +1,29 @@
 /**
  * @file PlantCtrl.cpp
  * @author your name (you@domain.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2020-05-27
- * 
+ *
  * @copyright Copyright (c) 2020
- * 
+ *
 
  */
 #include "PlantCtrl.h"
 #include "ControllerConfiguration.h"
 #include "TimeUtils.h"
 #include "driver/pcnt.h"
+#include "MQTTUtils.h"
 
-Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting)
+Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSettings_t *setting, SENSOR_MODE mode)
 {
     this->mPinSensor = pinSensor;
     this->mPinPump = pinPump;
     this->mPlant = plant;
     this->mSetting = setting;
     this->mPlantId = plantId;
+    this->mSensorMode = mode;
+    this->sht20 = SHT2x();
 }
 
 void Plant::init(void)
@@ -29,10 +32,6 @@ void Plant::init(void)
     this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
     this->mSetting->pSensorDry->setValidator([](long candidate)
                                              { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE)); });
-
-    this->mSetting->pSensorMode->setDefaultValue(NONE);
-    this->mSetting->pSensorMode->setValidator([](long candidate)
-                                              { return candidate == NONE || candidate == CAPACITIVE_FREQUENCY || candidate == ANALOG_RESISTANCE_PROBE; });
 
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate)
@@ -56,18 +55,14 @@ void Plant::init(void)
                                                   { return ((candidate >= 0) && (candidate <= 100)); });
 
     /* Initialize Hardware */
-    Serial.println("Init PWM controller for pump " + String(mPinPump) + "=" + String(OUTPUT));
-    Serial.flush();
     ledcSetup(this->mPlantId, PWM_FREQ, PWM_BITS);
     ledcAttachPin(mPinPump, this->mPlantId);
     ledcWrite(this->mPlantId, 0);
-
-    Serial.println("Set GPIO mode " + String(mPinSensor) + "=" + String(ANALOG));
-    Serial.flush();
     pinMode(this->mPinSensor, INPUT);
 }
 
-void Plant::initSensors(void){
+void Plant::initSensors(void)
+{
     switch (getSensorMode())
     {
     case CAPACITIVE_FREQUENCY:
@@ -89,19 +84,17 @@ void Plant::initSensors(void){
 
         pcnt_counter_pause(unit); // Pausa o contador PCNT
         pcnt_counter_clear(unit); // Zera o contador PCNT
-
-        Serial.println("Setup Counter " + String(mPinPump) + "=" + String(LOW));
         break;
     }
-
     case ANALOG_RESISTANCE_PROBE:
     {
         adcAttachPin(this->mPinSensor);
         break;
     }
+    case SHT20:
     case NONE:
     {
-        //do nothing
+        // do nothing
         break;
     }
     }
@@ -117,13 +110,41 @@ void Plant::blockingMoistureMeasurement(void)
         {
             this->mMoisture_raw.add(analogReadMilliVolts(this->mPinSensor));
             delay(5);
-            break;
         }
+        break;
+    }
+    case SHT20:
+    {
+        
+        //do not assume valid i2c state, reinit
+        TwoWire sensorWire = TwoWire(0);
+        sensorWire.setPins(SENSOR_TANK_SDA, SHARED_SCL);
+        sht20.begin(&sensorWire);
+        sht20.reset();
+        delay(100);
+        if(!sht20.isConnected()){
+            Serial.println("SHT20 connection error");
+        }
+        bool success = sht20.read();
+        int error = sht20.getError();
+        if (error)
+        {
+            log(LOG_LEVEL_ERROR, "Failure reading SHT20 " + String(error), LOG_SENSOR_MISSING);
+        }
+        if (!success || error)
+        {
+            this->mMoisture_raw.clear();
+            this->mMoisture_raw.add(MISSING_SENSOR);
+            return;
+        }
+        mMoisture_raw.add(sht20.getHumidity());
+        mTemperature_degree.add(sht20.getTemperature());
+        break;
     }
     case CAPACITIVE_FREQUENCY:
     case NONE:
     {
-        //nothing to do here
+        // nothing to do here
         break;
     }
     }
@@ -139,10 +160,11 @@ void Plant::startMoistureMeasurement(void)
         pcnt_counter_resume(unit);
         break;
     }
+    case SHT20:
     case ANALOG_RESISTANCE_PROBE:
     case NONE:
     {
-        //do nothing here
+        // do nothing here
     }
     }
 }
@@ -170,11 +192,8 @@ void Plant::stopMoistureMeasurement(void)
         }
         break;
     }
+    case SHT20:
     case ANALOG_RESISTANCE_PROBE:
-    {
-        //nothing to do here
-        break;
-    }
     case NONE:
     {
         break;
@@ -280,4 +299,5 @@ void Plant::advertise(void)
     this->mPlant->advertise("moist").setName("Percent").setDatatype("Float").setUnit("%");
     this->mPlant->advertise("moistraw").setName("adc").setDatatype("Float").setUnit("3.3/4096V");
     this->mPlant->advertise("state").setName("state").setDatatype("String");
+    
 }

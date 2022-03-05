@@ -21,8 +21,8 @@
 #define OUTPUT_ENABLE_PUMP   GPIO_NUM_13 /**< GPIO 13 - Enable Pumps  */
 
 #define SENSOR_ONEWIRE      GPIO_NUM_4 /**< GPIO 12 - Temperatur sensor, Battery and other cool onewire stuff */
-#define SENSOR_TANK_ECHO    GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
-#define SENSOR_TANK_TRG     GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
+#define SHARED_SCL          GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
+#define SENSOR_TANK_SDA     GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
 #define BUTTON              GPIO_NUM_0  /**< GPIO 0 - Fix button of NodeMCU */
 
 #define CUSTOM1_PIN1        GPIO_NUM_34   /** direct gpio */
@@ -64,6 +64,8 @@
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
+
+#define PLANT_WITHOUT_TEMPSENSOR 100
 
 #define UTC_OFFSET_DE                   3600    /* UTC offset in seconds for Germany */
 #define UTF_OFFSET_DE_DST               3600    /* offset in seconds if daylight saving time is active */

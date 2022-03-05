@@ -4,9 +4,9 @@
  * @brief Abstraction to handle the Sensors
  * @version 0.1
  * @date 2020-05-27
- * 
+ *
  * @copyright Copyright (c) 2020
- * 
+ *
  */
 
 #ifndef PLANT_CTRL_H
@@ -19,6 +19,7 @@
 #include "MathUtils.h"
 #include "MQTTUtils.h"
 #include "LogDefines.h"
+#include "SHT2x.h"
 
 #define ANALOG_REREADS 5
 #define MOISTURE_MEASUREMENT_DURATION 400 /** ms */
@@ -32,31 +33,35 @@ private:
     HomieNode *mPlant = NULL;
     HomieInternals::PropertyInterface mPump;
     RunningMedian mMoisture_raw = RunningMedian(ANALOG_REREADS);
+    RunningMedian mTemperature_degree = RunningMedian(ANALOG_REREADS);
     int mPinSensor = 0; /**< Pin of the moist sensor */
     int mPinPump = 0;   /**< Pin of the pump */
     bool mConnected = false;
     int mPlantId = -1;
+    SENSOR_MODE mSensorMode;
+    SHT2x sht20;
+
 
 public:
     PlantSettings_t *mSetting;
     /**
      * @brief Construct a new Plant object
-     * 
+     *
      * @param pinSensor Pin of the Sensor to use to measure moist
      * @param pinPump   Pin of the Pump to use
      */
     Plant(int pinSensor, int pinPump,
           int plantId,
           HomieNode *plant,
-          PlantSettings_t *setting);
+          PlantSettings_t *setting, SENSOR_MODE mode);
 
     void postMQTTconnection(void);
 
     void advertise(void);
 
-    //for sensor that might take any time
+    // for sensor that might take any time
     void blockingMoistureMeasurement(void);
-    //for sensor that need a start and a end in defined timing
+    // for sensor that need a start and a end in defined timing
     void startMoistureMeasurement(void);
     void stopMoistureMeasurement(void);
 
@@ -64,7 +69,8 @@ public:
 
     void activatePump(void);
 
-    String getSensorModeString(){
+    String getSensorModeString()
+    {
         SENSOR_MODE mode = getSensorMode();
         return SENSOR_STRING[mode];
     }
@@ -77,22 +83,20 @@ public:
 
     SENSOR_MODE getSensorMode()
     {
-        int raw_mode = this->mSetting->pSensorMode->get();
-        SENSOR_MODE sensorType = static_cast<SENSOR_MODE>(raw_mode);
-        return sensorType;
+        return mSensorMode;
     }
 
     /**
      * @brief Check if a plant is too dry and needs some water.
-     * 
-     * @return true 
-     * @return false 
+     *
+     * @return true
+     * @return false
      */
     bool isPumpRequired()
     {
         if (isHydroponic())
         {
-            //hydroponic only uses timer based controll
+            // hydroponic only uses timer based controll
             return true;
         }
         bool isDry = getCurrentMoisturePCT() < getTargetMoisturePCT();
@@ -118,30 +122,39 @@ public:
         }
     }
 
+    float getCurrentTemperature(){
+        if(mTemperature_degree.getCount() == 0){
+            return PLANT_WITHOUT_TEMPSENSOR; 
+        }
+        return mTemperature_degree.getMedian();
+    }
+
     float getCurrentMoisturePCT()
     {
-        switch (getSensorMode()){
+        switch (getSensorMode())
+        {
         case NONE:
             return DEACTIVATED_PLANT;
         case CAPACITIVE_FREQUENCY:
             return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
         case ANALOG_RESISTANCE_PROBE:
             return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MAX_MV, ANALOG_SENSOR_MIN_MV, 0, 100);
-        default:
-            log(LOG_LEVEL_ERROR, LOG_SENSORMODE_UNKNOWN, LOG_SENSORMODE_UNKNOWN_CODE);
-            return DEACTIVATED_PLANT;
+        case SHT20:
+            return mMoisture_raw.getMedian();
         }
+        return MISSING_SENSOR;
     }
 
     float getCurrentMoistureRaw()
     {
-        if(getSensorMode() == CAPACITIVE_FREQUENCY){
-if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
+        if (getSensorMode() == CAPACITIVE_FREQUENCY)
+        {
+            if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
             {
                 return MISSING_SENSOR;
             }
         }
-        
+
         return mMoisture_raw.getMedian();
     }
 
@@ -160,8 +173,8 @@ if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
 
     /**
      * @brief Get the Hours when pumping should start
-     * 
-     * @return hour 
+     *
+     * @return hour
      */
     int getHoursStart()
     {
@@ -170,8 +183,8 @@ if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
 
     /**
      * @brief Get the Hours when pumping should end
-     * 
-     * @return hour 
+     *
+     * @return hour
      */
     int getHoursEnd()
     {
