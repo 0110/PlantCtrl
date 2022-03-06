@@ -138,7 +138,7 @@ public:
         case CAPACITIVE_FREQUENCY:
             return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
         case ANALOG_RESISTANCE_PROBE:
-            return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MAX_MV, ANALOG_SENSOR_MIN_MV, 0, 100);
+            return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MIN_MV, ANALOG_SENSOR_MAX_MV, 0, 100);
         case SHT20:
             return mMoisture_raw.getMedian();
         }
