@@ -13,11 +13,21 @@
 
 #include <Homie.h>
 
+/**
+ * @name Sensor types
+ * possible sensors:
+ * @{
+ **/
+
 #define FOREACH_SENSOR(SENSOR) \
         SENSOR(NONE)   \
         SENSOR(CAPACITIVE_FREQUENCY)  \
         SENSOR(ANALOG_RESISTANCE_PROBE)   \
         SENSOR(SHT20)
+
+/**
+ * @}
+ */
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,

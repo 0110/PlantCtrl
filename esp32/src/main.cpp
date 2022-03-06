@@ -92,14 +92,36 @@ DallasTemperature sensors(&oneWire);
 DS2438 battery(&oneWire, 0.0333333f, AMOUNT_SENOR_QUERYS);
 VL53L0X tankSensor;
 
+#ifndef PLANT0_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT1_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT2_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT3_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT4_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT5_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+#ifndef PLANT6_SENSORTYPE
+#error "Sensor type must be specified, see HomieTypes.h - Sensor types"
+#endif
+
 Plant mPlants[MAX_PLANTS] = {
-    Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0, SHT20),
-    Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1, &plant1, &mSetting1, ANALOG_RESISTANCE_PROBE),
-    Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2, &plant2, &mSetting2, CAPACITIVE_FREQUENCY),
-    Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3, &plant3, &mSetting3, CAPACITIVE_FREQUENCY),
-    Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4, CAPACITIVE_FREQUENCY),
-    Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5, CAPACITIVE_FREQUENCY),
-    Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6, CAPACITIVE_FREQUENCY)};
+    Plant(SENSOR_PLANT0, OUTPUT_PUMP0, 0, &plant0, &mSetting0, PLANT0_SENSORTYPE),
+    Plant(SENSOR_PLANT1, OUTPUT_PUMP1, 1, &plant1, &mSetting1, PLANT1_SENSORTYPE),
+    Plant(SENSOR_PLANT2, OUTPUT_PUMP2, 2, &plant2, &mSetting2, PLANT2_SENSORTYPE),
+    Plant(SENSOR_PLANT3, OUTPUT_PUMP3, 3, &plant3, &mSetting3, PLANT3_SENSORTYPE),
+    Plant(SENSOR_PLANT4, OUTPUT_PUMP4, 4, &plant4, &mSetting4, PLANT4_SENSORTYPE),
+    Plant(SENSOR_PLANT5, OUTPUT_PUMP5, 5, &plant5, &mSetting5, PLANT5_SENSORTYPE),
+    Plant(SENSOR_PLANT6, OUTPUT_PUMP6, 6, &plant6, &mSetting6, PLANT6_SENSORTYPE)};
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
