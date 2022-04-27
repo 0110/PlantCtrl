@@ -122,13 +122,6 @@ public:
         }
     }
 
-    float getCurrentTemperature(){
-        if(mTemperature_degree.getCount() == 0){
-            return PLANT_WITHOUT_TEMPSENSOR; 
-        }
-        return mTemperature_degree.getMedian();
-    }
-
     float getCurrentMoisturePCT()
     {
         switch (getSensorMode())
@@ -139,8 +132,6 @@ public:
             return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
         case ANALOG_RESISTANCE_PROBE:
             return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MIN_MV, ANALOG_SENSOR_MAX_MV, 0, 100);
-        case SHT20:
-            return mMoisture_raw.getMedian();
         }
         return MISSING_SENSOR;
     }
@@ -210,6 +201,12 @@ public:
     {
         return this->mSetting->pPumpDuration->get();
     }
+    long getPumpMl()
+    {
+        return this->mSetting->pPumpMl->get();
+    }
+
+    
 };
 
 #endif

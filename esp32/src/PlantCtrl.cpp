@@ -47,7 +47,7 @@ void Plant::init(void)
     this->mSetting->pPumpDuration->setDefaultValue(30);
     this->mSetting->pPumpDuration->setValidator([](long candidate)
                                                 { return ((candidate >= 0) && (candidate <= 1000)); });
-    this->mSetting->pPumpMl->setDefaultValue(0);
+    this->mSetting->pPumpMl->setDefaultValue(1000);
     this->mSetting->pPumpMl->setValidator([](long candidate)
                                           { return ((candidate >= 0) && (candidate <= 5000)); });
     this->mSetting->pPumpPowerLevel->setDefaultValue(100);
@@ -91,7 +91,6 @@ void Plant::initSensors(void)
         adcAttachPin(this->mPinSensor);
         break;
     }
-    case SHT20:
     case NONE:
     {
         // do nothing
@@ -113,34 +112,6 @@ void Plant::blockingMoistureMeasurement(void)
         }
         break;
     }
-    case SHT20:
-    {
-        
-        //do not assume valid i2c state, reinit
-        TwoWire sensorWire = TwoWire(0);
-        sensorWire.setPins(SENSOR_TANK_SDA, SHARED_SCL);
-        sht20.begin(&sensorWire);
-        sht20.reset();
-        delay(100);
-        if(!sht20.isConnected()){
-            Serial.println("SHT20 connection error");
-        }
-        bool success = sht20.read();
-        int error = sht20.getError();
-        if (error)
-        {
-            log(LOG_LEVEL_ERROR, "Failure reading SHT20 " + String(error), LOG_SENSOR_MISSING);
-        }
-        if (!success || error)
-        {
-            this->mMoisture_raw.clear();
-            this->mMoisture_raw.add(MISSING_SENSOR);
-            return;
-        }
-        mMoisture_raw.add(sht20.getHumidity());
-        mTemperature_degree.add(sht20.getTemperature());
-        break;
-    }
     case CAPACITIVE_FREQUENCY:
     case NONE:
     {
@@ -160,7 +131,6 @@ void Plant::startMoistureMeasurement(void)
         pcnt_counter_resume(unit);
         break;
     }
-    case SHT20:
     case ANALOG_RESISTANCE_PROBE:
     case NONE:
     {
@@ -192,7 +162,6 @@ void Plant::stopMoistureMeasurement(void)
         }
         break;
     }
-    case SHT20:
     case ANALOG_RESISTANCE_PROBE:
     case NONE:
     {
