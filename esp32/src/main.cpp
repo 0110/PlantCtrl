@@ -56,6 +56,7 @@ int determineNextPump(bool lowLight);
 void plantcontrol();
 void readPowerSwitchedSensors();
 bool determineTimedLightState(bool lowLight);
+bool otaRunning = false;
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
@@ -401,10 +402,7 @@ void onHomieEvent(const HomieEvent &event)
     {
       mPlants[i].deactivatePump();
     }
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
-    delay(100);
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
+    otaRunning = true;
     mDownloadMode = true;
     break;
   case HomieEventType::OTA_SUCCESSFUL:
@@ -981,7 +979,14 @@ void loop()
       digitalWrite(OUTPUT_ENABLE_SENSOR, !digitalRead(OUTPUT_ENABLE_SENSOR));
       if (mConfigured)
       {
-        nextBlink = millis() + 500;
+        if (otaRunning)
+        {
+          nextBlink = millis() + 100;
+        }
+        else
+        {
+          nextBlink = millis() + 501;
+        }
       }
       else
       {
