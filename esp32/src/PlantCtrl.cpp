@@ -39,7 +39,7 @@ void Plant::init(void)
     this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20); // stop pumps at 20:00
     this->mSetting->pPumpAllowedHourRangeEnd->setValidator([](long candidate)
                                                            { return ((candidate >= 0) && (candidate <= 23)); });
-    this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
+    this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(false);
     this->mSetting->pPumpCooldownInSeconds->setDefaultValue(60 * 60); // 1 hour
     this->mSetting->pPumpCooldownInSeconds->setValidator([](long candidate)
                                                          { return (candidate >= 0); });
