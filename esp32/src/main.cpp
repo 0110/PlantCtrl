@@ -751,12 +751,14 @@ void safeSetup()
 
   pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
 
+  static_assert(HomieInternals::MAX_CONFIG_SETTING_SIZE >= MAX_CONFIG_SETTING_ITEMS, "Limits.hpp not adjusted MAX_CONFIG_SETTING_ITEMS");
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
   {
     //increase the config settings
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
+  static_assert(HomieInternals::MAX_JSON_CONFIG_FILE_SIZE >= MAX_JSON_CONFIG_FILE_SIZE_CUSTOM, "Limits.hpp not adjusted MAX_JSON_CONFIG_FILE_SIZE");
   if (HomieInternals::MAX_JSON_CONFIG_FILE_SIZE < MAX_JSON_CONFIG_FILE_SIZE_CUSTOM)
   {
     //increase the config settings
