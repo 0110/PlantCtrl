@@ -86,7 +86,7 @@
 #define CONFIG_COMPILER_CXX_EXCEPTIONS
 
 
-#define FIRMWARE_VERSION "2.3 @ 0.10b"
+#define FIRMWARE_VERSION "2.4 HW0.10b"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
 #define FLOWMETER_PIN CUSTOM1_PIN1
@@ -95,10 +95,10 @@
 #endif
 
 #define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
-#define MOIST_SENSOR_MIN_FRQ                1000 // 1kHz (500Hz margin)
+#define MOIST_SENSOR_MIN_FRQ                500 // 0.5kHz (500Hz margin)
 
-#define ANALOG_SENSOR_MAX_MV                4095 /**< Maximum according https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html */
-#define ANALOG_SENSOR_MIN_MV                100
+#define ANALOG_SENSOR_MAX_MV                1300 //successive approximation of good range
+#define ANALOG_SENSOR_MIN_MV                300  //successive approximation of good range
 
 #define SOLAR_VOLT_FACTOR           11
 #define BATTSENSOR_INDEX_SOLAR      0
