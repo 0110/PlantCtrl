@@ -75,6 +75,12 @@ public:
         return SENSOR_STRING[mode];
     }
 
+    bool isTimerOnly()
+    {
+        long current = this->mSetting->pSensorDry->get();
+        return equalish(current, TIMER_ONLY);
+    }
+
     bool isHydroponic()
     {
         long current = this->mSetting->pSensorDry->get();
@@ -94,7 +100,7 @@ public:
      */
     bool isPumpRequired()
     {
-        if (isHydroponic())
+        if (isHydroponic() || isTimerOnly())
         {
             // hydroponic only uses timer based controll
             return true;

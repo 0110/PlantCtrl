@@ -31,7 +31,7 @@ void Plant::init(void)
     /* Initialize Home Settings validator */
     this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
     this->mSetting->pSensorDry->setValidator([](long candidate)
-                                             { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE)); });
+                                             { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE) || equalish(candidate, TIMER_ONLY)); });
 
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate)

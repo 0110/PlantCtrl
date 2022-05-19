@@ -460,7 +460,7 @@ int determineNextPump(bool isLowLight)
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
-    if (!plant.isHydroponic())
+    if (! (plant.isHydroponic() || plant.isTimerOnly()))
     {
       if (equalish(plant.getCurrentMoistureRaw(), MISSING_SENSOR))
       {
@@ -497,7 +497,7 @@ int determineNextPump(bool isLowLight)
           }
         }
 
-        if (!plant.isHydroponic())
+        if (! (plant.isHydroponic() || plant.isTimerOnly()))
         {
           consecutiveWateringPlant[i]++;
         }
@@ -1137,9 +1137,11 @@ bool determineTimedLightState(bool lowLight)
   }
 
   int curHour = getCurrentHour();
+
   bool condition1 = ((hoursStart > hoursEnd) &&
                      (curHour >= hoursStart || curHour <= hoursEnd));
   bool condition2 = /* Handle e.g. start = 8, end = 21 */
+
       ((hoursStart < hoursEnd) &&
        (curHour >= hoursStart && curHour <= hoursEnd));
   timedLightNode.setProperty("debug").send(String(curHour) + " " + String(hoursStart) + " " + String(hoursEnd) + " " + String(condition1) + " " + String(condition2));
