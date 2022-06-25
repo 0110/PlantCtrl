@@ -22,8 +22,7 @@
 #define FOREACH_SENSOR(SENSOR) \
         SENSOR(NONE)   \
         SENSOR(CAPACITIVE_FREQUENCY)  \
-        SENSOR(ANALOG_RESISTANCE_PROBE)   \
-        SENSOR(SHT20)
+        SENSOR(ANALOG_RESISTANCE_PROBE)   
 
 /**
  * @}
@@ -46,6 +45,8 @@ static const char *SENSOR_STRING[] = {
 #define MISSING_SENSOR -2
 //plant uses only cooldown and duration, moisture is measured but ignored, allowedHours is ignored (eg. make a 30min on 30min off cycle)
 #define HYDROPONIC_MODE -3
+//plant uses cooldown and duration and workhours, moisture is measured but ignored
+#define TIMER_ONLY -4
 
 typedef struct PlantSettings_t
 {

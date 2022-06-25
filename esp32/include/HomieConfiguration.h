@@ -88,6 +88,7 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> timedLightStart("LightStart", "hour to start light");
         HomieSetting<long> timedLightEnd("LightEnd", "hour to end light");
         HomieSetting<bool> timedLightOnlyWhenDark("LightOnlyDark", "only enable light, if solar is low");
+        HomieSetting<long> timedLightPowerLevel("LightPowerLevel", "0-255 power level");
 #endif // TIMED_LIGHT_PIN
 
 
@@ -106,11 +107,11 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("hourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)");                                      \
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("hourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("lowLight" strplant, "Plant" strplant " - Enable the Pump only, when there is no sunlight"); \
-        HomieSetting<long> mPumpCooldownInMinutes##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
+        HomieSetting<long> mPumpCooldownInSeconds##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
         HomieSetting<long> pPumpDuration##plant = HomieSetting<long>("pumpDuration" strplant, "Plant" strplant " - time seconds to water when pump is active");                      \
         HomieSetting<long> pPumpMl##plant = HomieSetting<long>("pumpAmount" strplant, "Plant" strplant " - ml (if using flowmeter) to water when pump is active");                      \
         HomieSetting<long> pPowerLevel##plant = HomieSetting<long>("powerLevel" strplant, "Plant" strplant " - pwm duty cycle in percent");                      \
-        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInMinutes##plant, &pPumpDuration##plant, &pPowerLevel##plant, &pPumpMl##plant}; \
+        PlantSettings_t mSetting##plant = {&mSensorDry##plant, &mPumpAllowedHourRangeStart##plant, &mPumpAllowedHourRangeEnd##plant, &mPumpOnlyWhenLowLight##plant, &mPumpCooldownInSeconds##plant, &pPumpDuration##plant, &pPowerLevel##plant, &pPumpMl##plant}; \
         /**< Generate all settings for one plant \
          * \
          * Feature to start pumping only at morning: @link{SOLAR_CHARGE_MIN_VOLTAGE} and @link{SOLAR_CHARGE_MAX_VOLTAGE} \
