@@ -429,7 +429,7 @@ int determineNextPump(bool isLowLight)
     Plant plant = mPlants[i];
     if (!plant.isPumpTriggerActive())
     {
-      plant.publishState("deactivated");
+      plant.publishState(PLANTSTATE_NUM_DEACTIVATED, PLANTSTATE_STR_DEACTIVATED);
       log(LOG_LEVEL_DEBUG, String(String(i) + " Skip deactivated pump"), LOG_DEBUG_CODE);
       continue;
     }
@@ -437,11 +437,11 @@ int determineNextPump(bool isLowLight)
     {
       if (wateralarm)
       {
-        plant.publishState("cooldown+alarm");
+        plant.publishState(PLANTSTATE_NUM_COOLDOWN_ALARM, PLANTSTATE_STR_COOLDOWN_ALARM);
       }
       else
       {
-        plant.publishState("cooldown");
+        plant.publishState(PLANTSTATE_NUM_COOLDOWN, PLANTSTATE_STR_COOLDOWN);
       }
       log(LOG_LEVEL_DEBUG, String(String(i) + " Skipping due to cooldown " + String(rtcLastWateringPlant[i] + plant.getCooldownInSeconds())), LOG_DEBUG_CODE);
       continue;
@@ -450,11 +450,11 @@ int determineNextPump(bool isLowLight)
     {
       if (wateralarm)
       {
-        plant.publishState("sunny+alarm");
+        plant.publishState(PLANTSTATE_NUM_SUNNY_ALARM, PLANTSTATE_STR_SUNNY_ALARM);
       }
       else
       {
-        plant.publishState("sunny");
+        plant.publishState(PLANTSTATE_NUM_SUNNY, PLANTSTATE_STR_SUNNY);
       }
 
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
@@ -464,7 +464,7 @@ int determineNextPump(bool isLowLight)
     {
       if (equalish(plant.getCurrentMoistureRaw(), MISSING_SENSOR))
       {
-        plant.publishState("nosensor");
+        plant.publishState(PLANTSTATE_NUM_NO_SENSOR, PLANTSTATE_STR_NO_SENSOR);
         log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
         continue;
       }
@@ -483,17 +483,17 @@ int determineNextPump(bool isLowLight)
       {
         if (wateralarm)
         {
-          plant.publishState("active+alarm");
+          plant.publishState(PLANTSTATE_NUM_ACTIVE_ALARM, PLANTSTATE_STR_ACTIVE_ALARM);
         }
         else
         {
           if (mDownloadMode)
           {
-            plant.publishState("active+supressed");
+            plant.publishState(PLANTSTATE_NUM_ACTIVE_SUPESSED, PLANTSTATE_STR_ACTIVE_SUPESSED);
           }
           else
           {
-            plant.publishState("active");
+            plant.publishState(PLANTSTATE_NUM_ACTIVE, PLANTSTATE_STR_ACTIVE);
           }
         }
 
@@ -510,11 +510,11 @@ int determineNextPump(bool isLowLight)
       {
         if (wateralarm)
         {
-          plant.publishState("after-work+alarm");
+          plant.publishState(PLANTSTATE_NUM_AFTERWORK_ALARM, PLANTSTATE_STR_AFTERWORK_ALARM);
         }
         else
         {
-          plant.publishState("after-work");
+          plant.publishState(PLANTSTATE_NUM_AFTERWORK, PLANTSTATE_STR_AFTERWORK);
         }
         log(LOG_LEVEL_DEBUG, String(String(i) + " ignored due to time boundary: " + String(plant.getHoursStart()) + " to " + String(plant.getHoursEnd()) + " ( current " + String(getCurrentHour()) + " )"), LOG_DEBUG_CODE);
       }
@@ -522,7 +522,7 @@ int determineNextPump(bool isLowLight)
     }
     else
     {
-      plant.publishState("wet");
+      plant.publishState(PLANTSTATE_NUM_WET, PLANTSTATE_STR_WET);
       // plant was detected as wet, remove consecutive count
       consecutiveWateringPlant[i] = 0;
     }

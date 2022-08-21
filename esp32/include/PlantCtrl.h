@@ -197,7 +197,7 @@ public:
         return this->mSetting->pPumpOnlyWhenLowLight->get();
     }
 
-    void publishState(String state);
+    void publishState(int stateNumber, String stateString);
 
     bool switchHandler(const HomieRange &range, const String &value);
 

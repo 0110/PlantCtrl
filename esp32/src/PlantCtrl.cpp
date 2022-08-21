@@ -209,11 +209,11 @@ void Plant::deactivatePump(void)
     }
 }
 
-void Plant::publishState(String state)
+void Plant::publishState(int stateNumber, String stateString)
 {
     if (this->mConnected)
     {
-        this->mPlant->setProperty("state").send(state);
+        this->mPlant->setProperty("state").send(stateString);
     }
 }
 
