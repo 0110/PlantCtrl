@@ -48,6 +48,36 @@ static const char *SENSOR_STRING[] = {
 //plant uses cooldown and duration and workhours, moisture is measured but ignored
 #define TIMER_ONLY -4
 
+/**
+ * @brief State of plants
+ * 
+ */
+#define PLANTSTATE_NUM_DEACTIVATED      0xF000
+#define PLANTSTATE_NUM_NO_SENSOR        0xE000
+#define PLANTSTATE_NUM_WET              0x0F00
+#define PLANTSTATE_NUM_SUNNY_ALARM      0x0021
+#define PLANTSTATE_NUM_ACTIVE_ALARM     0x0011
+#define PLANTSTATE_NUM_ACTIVE_SUPESSED  0x001F
+#define PLANTSTATE_NUM_ACTIVE           0x0010
+#define PLANTSTATE_NUM_SUNNY            0x0020
+#define PLANTSTATE_NUM_COOLDOWN_ALARM   0x0031
+#define PLANTSTATE_NUM_COOLDOWN         0x0030
+#define PLANTSTATE_NUM_AFTERWORK_ALARM  0x0041
+#define PLANTSTATE_NUM_AFTERWORK        0x0040
+
+#define PLANTSTATE_STR_DEACTIVATED      "deactivated"
+#define PLANTSTATE_STR_NO_SENSOR        "nosensor"
+#define PLANTSTATE_STR_WET              "wet"
+#define PLANTSTATE_STR_SUNNY_ALARM      "sunny+alarm"
+#define PLANTSTATE_STR_ACTIVE_ALARM     "activate+alarm"
+#define PLANTSTATE_STR_ACTIVE_SUPESSED  "activate+supressed"
+#define PLANTSTATE_STR_ACTIVE           "activate"
+#define PLANTSTATE_STR_SUNNY            "sunny"
+#define PLANTSTATE_STR_COOLDOWN_ALARM   "cooldown+alarm"
+#define PLANTSTATE_STR_COOLDOWN         "cooldown"
+#define PLANTSTATE_STR_AFTERWORK_ALARM  "after-work+alarm"
+#define PLANTSTATE_STR_AFTERWORK        "after-work"
+
 typedef struct PlantSettings_t
 {
     HomieSetting<double> *pSensorDry;
