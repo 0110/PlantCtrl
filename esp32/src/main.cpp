@@ -1063,7 +1063,11 @@ void plantcontrol()
     sensorLipo.setProperty("ICA").send(String(battery.getICA()));
     sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
     sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
-    sensorSolar.setProperty("volt").send(String(mSolarVoltage));
+    if (mSolarVoltage < SOLAR_MAX_VOLTAGE_POSSIBLE) {
+      sensorSolar.setProperty("volt").send(String(mSolarVoltage));
+    } else {
+      log(LOG_LEVEL_INFO, String("Ignore unrealistc sun voltage" + String(mSolarVoltage) +"V"), LOG_SOLAR_CHARGER_MISSING);
+    }
     sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
   }
   else

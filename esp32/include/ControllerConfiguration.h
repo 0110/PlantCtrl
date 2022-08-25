@@ -110,6 +110,7 @@
 #define MAX_PLANTS          7
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
+#define SOLAR_MAX_VOLTAGE_POSSIBLE 100  /**< higher values are treated as not connected sensor  */
 #define VOLT_MAX_BATT               4.2f
 
 #define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
