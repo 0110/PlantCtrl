@@ -29,6 +29,9 @@
 #define LOG_PUMP_AND_DOWNLOADMODE "Download mode, ignoring pump request"
 #define LOG_PUMP_AND_DOWNLOADMODE_CODE 2
 
+#define LOG_VERY_COLD_WATER "Water potentially frozen, ignoring pump request"
+#define LOG_VERY_COLD_WATER -7
+
 //msg is dynamic defined
 #define LOG_PUMP_INEFFECTIVE -4
 #define LOG_PUMP_STARTED_CODE 10

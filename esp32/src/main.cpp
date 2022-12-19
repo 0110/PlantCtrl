@@ -90,6 +90,8 @@ long lastSendPumpUpdate = 0;
 long pumpTargetMl = -1;
 #endif
 
+float waterTemp = 30;
+
 /*************************** Hardware abstraction *****************************/
 
 OneWire oneWire(SENSOR_ONEWIRE);
@@ -267,6 +269,7 @@ void readOneWireSensors()
       {
         mqttWrite(&sensorTemp, TEMPERATUR_SENSOR_WATER, String(temp));
         Serial << "Water Temperatur " << temp << " °C " << endl;
+        waterTemp = temp;
       }
       /* Always send the sensor address with the temperatur value */
       mqttWrite(&sensorTemp, String(buf), String(temp));
@@ -1085,25 +1088,31 @@ void plantcontrol()
   }
 
 #endif // TIMED_LIGHT_PIN
-
+  bool isLiquid = waterTemp > 5;
   bool hasWater = true; // FIXME remaining > waterLevelMin.get();
   // FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
   // early aborts
   if (pumpToRun != -1)
   {
-    if (hasWater)
-    {
-      if (mDownloadMode)
+    if(isLiquid){
+      if (hasWater)
       {
-        log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+        if (mDownloadMode)
+        {
+          log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+          pumpToRun = -1;
+        }
+      }
+      else
+      {
+        log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
         pumpToRun = -1;
       }
     }
-    else
-    {
+    else{
       log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
-      pumpToRun = -1;
+        pumpToRun = -1;
     }
   }
 
