@@ -1,18 +1,18 @@
 /** \addtogroup Controller
  *  @{
- * 
+ *
  * @file main.cpp
  * @author Ollo
  * @brief PlantControl
  * @version 0.1
  * @date 2020-05-01
- * 
+ *
  * @copyright Copyright (c) 2020
  */
 
 /******************************************************************************
  *                                     INCLUDES
-******************************************************************************/
+ ******************************************************************************/
 #include "LogDefines.h"
 #include "FileUtils.h"
 #include "TimeUtils.h"
@@ -37,29 +37,29 @@
 #include "MQTTUtils.h"
 #include "esp_ota_ops.h"
 #if defined(TIMED_LIGHT_PIN)
-  #include "ulp-pwm.h"
+#include "ulp-pwm.h"
 #endif
-
 
 /******************************************************************************
  *                                     DEFINES
-******************************************************************************/
+ ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
 #define MAX_TANK_DEPTH 2000
 #define REBOOT_LOOP_DETECTION_ERROR 5
 
 /******************************************************************************
  *                            FUNCTION PROTOTYPES
-******************************************************************************/
+ ******************************************************************************/
 
 int determineNextPump(bool lowLight);
 void plantcontrol();
 void readPowerSwitchedSensors();
 bool determineTimedLightState(bool lowLight);
+bool otaRunning = false;
 
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
-******************************************************************************/
+ ******************************************************************************/
 #if defined(TIMED_LIGHT_PIN)
 RTC_DATA_ATTR bool timedLightLowVoltageTriggered = false; /**remember if it was shut down due to voltage level */
 #endif                                                    // TIMED_LIGHT_PIN
@@ -69,7 +69,7 @@ RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
 
 /******************************************************************************
  *                            LOCAL VARIABLES
-******************************************************************************/
+ ******************************************************************************/
 bool volatile mDownloadMode = false; /**< Controller must not sleep */
 bool volatile mSensorsRead = false;  /**< Sensors are read without Wifi or MQTT */
 int volatile pumpToRun = -1;         /** pump to run  at the end of the cycle */
@@ -89,6 +89,8 @@ long lastSendPumpUpdate = 0;
 #ifdef FLOWMETER_PIN
 long pumpTargetMl = -1;
 #endif
+
+float waterTemp = 30;
 
 /*************************** Hardware abstraction *****************************/
 
@@ -130,7 +132,7 @@ Plant mPlants[MAX_PLANTS] = {
 
 /******************************************************************************
  *                            LOCAL FUNCTIONS
-******************************************************************************/
+ ******************************************************************************/
 
 void finsihedCycleSucessfully()
 {
@@ -152,7 +154,7 @@ void espDeepSleep(bool afterPump = false)
   if (mDownloadMode)
   {
     log(LOG_LEVEL_DEBUG, "abort deepsleep, DownloadMode active", LOG_DEBUG_CODE);
-    //if we manage to get to the download mode, the device can be restored
+    // if we manage to get to the download mode, the device can be restored
     finsihedCycleSucessfully();
     return;
   }
@@ -212,7 +214,7 @@ void espDeepSleep(bool afterPump = false)
   }
 }
 
-//requires homie being started
+// requires homie being started
 void readOneWireSensors()
 {
   for (uint8_t i = 0; i < sensors.getDeviceCount(); i++)
@@ -240,7 +242,7 @@ void readOneWireSensors()
 
     if (!valid)
     {
-      //wrong family or crc errors on each retry
+      // wrong family or crc errors on each retry
       continue;
     }
 
@@ -267,6 +269,7 @@ void readOneWireSensors()
       {
         mqttWrite(&sensorTemp, TEMPERATUR_SENSOR_WATER, String(temp));
         Serial << "Water Temperatur " << temp << " °C " << endl;
+        waterTemp = temp;
       }
       /* Always send the sensor address with the temperatur value */
       mqttWrite(&sensorTemp, String(buf), String(temp));
@@ -401,10 +404,7 @@ void onHomieEvent(const HomieEvent &event)
     {
       mPlants[i].deactivatePump();
     }
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-    digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
-    delay(100);
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1);
+    otaRunning = true;
     mDownloadMode = true;
     break;
   case HomieEventType::OTA_SUCCESSFUL:
@@ -461,7 +461,7 @@ int determineNextPump(bool isLowLight)
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
       continue;
     }
-    if (!plant.isHydroponic())
+    if (! (plant.isHydroponic() || plant.isTimerOnly()))
     {
       if (equalish(plant.getCurrentMoistureRaw(), MISSING_SENSOR))
       {
@@ -493,10 +493,9 @@ int determineNextPump(bool isLowLight)
           }else {
             plant.publishState("active");
           }
-          
         }
 
-        if (!plant.isHydroponic())
+        if (! (plant.isHydroponic() || plant.isTimerOnly()))
         {
           consecutiveWateringPlant[i]++;
         }
@@ -522,7 +521,7 @@ int determineNextPump(bool isLowLight)
     else
     {
       plant.publishState("wet");
-      //plant was detected as wet, remove consecutive count
+      // plant was detected as wet, remove consecutive count
       consecutiveWateringPlant[i] = 0;
     }
   }
@@ -531,7 +530,7 @@ int determineNextPump(bool isLowLight)
 
 /**
  * @brief Handle Mqtt commands to keep controller alive
- * 
+ *
  * @param range multiple transmitted values (not used for this function)
  * @param value single value
  * @return true when the command was parsed and executed succuessfully
@@ -608,12 +607,12 @@ bool switch7(const HomieRange &range, const String &value)
 
 void initPumpLogic()
 {
-  //set targets
+  // set targets
 
 #ifdef FLOWMETER_PIN
   pumpTargetMl = mPlants[pumpToRun].getPumpMl();
 
-  //0-6 are used for moisture measurment
+  // 0-6 are used for moisture measurment
   pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_7);
   pcnt_config_t pcnt_config = {};                // Instancia PCNT config
   pcnt_config.pulse_gpio_num = FLOWMETER_PIN;    // Configura GPIO para entrada dos pulsos
@@ -639,7 +638,7 @@ void initPumpLogic()
   #endif
   
 
-  //enable power
+  // enable power
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
   delay(100);
@@ -666,7 +665,7 @@ void pumpActiveLoop()
     mqttUpdateTick = true;
   }
 
-long duration = millis() - pumpStartTime;
+  long duration = millis() - pumpStartTime;
 #ifdef FLOWMETER_PIN
   int16_t pulses;
   pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_7);
@@ -676,11 +675,10 @@ long duration = millis() - pumpStartTime;
     log(LOG_LEVEL_ERROR, LOG_HARDWARECOUNTER_ERROR_MESSAGE, LOG_HARDWARECOUNTER_ERROR_CODE);
     targetReached = true;
     log(LOG_LEVEL_INFO, "Reached pump target ml " + String(pumpToRun), LOG_PUMP_STARTED_CODE);
-
   }
   else
   {
-    float mLPumped = pulses/FLOWMETER_PULSES_PER_ML;  //mLperMs*duration;
+    float mLPumped = pulses / FLOWMETER_PULSES_PER_ML; // mLperMs*duration;
     if (mLPumped >= pumpTargetMl)
     {
       targetReached = true;
@@ -688,7 +686,7 @@ long duration = millis() - pumpStartTime;
       mPlants[pumpToRun].setProperty("pulses").send(String(pulses));
       mPlants[pumpToRun].setProperty("waterusage").send(String(mLPumped));
     }
-    
+
     else if (mqttUpdateTick)
     {
       mPlants[pumpToRun].setProperty("pulses").send(String(pulses));
@@ -697,7 +695,6 @@ long duration = millis() - pumpStartTime;
   }
 #endif
 
-  
   if (millis() > pumpTarget)
   {
     mPlants[pumpToRun].setProperty("watertime").send(String(duration));
@@ -711,12 +708,12 @@ long duration = millis() - pumpStartTime;
   if (targetReached)
   {
 
-    //disable all
+    // disable all
     digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
     mPlants[pumpToRun].deactivatePump();
-    //disable loop, to prevent multi processing
+    // disable loop, to prevent multi processing
     pumpStarted = false;
-    //if runtime is larger than cooldown, else it would run continously
+    // if runtime is larger than cooldown, else it would run continously
     rtcLastWateringPlant[pumpToRun] = getCurrentTime();
     espDeepSleep(true);
   }
@@ -733,7 +730,7 @@ void safeSetup()
   WiFi.mode(WIFI_OFF);
   Serial.flush();
 
-//restore state before releasing pin, to prevent flickering
+// restore state before releasing pin, to prevent flickering
 #if defined(TIMED_LIGHT_PIN)
   ulp_pwm_init();
 #endif // TIMED_LIGHT_PIN
@@ -753,26 +750,28 @@ void safeSetup()
 
   pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
 
+  static_assert(HomieInternals::MAX_CONFIG_SETTING_SIZE >= MAX_CONFIG_SETTING_ITEMS, "Limits.hpp not adjusted MAX_CONFIG_SETTING_ITEMS");
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
   {
-    //increase the config settings
+    // increase the config settings
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
+  static_assert(HomieInternals::MAX_JSON_CONFIG_FILE_SIZE >= MAX_JSON_CONFIG_FILE_SIZE_CUSTOM, "Limits.hpp not adjusted MAX_JSON_CONFIG_FILE_SIZE");
   if (HomieInternals::MAX_JSON_CONFIG_FILE_SIZE < MAX_JSON_CONFIG_FILE_SIZE_CUSTOM)
   {
-    //increase the config settings
+    // increase the config settings
     Serial << "Limits.hpp is not adjusted, please search for this string and increase" << endl;
     return;
   }
 
-   /************************* Start Homie Framework ***************/
+  /************************* Start Homie Framework ***************/
   Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
   Homie.disableLedFeedback();
   Homie_setBrand("PlantControl");
   // Set default values
 
-  //in seconds
+  // in seconds
   deepSleepTime.setDefaultValue(600).setValidator([](long candidate)
                                                   { return (candidate > 0) && (candidate < (60 * 60 * 2) /** 2h max sleep */); });
   deepSleepNightTime.setDefaultValue(600);
@@ -789,7 +788,7 @@ void safeSetup()
 
 #if defined(TIMED_LIGHT_PIN)
   timedLightPowerLevel.setDefaultValue(25).setValidator([](long candidate)
-                                                   { return (candidate > 0) && (candidate <= (255)); });
+                                                        { return (candidate > 0) && (candidate <= (255)); });
   timedLightStart.setDefaultValue(18).setValidator([](long candidate)
                                                    { return (candidate > 0) && (candidate < (25)); });
   timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
@@ -809,15 +808,13 @@ void safeSetup()
   }
   readPowerSwitchedSensors();
 
-
   Homie.setup();
 
   Wire = TwoWire(0);
   Wire.setPins(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   Wire.begin();
 
-
- /************************* Start One-Wire bus ***************/
+  /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
   uint8_t sensorCount = 0U;
 
@@ -835,7 +832,7 @@ void safeSetup()
   /* Measure temperature TODO idea: move this into setup */
   if (sensorCount > 0)
   {
-    //sensors.setResolution(DS18B20_RESOLUTION);
+    // sensors.setResolution(DS18B20_RESOLUTION);
     sensors.requestTemperatures();
   }
 
@@ -905,7 +902,7 @@ void safeSetup()
     }
 
     readOneWireSensors();
-    //prevent BOD to be paranoid
+    // prevent BOD to be paranoid
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     digitalWrite(OUTPUT_ENABLE_PUMP, HIGH);
     delay(100);
@@ -981,7 +978,14 @@ void loop()
       digitalWrite(OUTPUT_ENABLE_SENSOR, !digitalRead(OUTPUT_ENABLE_SENSOR));
       if (mConfigured)
       {
-        nextBlink = millis() + 500;
+        if (otaRunning)
+        {
+          nextBlink = millis() + 100;
+        }
+        else
+        {
+          nextBlink = millis() + 501;
+        }
       }
       else
       {
@@ -1075,27 +1079,34 @@ void plantcontrol()
   }else {
     ulp_pwm_set_level(0);
   }
-  
+
 #endif // TIMED_LIGHT_PIN
 
-  bool hasWater = true; //FIXME remaining > waterLevelMin.get();
-  //FIXME no water warning message
+  bool isLiquid = waterTemp > 5;
+  bool hasWater = true; // FIXME remaining > waterLevelMin.get();
+  // FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
-  //early aborts
+  // early aborts
   if (pumpToRun != -1)
   {
-    if (hasWater)
-    {
-      if (mDownloadMode)
+    if(isLiquid){
+      if (hasWater)
       {
-        log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+        if (mDownloadMode)
+        {
+          log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+          pumpToRun = -1;
+        }
+      }
+      else
+      {
+        log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
         pumpToRun = -1;
       }
     }
-    else
-    {
+    else{
       log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
-      pumpToRun = -1;
+        pumpToRun = -1;
     }
   }
 
@@ -1115,7 +1126,7 @@ bool determineTimedLightState(bool lowLight)
   long hoursStart = timedLightStart.get();
   long hoursEnd = timedLightEnd.get();
 
-  //ntp missing
+  // ntp missing
   if (getCurrentTime() < 10000)
   {
     timedLightNode.setProperty("state").send(String("Off, missing ntp"));
@@ -1129,9 +1140,11 @@ bool determineTimedLightState(bool lowLight)
   }
 
   int curHour = getCurrentHour();
+
   bool condition1 = ((hoursStart > hoursEnd) &&
                      (curHour >= hoursStart || curHour <= hoursEnd));
   bool condition2 = /* Handle e.g. start = 8, end = 21 */
+
       ((hoursStart < hoursEnd) &&
        (curHour >= hoursStart && curHour <= hoursEnd));
   timedLightNode.setProperty("debug").send(String(curHour) + " " + String(hoursStart) + " " + String(hoursEnd) + " " + String(condition1) + " " + String(condition2));

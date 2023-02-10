@@ -30,7 +30,7 @@ void Plant::init(void)
     /* Initialize Home Settings validator */
     this->mSetting->pSensorDry->setDefaultValue(DEACTIVATED_PLANT);
     this->mSetting->pSensorDry->setValidator([](long candidate)
-                                             { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE)); });
+                                             { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE) || equalish(candidate, TIMER_ONLY)); });
 
     this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate)
@@ -38,7 +38,7 @@ void Plant::init(void)
     this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20); // stop pumps at 20:00
     this->mSetting->pPumpAllowedHourRangeEnd->setValidator([](long candidate)
                                                            { return ((candidate >= 0) && (candidate <= 23)); });
-    this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(true);
+    this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(false);
     this->mSetting->pPumpCooldownInSeconds->setDefaultValue(60 * 60); // 1 hour
     this->mSetting->pPumpCooldownInSeconds->setValidator([](long candidate)
                                                          { return (candidate >= 0); });
@@ -263,9 +263,9 @@ void Plant::advertise(void)
 {
     // Advertise topics
     mPump = this->mPlant->advertise("switch").setName("Pump").setDatatype("Boolean");
-    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("Integer").setUnit("unixtime");
-    this->mPlant->advertise("moist").setName("Percent").setDatatype("Float").setUnit("%");
-    this->mPlant->advertise("moistraw").setName("adc").setDatatype("Float").setUnit("3.3/4096V");
-    this->mPlant->advertise("state").setName("state").setDatatype("String");
+    this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("Integer").setUnit("unixtime").setRetained(true);
+    this->mPlant->advertise("moist").setName("Percent").setDatatype("Float").setUnit("%").setRetained(true);
+    this->mPlant->advertise("moistraw").setName("adc").setDatatype("Float").setUnit("3.3/4096V").setRetained(true);
+    this->mPlant->advertise("state").setName("state").setDatatype("String").setRetained(true);
     
 }
