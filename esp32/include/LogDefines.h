@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LOG_DEFINES_H
+#define LOG_DEFINES_H
 
 #define LOG_LEVEL_ERROR 0
 #define LOG_LEVEL_WARN 1
@@ -30,7 +31,7 @@
 #define LOG_PUMP_AND_DOWNLOADMODE_CODE 2
 
 #define LOG_VERY_COLD_WATER "Water potentially frozen, ignoring pump request"
-#define LOG_VERY_COLD_WATER -7
+#define LOG_VERY_COLD_WATER_CODE -7
 
 //msg is dynamic defined
 #define LOG_PUMP_INEFFECTIVE -4
@@ -41,3 +42,4 @@
 #define LOG_SLEEP_CYCLE 102
 #define LOG_MISSING_PUMP -4
 #define LOG_BOOT_ERROR_DETECTION 10000
+#endif

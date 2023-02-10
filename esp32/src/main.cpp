@@ -1105,7 +1105,7 @@ void plantcontrol()
       }
     }
     else{
-      log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
+      log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
         pumpToRun = -1;
     }
   }
