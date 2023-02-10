@@ -19,7 +19,6 @@
 #include "MathUtils.h"
 #include "MQTTUtils.h"
 #include "LogDefines.h"
-#include "SHT2x.h"
 
 #define ANALOG_REREADS 5
 #define MOISTURE_MEASUREMENT_DURATION 400 /** ms */
@@ -39,7 +38,6 @@ private:
     bool mConnected = false;
     int mPlantId = -1;
     SENSOR_MODE mSensorMode;
-    SHT2x sht20;
 
 
 public:
@@ -128,8 +126,8 @@ public:
         {
         case NONE:
             return DEACTIVATED_PLANT;
-        case CAPACITIVE_FREQUENCY:
-            return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MAX_FRQ, MOIST_SENSOR_MIN_FRQ, 0, 100);
+        case FREQUENCY_MOD_RESISTANCE_PROBE:
+            return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MIN_FRQ, MOIST_SENSOR_MAX_FRQ, 0, 100);
         case ANALOG_RESISTANCE_PROBE:
             return mapf(mMoisture_raw.getMedian(), ANALOG_SENSOR_MAX_MV, ANALOG_SENSOR_MIN_MV, 0, 100);
         }
@@ -138,7 +136,7 @@ public:
 
     float getCurrentMoistureRaw()
     {
-        if (getSensorMode() == CAPACITIVE_FREQUENCY)
+        if (getSensorMode() == FREQUENCY_MOD_RESISTANCE_PROBE)
         {
             if (mMoisture_raw.getMedian() < MOIST_SENSOR_MIN_FRQ)
             {
