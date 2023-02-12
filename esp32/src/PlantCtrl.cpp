@@ -23,6 +23,7 @@ Plant::Plant(int pinSensor, int pinPump, int plantId, HomieNode *plant, PlantSet
     this->mSetting = setting;
     this->mPlantId = plantId;
     this->mSensorMode = mode;
+    this->sht20 = SHT2x();
 }
 
 void Plant::init(void)
@@ -64,7 +65,7 @@ void Plant::initSensors(void)
 {
     switch (getSensorMode())
     {
-    case FREQUENCY_MOD_RESISTANCE_PROBE:
+    case CAPACITIVE_FREQUENCY:
     {
 
         pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_0 + this->mPlantId);
@@ -111,7 +112,7 @@ void Plant::blockingMoistureMeasurement(void)
         }
         break;
     }
-    case FREQUENCY_MOD_RESISTANCE_PROBE:
+    case CAPACITIVE_FREQUENCY:
     case NONE:
     {
         // nothing to do here
@@ -124,7 +125,7 @@ void Plant::startMoistureMeasurement(void)
 {
     switch (getSensorMode())
     {
-    case FREQUENCY_MOD_RESISTANCE_PROBE:
+    case CAPACITIVE_FREQUENCY:
     {
         pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_0 + this->mPlantId);
         pcnt_counter_resume(unit);
@@ -142,7 +143,7 @@ void Plant::stopMoistureMeasurement(void)
 {
     switch (getSensorMode())
     {
-    case FREQUENCY_MOD_RESISTANCE_PROBE:
+    case CAPACITIVE_FREQUENCY:
     {
         int16_t pulses;
         pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_0 + this->mPlantId);

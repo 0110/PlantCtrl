@@ -101,6 +101,17 @@ static inline uint16_t ulp_internal_data_read(size_t offset)
     return RTC_SLOW_MEM[offset] & 0xffff;
 }
 
+static inline uint32_t rtc_io_number_get(gpio_num_t gpio_num)
+{
+    assert(rtc_gpio_is_valid_gpio(gpio_num) && "Invalid GPIO for RTC");
+    uint32_t bit = rtc_bit[gpio_num];
+    Serial.print("Resolved GPIO ");
+    Serial.print(gpio_num);
+    Serial.print(" to rtc bit ");
+    Serial.println(bit);
+    return bit;
+}
+
 void ulp_internal_start(void)
 {
     rtc_gpio_init(PIN);

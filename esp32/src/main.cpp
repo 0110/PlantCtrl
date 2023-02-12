@@ -318,7 +318,7 @@ void readPowerSwitchedSensors()
     Plant plant = mPlants[i];
     switch (plant.getSensorMode())
     {
-      case FREQUENCY_MOD_RESISTANCE_PROBE: {
+      case CAPACITIVE_FREQUENCY: {
         Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz " << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
         break;
       }
