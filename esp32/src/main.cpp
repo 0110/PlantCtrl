@@ -220,7 +220,6 @@ void readOneWireSensors()
   for (uint8_t i = 0; i < sensors.getDeviceCount(); i++)
   {
     uint8_t ds18b20Address[8];
-
     bool valid = false;
     float temp = -127;
     for (int retry = 0; retry < AMOUNT_SENOR_QUERYS && !valid; retry++)
@@ -244,9 +243,8 @@ void readOneWireSensors()
     {
       // wrong family or crc errors on each retry
       continue;
-    }
-
-    char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
+   }
+   char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -256,8 +254,7 @@ void readOneWireSensors()
              ds18b20Address[5],
              ds18b20Address[6],
              ds18b20Address[7]);
-
-    if (valid)
+   if (valid)
     {
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (strcmp(lipoSensorAddr.get(), buf) == 0)
@@ -355,8 +352,7 @@ void readPowerSwitchedSensors()
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
-
-    for (int readCnt = 0; readCnt < 5; readCnt++)
+   for (int readCnt = 0; readCnt < 5; readCnt++)
     {
       if (!tankSensor.timeoutOccurred())
       {
@@ -721,9 +717,6 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  /* reduce power consumption */
-  setCpuFrequencyMhz(80);
-
   Serial.begin(115200);
 
   Serial << "Wifi mode set to " << WIFI_OFF << " to allow analog2 useage " << endl;
@@ -806,13 +799,11 @@ void safeSetup()
   {
     mPlants[i].initSensors();
   }
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   readPowerSwitchedSensors();
 
   Homie.setup();
 
-  Wire = TwoWire(0);
-  Wire.setPins(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
-  Wire.begin();
 
   /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -832,7 +823,7 @@ void safeSetup()
   /* Measure temperature TODO idea: move this into setup */
   if (sensorCount > 0)
   {
-    // sensors.setResolution(DS18B20_RESOLUTION);
+    sensors.setResolution(DS18B20_RESOLUTION);
     sensors.requestTemperatures();
   }
 
@@ -920,6 +911,11 @@ void safeSetup()
  */
 void setup()
 {
+  Serial.begin(115200);
+  Serial << "First init" << endl;
+  Serial.flush();
+
+
   try
   {
     safeSetup();
@@ -1071,8 +1067,9 @@ void plantcontrol()
     Serial.flush();
   }
 
+bool isLowLight = mSolarVoltage <= 9;
 #if defined(TIMED_LIGHT_PIN)
-  bool isLowLight = mSolarVoltage <= 9;
+  
   bool shouldLight = determineTimedLightState(isLowLight);
   if(shouldLight){
     ulp_pwm_set_level(timedLightPowerLevel.get());

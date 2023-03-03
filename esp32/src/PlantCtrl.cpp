@@ -265,7 +265,7 @@ void Plant::advertise(void)
     mPump = this->mPlant->advertise("switch").setName("Pump").setDatatype("Boolean");
     this->mPlant->advertise("lastPump").setName("lastPump").setDatatype("Integer").setUnit("unixtime").setRetained(true);
     this->mPlant->advertise("moist").setName("Percent").setDatatype("Float").setUnit("%").setRetained(true);
-    this->mPlant->advertise("moistraw").setName("adc").setDatatype("Float").setUnit("3.3/4096V").setRetained(true);
+    this->mPlant->advertise("moistraw").setName("frequency").setDatatype("Float").setUnit("hz").setRetained(true);
     this->mPlant->advertise("state").setName("state").setDatatype("String").setRetained(true);
     
 }
