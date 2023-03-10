@@ -329,12 +329,13 @@ void readPowerSwitchedSensors()
     }
   }
 
-  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL, 100000UL /* 100kHz */);
-  tankSensor.setTimeout(500);
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
+  // Source: https://www.st.com/resource/en/datasheet/vl53l0x.pdf
+  tankSensor.setAddress(0x52);
   tankSensor.setBus(&Wire);
+  delay(50);
   long start = millis();
   bool distanceReady = false;
-  delay(50);
   while ((start + WATERSENSOR_TIMEOUT) > millis())
   {
     if (tankSensor.init())
@@ -344,7 +345,7 @@ void readPowerSwitchedSensors()
     }
     else
     {
-      delay(20);
+      delay(200);
     }
   }
   if (distanceReady)

@@ -115,7 +115,7 @@
 #define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
 
 #define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatures sensors */
-#define WATERSENSOR_TIMEOUT             2000    /**< 2 Seconds timeout for the water distance sensor */
+#define WATERSENSOR_TIMEOUT             3000    /**< 3 Seconds timeout for the water distance sensor */
 #define WATERSENSOR_CYCLE               5       /**< 5 sensor measurement are performed */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
 
