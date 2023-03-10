@@ -98,7 +98,7 @@
 #define MOIST_SENSOR_MIN_FRQ                500 // 0.5kHz (500Hz margin)
 
 #define ANALOG_SENSOR_MAX_MV                1300 //successive approximation of good range
-#define ANALOG_SENSOR_MIN_MV                300  //successive approximation of good range
+#define ANALOG_SENSOR_MIN_MV                100  //successive approximation of good range
 
 #define SOLAR_VOLT_FACTOR           11
 #define BATTSENSOR_INDEX_SOLAR      0

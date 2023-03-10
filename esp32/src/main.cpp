@@ -90,6 +90,8 @@ long lastSendPumpUpdate = 0;
 long pumpTargetMl = -1;
 #endif
 
+float waterTemp = 30;
+
 /*************************** Hardware abstraction *****************************/
 
 OneWire oneWire(SENSOR_ONEWIRE);
@@ -218,7 +220,6 @@ void readOneWireSensors()
   for (uint8_t i = 0; i < sensors.getDeviceCount(); i++)
   {
     uint8_t ds18b20Address[8];
-
     bool valid = false;
     float temp = -127;
     for (int retry = 0; retry < AMOUNT_SENOR_QUERYS && !valid; retry++)
@@ -242,9 +243,8 @@ void readOneWireSensors()
     {
       // wrong family or crc errors on each retry
       continue;
-    }
-
-    char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
+   }
+   char buf[(sizeof(ds18b20Address) * 2) + 1]; /* additional byte for trailing terminator */
     snprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X%.2X%.2X%.2X%.2X",
              ds18b20Address[0],
              ds18b20Address[1],
@@ -254,8 +254,7 @@ void readOneWireSensors()
              ds18b20Address[5],
              ds18b20Address[6],
              ds18b20Address[7]);
-
-    if (valid)
+   if (valid)
     {
       Serial << "DS18S20 Temperatur " << String(buf) << " : " << temp << " °C " << endl;
       if (strcmp(lipoSensorAddr.get(), buf) == 0)
@@ -267,6 +266,7 @@ void readOneWireSensors()
       {
         mqttWrite(&sensorTemp, TEMPERATUR_SENSOR_WATER, String(temp));
         Serial << "Water Temperatur " << temp << " °C " << endl;
+        waterTemp = temp;
       }
       /* Always send the sensor address with the temperatur value */
       mqttWrite(&sensorTemp, String(buf), String(temp));
@@ -315,19 +315,17 @@ void readPowerSwitchedSensors()
     Plant plant = mPlants[i];
     switch (plant.getSensorMode())
     {
-    case CAPACITIVE_FREQUENCY:
-    {
-      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz " << mPlants[i].getCurrentMoisturePCT() << "%" << endl;
-      break;
-    }
-    case ANALOG_RESISTANCE_PROBE:
-    {
-      Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV " << mPlants[i].getCurrentMoisturePCT() << "%" << endl;
-      break;
-    }
-    case NONE:
-    {
-    }
+      case FREQUENCY_MOD_RESISTANCE_PROBE: {
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " hz " << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
+        break;
+      }
+      case ANALOG_RESISTANCE_PROBE : {
+        Serial << "Plant " << i << " measurement: " << mPlants[i].getCurrentMoistureRaw() << " mV " << mPlants[i].getCurrentMoisturePCT() << "%" <<  endl;
+        break;
+      }
+      case NONE : {
+
+      }
     }
   }
 
@@ -354,8 +352,7 @@ void readPowerSwitchedSensors()
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
-
-    for (int readCnt = 0; readCnt < 5; readCnt++)
+   for (int readCnt = 0; readCnt < 5; readCnt++)
     {
       if (!tankSensor.timeoutOccurred())
       {
@@ -633,11 +630,12 @@ void initPumpLogic()
 #endif
   pumpStartTime = millis();
   pumpTarget = millis() + (mPlants[pumpToRun].getPumpDuration() * 1000);
-#ifdef FLOWMETER_PIN
-  log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s or " + String(pumpTargetMl) + "ml", LOG_PUMP_STARTED_CODE);
-#else
-  log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s", LOG_PUMP_STARTED_CODE);
-#endif
+  #ifdef FLOWMETER_PIN
+    log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s or " + String(pumpTargetMl) + "ml", LOG_PUMP_STARTED_CODE);
+  #else
+    log(LOG_LEVEL_INFO, "Starting pump " + String(pumpToRun) + " for " + String(mPlants[pumpToRun].getPumpDuration()) + "s", LOG_PUMP_STARTED_CODE);
+  #endif
+  
 
   // enable power
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -722,9 +720,6 @@ void pumpActiveLoop()
 
 void safeSetup()
 {
-  /* reduce power consumption */
-  setCpuFrequencyMhz(80);
-
   Serial.begin(115200);
 
   Serial << "Wifi mode set to " << WIFI_OFF << " to allow analog2 useage " << endl;
@@ -807,13 +802,11 @@ void safeSetup()
   {
     mPlants[i].initSensors();
   }
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   readPowerSwitchedSensors();
 
   Homie.setup();
 
-  Wire = TwoWire(0);
-  Wire.setPins(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
-  Wire.begin();
 
   /************************* Start One-Wire bus ***************/
   int tempInitStartTime = millis();
@@ -833,7 +826,7 @@ void safeSetup()
   /* Measure temperature TODO idea: move this into setup */
   if (sensorCount > 0)
   {
-    // sensors.setResolution(DS18B20_RESOLUTION);
+    sensors.setResolution(DS18B20_RESOLUTION);
     sensors.requestTemperatures();
   }
 
@@ -921,6 +914,11 @@ void safeSetup()
  */
 void setup()
 {
+  Serial.begin(115200);
+  Serial << "First init" << endl;
+  Serial.flush();
+
+
   try
   {
     safeSetup();
@@ -1076,38 +1074,43 @@ void plantcontrol()
     Serial.flush();
   }
 
+bool isLowLight = mSolarVoltage <= 9;
 #if defined(TIMED_LIGHT_PIN)
-  bool isLowLight = mSolarVoltage <= 9;
+  
   bool shouldLight = determineTimedLightState(isLowLight);
-  if (shouldLight)
-  {
+  if(shouldLight){
     ulp_pwm_set_level(timedLightPowerLevel.get());
-  }
-  else
-  {
+  }else {
     ulp_pwm_set_level(0);
   }
 
 #endif // TIMED_LIGHT_PIN
 
+  bool isLiquid = waterTemp > 5;
   bool hasWater = true; // FIXME remaining > waterLevelMin.get();
   // FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
   // early aborts
   if (pumpToRun != -1)
   {
-    if (hasWater)
-    {
-      if (mDownloadMode)
+    if(isLiquid){
+      if (hasWater)
       {
-        log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+        if (mDownloadMode)
+        {
+          log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
+          pumpToRun = -1;
+        }
+      }
+      else
+      {
+        log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
         pumpToRun = -1;
       }
     }
-    else
-    {
-      log(LOG_LEVEL_ERROR, LOG_PUMP_BUTNOTANK_MESSAGE, LOG_PUMP_BUTNOTANK_CODE);
-      pumpToRun = -1;
+    else{
+      log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
+        pumpToRun = -1;
     }
   }
 
