@@ -66,8 +66,8 @@
 #define OUTPUT_ENABLE_PUMP   GPIO_NUM_13 /**< GPIO 13 - Enable Pumps  */
 
 #define SENSOR_ONEWIRE      GPIO_NUM_4 /**< GPIO 12 - Temperatur sensor, Battery and other cool onewire stuff */
-#define SENSOR_TANK_SDA    GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
-#define SENSOR_TANK_SCL     GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
+#define SENSOR_TANK_SDA     GPIO_NUM_17 /**< GPIO 17 - water sensor SDA */ 
+#define SENSOR_TANK_SCL     GPIO_NUM_16 /**< GPIO 16 - water sensor SCL */
 #define BUTTON              GPIO_NUM_0  /**< GPIO 0 - Fix button of NodeMCU */
 
 #define CUSTOM1_PIN1        GPIO_NUM_34   /** direct gpio */
