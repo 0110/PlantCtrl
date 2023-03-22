@@ -75,8 +75,6 @@
 #define CUSTOM1_PIN5        GPIO_NUM_2   /** mosfet controlled */
 #define CUSTOM1_PIN7        GPIO_NUM_12   /** mosfet controlled */
 
-#define I2C1_SDA          GPIO_NUM_34   /**< GPIO 34 - I2C */
-#define I2C1_SCL          GPIO_NUM_35   /**< GPIO 35 - I2C */
 /* @} */
 
 /** \addtogroup Configuration
@@ -116,7 +114,9 @@
 #define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
 #define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
 
-#define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
+#define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatures sensors */
+#define WATERSENSOR_TIMEOUT             3000    /**< 3 Seconds timeout for the water distance sensor */
+#define WATERSENSOR_CYCLE               5       /**< 5 sensor measurement are performed */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
 
 #define UTC_OFFSET_DE                   3600    /* UTC offset in seconds for Germany */

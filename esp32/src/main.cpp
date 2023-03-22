@@ -329,11 +329,14 @@ void readPowerSwitchedSensors()
     }
   }
 
-  waterRawSensor.clear();
-  tankSensor.setTimeout(500);
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
+  // Source: https://www.st.com/resource/en/datasheet/vl53l0x.pdf
+  tankSensor.setAddress(0x52);
+  tankSensor.setBus(&Wire);
+  delay(50);
   long start = millis();
   bool distanceReady = false;
-  while (start + 500 > millis())
+  while ((start + WATERSENSOR_TIMEOUT) > millis())
   {
     if (tankSensor.init())
     {
@@ -342,17 +345,18 @@ void readPowerSwitchedSensors()
     }
     else
     {
-      delay(20);
+      delay(200);
     }
   }
   if (distanceReady)
   {
+    waterRawSensor.clear();
     tankSensor.setSignalRateLimit(0.1);
     // increase laser pulse periods (defaults are 14 and 10 PCLKs)
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
-   for (int readCnt = 0; readCnt < 5; readCnt++)
+    for (int readCnt = 0; readCnt < WATERSENSOR_CYCLE; readCnt++)
     {
       if (!tankSensor.timeoutOccurred())
       {
@@ -362,7 +366,7 @@ void readPowerSwitchedSensors()
           waterRawSensor.add(distance);
         }
       }
-      delay(10);
+      delay(50);
     }
     Serial << "Distance sensor " << waterRawSensor.getMedian() << " mm" << endl;
   }
@@ -802,7 +806,6 @@ void safeSetup()
   {
     mPlants[i].initSensors();
   }
-  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   readPowerSwitchedSensors();
 
   Homie.setup();
