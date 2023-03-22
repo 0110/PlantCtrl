@@ -1,61 +1,58 @@
 #include <Arduino.h>
-#include "driver/pcnt.h" 
+#include "driver/pcnt.h"
+#include <VL53L0X.h>
 
-#define PWM_FREQ 50000
-#define PWM_BITS 8
 
 #define OUTPUT_SENSOR       14
 #define SENSOR_PLANT        17
 
-int16_t         pulses        = 0; 
-int16_t         pulses2        = 0; 
+VL53L0X tankSensor;
 
-int plantId = 0;
-
-void setup() {
-RTC_SLOW_ATTR uint8_t tick = 0;
-RTC_SLOW_ATTR bool dir = true;
 void setup()
 {
   Serial.begin(115200);
   pinMode(OUTPUT_SENSOR, OUTPUT);
-
-  ledcSetup(plantId, PWM_FREQ, PWM_BITS);
-  ledcAttachPin(SENSOR_PLANT, plantId);
-  ledcWrite(plantId, plantId);
-  pinMode(SENSOR_PLANT, INPUT);
-
-
-  pcnt_config_t pcnt_config = { };                                        // Instancia PCNT config
-  pcnt_unit_t unit = (pcnt_unit_t)(PCNT_UNIT_0 + plantId);
-  pcnt_config.pulse_gpio_num = SENSOR_PLANT;                         // Configura GPIO para entrada dos pulsos
-  pcnt_config.ctrl_gpio_num = PCNT_PIN_NOT_USED;                         // Configura GPIO para controle da contagem
-  pcnt_config.unit = unit;                                          // Unidade de contagem PCNT - 0
-  pcnt_config.channel = PCNT_CHANNEL_0;                               // Canal de contagem PCNT - 0
-  pcnt_config.counter_h_lim = INT16_MAX;                             // Limite maximo de contagem - 20000
-  pcnt_config.pos_mode = PCNT_COUNT_INC;                                  // Incrementa contagem na subida do pulso
-  pcnt_config.neg_mode = PCNT_COUNT_DIS;                                  // Incrementa contagem na descida do pulso
-  pcnt_config.lctrl_mode = PCNT_MODE_KEEP;                             // PCNT - modo lctrl desabilitado
-  pcnt_config.hctrl_mode = PCNT_MODE_KEEP;                                // PCNT - modo hctrl - se HIGH conta incrementando
-  pcnt_unit_config(&pcnt_config);                                         // Configura o contador PCNT
-
-
-  pcnt_counter_pause(PCNT_UNIT_0);                                    // Pausa o contador PCNT
-  pcnt_counter_clear(PCNT_UNIT_0);                                    // Zera o contador PCNT
-
+  tankSensor.setTimeout(500);
 
   digitalWrite(OUTPUT_SENSOR, HIGH);
   Serial.println("Nodemcu ESP32 Start done");
+
+  tankSensor.setTimeout(500);
+  long start = millis();
+  bool distanceReady = false;
+  while (start + 500 > millis())
+  {
+    if (tankSensor.init())
+    {
+      distanceReady = true;
+      break;
+    }
+    else
+    {
+      delay(20);
+    }
+  }
+
+  if (distanceReady)
+  {
+    Serial.println("Sensor init done");
+    tankSensor.setSignalRateLimit(0.1);
+    // increase laser pulse periods (defaults are 14 and 10 PCLKs)
+    tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
+    tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
+    tankSensor.setMeasurementTimingBudget(200000);
+  } else {
+    Serial.println("Sensor init failed");
+  }
 }
 
 void loop() { 
-    pcnt_counter_resume(PCNT_UNIT_0);
     
-    delay(500);
+  delay(500);
     
-    pcnt_counter_pause(PCNT_UNIT_0); 
-    pcnt_get_counter_value(PCNT_UNIT_0, &pulses);
-    pcnt_counter_clear(PCNT_UNIT_0);
-    
-    Serial.println(pulses*2);
+   
+  if (!tankSensor.timeoutOccurred())
+  {
+    uint16_t distance = tankSensor.readRangeSingleMillimeters();
+  }
 }
