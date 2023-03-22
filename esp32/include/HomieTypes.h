@@ -47,6 +47,8 @@ static const char *SENSOR_STRING[] = {
 #define HYDROPONIC_MODE -3
 //plant uses cooldown and duration and workhours, moisture is measured but ignored
 #define TIMER_ONLY -4
+//special value to indicate a shorted sensor when the plant is not deactivated but the sensor reads short circuit value
+#define SHORT_CIRCUIT_MODE -5
 
 typedef struct PlantSettings_t
 {

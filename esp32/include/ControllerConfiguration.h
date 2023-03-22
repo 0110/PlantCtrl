@@ -90,7 +90,7 @@
     #define FLOWMETER_PULSES_PER_ML 2.2
 #endif
 
-#define MOIST_SENSOR_MAX_FRQ               60000 // 60kHz (500Hz margin)
+#define MOIST_SENSOR_MAX_FRQ               5200 // 60kHz (500Hz margin)
 #define MOIST_SENSOR_MIN_FRQ                500 // 0.5kHz (500Hz margin)
 
 #define ANALOG_SENSOR_MAX_MV                1300 //successive approximation of good range
