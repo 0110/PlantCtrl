@@ -11,16 +11,7 @@
 
 VL53L0X tankSensor;
 
-void setup()
-{
-  Serial.begin(115200);
-  pinMode(OUTPUT_SENSOR, OUTPUT);
-  tankSensor.setTimeout(500);
-
-  digitalWrite(OUTPUT_SENSOR, HIGH);
-  Serial.println("Nodemcu ESP32 Start done");
-
-  tankSensor.setTimeout(500);
+void initializeTanksensor() {
   Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL, 100000UL /* 100kHz */);
   tankSensor.setTimeout(500);
   tankSensor.setBus(&Wire);
@@ -48,9 +39,21 @@ void setup()
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
+    tankSensor.startContinuous();
   } else {
     Serial.println("Sensor init failed");
   }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  pinMode(OUTPUT_SENSOR, OUTPUT);
+
+  digitalWrite(OUTPUT_SENSOR, HIGH);
+  Serial.println("Nodemcu ESP32 Start done");
+
+  initializeTanksensor();
 }
 
 void loop() { 
@@ -61,9 +64,21 @@ void loop() {
   if (!tankSensor.timeoutOccurred())
   {
     uint16_t distance = tankSensor.readRangeSingleMillimeters();
-    Serial.print("Distance");
-    Serial.println(distance);
+    if (distance == 8191) {
+      Serial.println("Reset due to 8.191 meter");
+      tankSensor.stopContinuous();
+      Wire.end();
+      delay(100);
+      initializeTanksensor();
+    } else {
+      Serial.print("Distance");
+      Serial.println(distance);
+    }
   } else {
     Serial.println("Timeout");
+    tankSensor.stopContinuous();
+    Wire.end();
+    delay(100);
+    initializeTanksensor();
   }
 }
