@@ -61,5 +61,9 @@ void loop() {
   if (!tankSensor.timeoutOccurred())
   {
     uint16_t distance = tankSensor.readRangeSingleMillimeters();
+    Serial.print("Distance");
+    Serial.println(distance);
+  } else {
+    Serial.println("Timeout");
   }
 }
