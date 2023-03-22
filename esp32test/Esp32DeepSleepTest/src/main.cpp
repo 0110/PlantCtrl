@@ -10,6 +10,7 @@
 #define SENSOR_PLANT        17
 
 VL53L0X tankSensor;
+bool distanceReady = false;
 
 void initializeTanksensor() {
   Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL, 100000UL /* 100kHz */);
@@ -17,7 +18,6 @@ void initializeTanksensor() {
   delay(100);
   tankSensor.setTimeout(500);
   long start = millis();
-  bool distanceReady = false;
   while (start + 500 > millis())
   {
     if (tankSensor.init())
@@ -31,7 +31,7 @@ void initializeTanksensor() {
     }
   }
 
-  if (distanceReady)
+  if ((distanceReady) && (!tankSensor.timeoutOccurred()))
   {
     Serial.println("Sensor init done");
     tankSensor.setSignalRateLimit(0.1);
@@ -61,7 +61,7 @@ void loop() {
   delay(500);
     
    
-  if (!tankSensor.timeoutOccurred())
+  if ((distanceReady) && (!tankSensor.timeoutOccurred()))
   {
     uint16_t distance = tankSensor.readRangeSingleMillimeters();
     if (distance > 8000) {
