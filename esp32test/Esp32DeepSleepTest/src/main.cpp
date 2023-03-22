@@ -13,9 +13,9 @@ VL53L0X tankSensor;
 
 void initializeTanksensor() {
   Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL, 100000UL /* 100kHz */);
-  tankSensor.setTimeout(500);
   tankSensor.setBus(&Wire);
-  delay(20);
+  delay(100);
+  tankSensor.setTimeout(500);
   long start = millis();
   bool distanceReady = false;
   while (start + 500 > millis())
@@ -64,11 +64,10 @@ void loop() {
   if (!tankSensor.timeoutOccurred())
   {
     uint16_t distance = tankSensor.readRangeSingleMillimeters();
-    if (distance == 8191) {
-      Serial.println("Reset due to 8.191 meter");
-      tankSensor.stopContinuous();
+    if (distance > 8000) {
+      Serial.println("Reset due invalid distance: 8 meter");
       Wire.end();
-      delay(100);
+      delay(1000);
       initializeTanksensor();
     } else {
       Serial.print("Distance");
