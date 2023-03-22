@@ -2,6 +2,9 @@
 #include "driver/pcnt.h"
 #include <VL53L0X.h>
 
+#define SENSOR_TANK_SDA    GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
+#define SENSOR_TANK_SCL    GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
+
 
 #define OUTPUT_SENSOR       14
 #define SENSOR_PLANT        17
@@ -18,6 +21,10 @@ void setup()
   Serial.println("Nodemcu ESP32 Start done");
 
   tankSensor.setTimeout(500);
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL, 100000UL /* 100kHz */);
+  tankSensor.setTimeout(500);
+  tankSensor.setBus(&Wire);
+  delay(20);
   long start = millis();
   bool distanceReady = false;
   while (start + 500 > millis())
