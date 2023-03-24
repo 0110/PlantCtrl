@@ -1095,7 +1095,12 @@ bool isLowLight = mSolarVoltage <= 9;
 #endif // TIMED_LIGHT_PIN
 
   bool isLiquid = waterTemp > 5;
-  bool hasWater = true; // FIXME remaining > waterLevelMin.get();
+  bool hasWater = true; // By default activate the pump
+  if (waterRawSensor.getCount() > 0)
+  {
+    hasWater = ( (waterLevelMax.get() - waterRawSensor.getAverage()) > waterLevelMin.get() );
+  }
+
   // FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
   // early aborts
@@ -1108,6 +1113,8 @@ bool isLowLight = mSolarVoltage <= 9;
         {
           log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
           pumpToRun = -1;
+        } else {
+          /* Pump can be used :) */
         }
       }
       else
@@ -1116,8 +1123,9 @@ bool isLowLight = mSolarVoltage <= 9;
         pumpToRun = -1;
       }
     }
-    else{
-      log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
+    else 
+    {
+        log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
         pumpToRun = -1;
     }
   }
