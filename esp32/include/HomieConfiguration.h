@@ -107,7 +107,7 @@ HomieSetting<const char *> ntpServer("ntpServer", "NTP server (pool.ntp.org as d
         HomieSetting<long> mPumpAllowedHourRangeStart##plant = HomieSetting<long>("hourstart" strplant, "Plant" strplant " - Range pump allowed hour start (0-23)");                                      \
         HomieSetting<long> mPumpAllowedHourRangeEnd##plant = HomieSetting<long>("hourend" strplant, "Plant" strplant " - Range pump allowed hour end (0-23)");                                            \
         HomieSetting<bool> mPumpOnlyWhenLowLight##plant = HomieSetting<bool>("lowLight" strplant, "Plant" strplant " - Enable the Pump only, when there is no sunlight"); \
-        HomieSetting<long> mPumpCooldownInSeconds##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (minutes)");                      \
+        HomieSetting<long> mPumpCooldownInSeconds##plant = HomieSetting<long>("delay" strplant, "Plant" strplant " - How long to wait until the pump is activated again (sec)");                      \
         HomieSetting<long> pPumpDuration##plant = HomieSetting<long>("pumpDuration" strplant, "Plant" strplant " - time seconds to water when pump is active");                      \
         HomieSetting<long> pPumpMl##plant = HomieSetting<long>("pumpAmount" strplant, "Plant" strplant " - ml (if using flowmeter) to water when pump is active");                      \
         HomieSetting<long> pPowerLevel##plant = HomieSetting<long>("powerLevel" strplant, "Plant" strplant " - pwm duty cycle in percent");                      \

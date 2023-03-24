@@ -50,6 +50,36 @@ static const char *SENSOR_STRING[] = {
 //special value to indicate a shorted sensor when the plant is not deactivated but the sensor reads short circuit value
 #define SHORT_CIRCUIT_MODE -5
 
+/**
+ * @brief State of plants
+ * 
+ */
+#define PLANTSTATE_NUM_DEACTIVATED      -1
+#define PLANTSTATE_NUM_NO_SENSOR        -2
+#define PLANTSTATE_NUM_WET              0x00
+#define PLANTSTATE_NUM_SUNNY_ALARM      0x11
+#define PLANTSTATE_NUM_ACTIVE_ALARM     0x41
+#define PLANTSTATE_NUM_ACTIVE_SUPESSED  -3
+#define PLANTSTATE_NUM_ACTIVE           0x40
+#define PLANTSTATE_NUM_SUNNY            0x10
+#define PLANTSTATE_NUM_COOLDOWN_ALARM   0x21
+#define PLANTSTATE_NUM_COOLDOWN         0x20
+#define PLANTSTATE_NUM_AFTERWORK_ALARM  0x31
+#define PLANTSTATE_NUM_AFTERWORK        0x30
+
+#define PLANTSTATE_STR_DEACTIVATED      "deactivated"
+#define PLANTSTATE_STR_NO_SENSOR        "nosensor"
+#define PLANTSTATE_STR_WET              "wet"
+#define PLANTSTATE_STR_SUNNY_ALARM      "sunny+alarm"
+#define PLANTSTATE_STR_ACTIVE_ALARM     "active+alarm"
+#define PLANTSTATE_STR_ACTIVE_SUPESSED  "active+supressed"
+#define PLANTSTATE_STR_ACTIVE           "active"
+#define PLANTSTATE_STR_SUNNY            "sunny"
+#define PLANTSTATE_STR_COOLDOWN_ALARM   "cooldown+alarm"
+#define PLANTSTATE_STR_COOLDOWN         "cooldown"
+#define PLANTSTATE_STR_AFTERWORK_ALARM  "after-work+alarm"
+#define PLANTSTATE_STR_AFTERWORK        "after-work"
+
 typedef struct PlantSettings_t
 {
     HomieSetting<double> *pSensorDry;

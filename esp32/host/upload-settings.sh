@@ -12,6 +12,8 @@ mqttHost=$1
 mqttPrefix=$2
 homieId=$3
 
+maxSteps=6
+
 settingsFile=settings.json
 if [ ! -f $settingsFile ]; then
 	echo "$settingsFile missing"
@@ -20,20 +22,20 @@ if [ ! -f $settingsFile ]; then
 fi
 
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "1" -r
-echo "Waiting ..."
+echo "(1 / $maxSteps) Waiting ..."
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
 set -e
-echo "Waiting 30 seconds ..."
+echo "(2 / $maxSteps) Waiting 30 seconds ..."
 sleep 30
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/\$implementation/config/set" -f $settingsFile
-echo "Waiting for reboot ..."
+echo "(3 / $maxSteps) Waiting for reboot ..."
 sleep 1
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
-echo "Alive"
+echo "(4 / $maxSteps) Alive"
 sleep 20
-echo "Create Backup ..."
+echo "(5 / $maxSteps) Create Backup ..."
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/config/backup/set" -m "true" -r
 sleep 5
-echo "Shutdown ..."
+echo "(6 / $maxSteps) Shutdown ..."
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "0" -r
 exit 0

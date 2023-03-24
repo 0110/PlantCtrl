@@ -66,8 +66,8 @@
 #define OUTPUT_ENABLE_PUMP   GPIO_NUM_13 /**< GPIO 13 - Enable Pumps  */
 
 #define SENSOR_ONEWIRE      GPIO_NUM_4 /**< GPIO 12 - Temperatur sensor, Battery and other cool onewire stuff */
-#define SENSOR_TANK_SDA    GPIO_NUM_16 /**< GPIO 16 - echo feedback of water sensor */ 
-#define SENSOR_TANK_SCL     GPIO_NUM_17 /**< GPIO 17 - trigger for water sensor */
+#define SENSOR_TANK_SDA     GPIO_NUM_17 /**< GPIO 17 - water sensor SDA */ 
+#define SENSOR_TANK_SCL     GPIO_NUM_16 /**< GPIO 16 - water sensor SCL */
 #define BUTTON              GPIO_NUM_0  /**< GPIO 0 - Fix button of NodeMCU */
 
 #define CUSTOM1_PIN1        GPIO_NUM_34   /** direct gpio */
@@ -75,8 +75,6 @@
 #define CUSTOM1_PIN5        GPIO_NUM_2   /** mosfet controlled */
 #define CUSTOM1_PIN7        GPIO_NUM_12   /** mosfet controlled */
 
-#define I2C1_SDA          GPIO_NUM_34   /**< GPIO 34 - I2C */
-#define I2C1_SCL          GPIO_NUM_35   /**< GPIO 35 - I2C */
 /* @} */
 
 /** \addtogroup Configuration
@@ -106,12 +104,15 @@
 #define MAX_PLANTS          7
 #define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
 #define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
+#define SOLAR_MAX_VOLTAGE_POSSIBLE 100  /**< higher values are treated as not connected sensor  */
 #define VOLT_MAX_BATT               4.2f
 
 #define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
 #define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
 
-#define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatur sensors */
+#define TEMPERATUR_TIMEOUT              3000    /**< 3 Seconds timeout for the temperatures sensors */
+#define WATERSENSOR_TIMEOUT             3000    /**< 3 Seconds timeout for the water distance sensor */
+#define WATERSENSOR_CYCLE               5       /**< 5 sensor measurement are performed */
 #define DS18B20_RESOLUTION              9       /**< 9bit temperature resolution -> 0.5°C steps */
 
 #define UTC_OFFSET_DE                   3600    /* UTC offset in seconds for Germany */

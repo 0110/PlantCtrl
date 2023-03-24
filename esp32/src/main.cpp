@@ -329,11 +329,14 @@ void readPowerSwitchedSensors()
     }
   }
 
-  waterRawSensor.clear();
-  tankSensor.setTimeout(500);
+  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
+  // Source: https://www.st.com/resource/en/datasheet/vl53l0x.pdf
+  tankSensor.setAddress(0x52);
+  tankSensor.setBus(&Wire);
+  delay(50);
   long start = millis();
   bool distanceReady = false;
-  while (start + 500 > millis())
+  while ((start + WATERSENSOR_TIMEOUT) > millis())
   {
     if (tankSensor.init())
     {
@@ -342,17 +345,18 @@ void readPowerSwitchedSensors()
     }
     else
     {
-      delay(20);
+      delay(200);
     }
   }
   if (distanceReady)
   {
+    waterRawSensor.clear();
     tankSensor.setSignalRateLimit(0.1);
     // increase laser pulse periods (defaults are 14 and 10 PCLKs)
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
-   for (int readCnt = 0; readCnt < 5; readCnt++)
+    for (int readCnt = 0; readCnt < WATERSENSOR_CYCLE; readCnt++)
     {
       if (!tankSensor.timeoutOccurred())
       {
@@ -362,7 +366,7 @@ void readPowerSwitchedSensors()
           waterRawSensor.add(distance);
         }
       }
-      delay(10);
+      delay(50);
     }
     Serial << "Distance sensor " << waterRawSensor.getMedian() << " mm" << endl;
   }
@@ -426,7 +430,7 @@ int determineNextPump(bool isLowLight)
     Plant plant = mPlants[i];
     if (!plant.isPumpTriggerActive())
     {
-      plant.publishState("deactivated");
+      plant.publishState(PLANTSTATE_NUM_DEACTIVATED, PLANTSTATE_STR_DEACTIVATED);
       log(LOG_LEVEL_DEBUG, String(String(i) + " Skip deactivated pump"), LOG_DEBUG_CODE);
       continue;
     }
@@ -434,11 +438,11 @@ int determineNextPump(bool isLowLight)
     {
       if (wateralarm)
       {
-        plant.publishState("cooldown+alarm");
+        plant.publishState(PLANTSTATE_NUM_COOLDOWN_ALARM, PLANTSTATE_STR_COOLDOWN_ALARM);
       }
       else
       {
-        plant.publishState("cooldown");
+        plant.publishState(PLANTSTATE_NUM_COOLDOWN, PLANTSTATE_STR_COOLDOWN);
       }
       log(LOG_LEVEL_DEBUG, String(String(i) + " Skipping due to cooldown " + String(rtcLastWateringPlant[i] + plant.getCooldownInSeconds())), LOG_DEBUG_CODE);
       continue;
@@ -447,11 +451,11 @@ int determineNextPump(bool isLowLight)
     {
       if (wateralarm)
       {
-        plant.publishState("sunny+alarm");
+        plant.publishState(PLANTSTATE_NUM_SUNNY_ALARM, PLANTSTATE_STR_SUNNY_ALARM);
       }
       else
       {
-        plant.publishState("sunny");
+        plant.publishState(PLANTSTATE_NUM_SUNNY, PLANTSTATE_STR_SUNNY);
       }
 
       log(LOG_LEVEL_DEBUG, String(String(i) + " No pump required: due to light"), LOG_DEBUG_CODE);
@@ -461,7 +465,7 @@ int determineNextPump(bool isLowLight)
     {
       if (equalish(plant.getCurrentMoistureRaw(), MISSING_SENSOR))
       {
-        plant.publishState("nosensor");
+        plant.publishState(PLANTSTATE_NUM_NO_SENSOR, PLANTSTATE_STR_NO_SENSOR);
         log(LOG_LEVEL_ERROR, String(String(i) + " No pump possible: missing sensor"), LOG_MISSING_PUMP);
         continue;
       }
@@ -480,14 +484,17 @@ int determineNextPump(bool isLowLight)
       {
         if (wateralarm)
         {
-          plant.publishState("active+alarm");
+          plant.publishState(PLANTSTATE_NUM_ACTIVE_ALARM, PLANTSTATE_STR_ACTIVE_ALARM);
         }
         else
         {
-          if(mDownloadMode){
-            plant.publishState("active+supressed");
-          }else {
-            plant.publishState("active");
+          if (mDownloadMode)
+          {
+            plant.publishState(PLANTSTATE_NUM_ACTIVE_SUPESSED, PLANTSTATE_STR_ACTIVE_SUPESSED);
+          }
+          else
+          {
+            plant.publishState(PLANTSTATE_NUM_ACTIVE, PLANTSTATE_STR_ACTIVE);
           }
         }
 
@@ -504,11 +511,11 @@ int determineNextPump(bool isLowLight)
       {
         if (wateralarm)
         {
-          plant.publishState("after-work+alarm");
+          plant.publishState(PLANTSTATE_NUM_AFTERWORK_ALARM, PLANTSTATE_STR_AFTERWORK_ALARM);
         }
         else
         {
-          plant.publishState("after-work");
+          plant.publishState(PLANTSTATE_NUM_AFTERWORK, PLANTSTATE_STR_AFTERWORK);
         }
         log(LOG_LEVEL_DEBUG, String(String(i) + " ignored due to time boundary: " + String(plant.getHoursStart()) + " to " + String(plant.getHoursEnd()) + " ( current " + String(getCurrentHour()) + " )"), LOG_DEBUG_CODE);
       }
@@ -516,7 +523,7 @@ int determineNextPump(bool isLowLight)
     }
     else
     {
-      plant.publishState("wet");
+      plant.publishState(PLANTSTATE_NUM_WET, PLANTSTATE_STR_WET);
       // plant was detected as wet, remove consecutive count
       consecutiveWateringPlant[i] = 0;
     }
@@ -799,7 +806,6 @@ void safeSetup()
   {
     mPlants[i].initSensors();
   }
-  Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   readPowerSwitchedSensors();
 
   Homie.setup();
@@ -1034,7 +1040,7 @@ void plantcontrol()
 
   readOneWireSensors();
 
-  Serial << "W : " << waterRawSensor.getAverage() << " cm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << "%)" << endl;
+  Serial << "W : " << waterRawSensor.getAverage() << " mm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << " mm left)" << endl;
 
   float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
@@ -1042,14 +1048,19 @@ void plantcontrol()
 
   if (aliveWasRead())
   {
-    float remaining = waterLevelMax.get() - waterRawSensor.getAverage();
-    if (!isnan(remaining))
+    /* Publish water values, if available */
+    if (waterRawSensor.getCount() > 0)
     {
-      sensorWater.setProperty("remaining").send(String(remaining));
-    }
-    if (!isnan(waterRawSensor.getAverage()))
-    {
-      sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
+      float remaining = (waterLevelMax.get() - waterRawSensor.getAverage());
+      if (!isnan(remaining))
+      {
+        /* measuring the distance from top -> smaller value means more water: */
+        sensorWater.setProperty("remaining").send(String(100.0 - (remaining/100)));
+      }
+      if (!isnan(waterRawSensor.getAverage()))
+      {
+        sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
+      }
     }
     sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
     sensorLipo.setProperty("volt").send(String(batteryVoltage));
@@ -1058,7 +1069,11 @@ void plantcontrol()
     sensorLipo.setProperty("ICA").send(String(battery.getICA()));
     sensorLipo.setProperty("DCA").send(String(battery.getDCA()));
     sensorLipo.setProperty("CCA").send(String(battery.getCCA()));
-    sensorSolar.setProperty("volt").send(String(mSolarVoltage));
+    if (mSolarVoltage < SOLAR_MAX_VOLTAGE_POSSIBLE) {
+      sensorSolar.setProperty("volt").send(String(mSolarVoltage));
+    } else {
+      log(LOG_LEVEL_INFO, String("Ignore unrealistc sun voltage" + String(mSolarVoltage) +"V"), LOG_SOLAR_CHARGER_MISSING);
+    }
     sensorTemp.setProperty(TEMPERATUR_SENSOR_CHIP).send(String(chipTemp));
   }
   else
@@ -1080,7 +1095,12 @@ bool isLowLight = mSolarVoltage <= 9;
 #endif // TIMED_LIGHT_PIN
 
   bool isLiquid = waterTemp > 5;
-  bool hasWater = true; // FIXME remaining > waterLevelMin.get();
+  bool hasWater = true; // By default activate the pump
+  if (waterRawSensor.getCount() > 0)
+  {
+    hasWater = ( (waterLevelMax.get() - waterRawSensor.getAverage()) > waterLevelMin.get() );
+  }
+
   // FIXME no water warning message
   pumpToRun = determineNextPump(isLowLight);
   // early aborts
@@ -1093,6 +1113,8 @@ bool isLowLight = mSolarVoltage <= 9;
         {
           log(LOG_LEVEL_INFO, LOG_PUMP_AND_DOWNLOADMODE, LOG_PUMP_AND_DOWNLOADMODE_CODE);
           pumpToRun = -1;
+        } else {
+          /* Pump can be used :) */
         }
       }
       else
@@ -1101,8 +1123,9 @@ bool isLowLight = mSolarVoltage <= 9;
         pumpToRun = -1;
       }
     }
-    else{
-      log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
+    else 
+    {
+        log(LOG_LEVEL_ERROR, LOG_VERY_COLD_WATER, LOG_VERY_COLD_WATER_CODE);
         pumpToRun = -1;
     }
   }

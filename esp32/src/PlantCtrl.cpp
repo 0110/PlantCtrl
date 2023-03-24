@@ -208,11 +208,16 @@ void Plant::deactivatePump(void)
     }
 }
 
-void Plant::publishState(String state)
+void Plant::publishState(int stateNumber, String stateString)
 {
+    String buffer;
+    StaticJsonDocument<200> doc;
     if (this->mConnected)
     {
-        this->mPlant->setProperty("state").send(state);
+        doc["number"] = stateNumber;
+        doc["message"] = stateString;
+        serializeJson(doc, buffer);
+        this->mPlant->setProperty("state").send(buffer.c_str());
     }
 }
 
