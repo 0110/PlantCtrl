@@ -148,7 +148,7 @@ public:
             {
                 return MISSING_SENSOR;
             }
-            if (mMoisture_raw.getMedian() > MOIST_SENSOR_MAX_FRQ)
+            else if (mMoisture_raw.getMedian() > MOIST_SENSOR_MAX_FRQ)
             {
                 return SHORT_CIRCUIT_MODE;
             }

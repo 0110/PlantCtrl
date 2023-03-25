@@ -80,6 +80,7 @@ long nextBlink = 0; /**< Time needed in main loop to support expected blink code
 
 RunningMedian waterRawSensor = RunningMedian(5);
 float mSolarVoltage = 0.0f; /**< Voltage from solar panels */
+float mBatteryVoltage = 0.0f; /**< Voltage from lipo */
 unsigned long setupFinishedTimestamp;
 
 bool pumpStarted = false;
@@ -189,7 +190,12 @@ void espDeepSleep(bool afterPump = false)
   }
   else
   {
-    if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
+    if (mBatteryVoltage < VOLT_MIN_BATT) 
+    {
+      log(LOG_LEVEL_INFO, String(String(mBatteryVoltage) + "V! Almost empty -> deepSleepNight times " + String(LOWVOLT_SLEEP_FACTOR)), LOG_SLEEP_LOWVOLTAGE);
+      secondsToSleep = (deepSleepNightTime.get() * LOWVOLT_SLEEP_FACTOR);
+    }
+    else if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
     {
       log(LOG_LEVEL_INFO, String(String(mSolarVoltage) + "V! Low light -> deepSleepNight"), LOG_SLEEP_NIGHT);
       secondsToSleep = deepSleepNightTime.get();
@@ -1042,7 +1048,7 @@ void plantcontrol()
 
   Serial << "W : " << waterRawSensor.getAverage() << " mm (" << String(waterLevelMax.get() - waterRawSensor.getAverage()) << " mm left)" << endl;
 
-  float batteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
+  mBatteryVoltage = battery.getVoltage(BATTSENSOR_INDEX_BATTERY);
   float chipTemp = battery.getTemperature();
   Serial << "Chip Temperatur " << chipTemp << " °C " << endl;
 
@@ -1062,8 +1068,8 @@ void plantcontrol()
         sensorWater.setProperty("distance").send(String(waterRawSensor.getAverage()));
       }
     }
-    sensorLipo.setProperty("percent").send(String(100 * batteryVoltage / VOLT_MAX_BATT));
-    sensorLipo.setProperty("volt").send(String(batteryVoltage));
+    sensorLipo.setProperty("percent").send(String(100 * mBatteryVoltage / VOLT_MAX_BATT));
+    sensorLipo.setProperty("volt").send(String(mBatteryVoltage));
     sensorLipo.setProperty("current").send(String(battery.getCurrent()));
     sensorLipo.setProperty("Ah").send(String(battery.getAh()));
     sensorLipo.setProperty("ICA").send(String(battery.getICA()));
@@ -1082,7 +1088,7 @@ void plantcontrol()
     Serial.flush();
   }
 
-bool isLowLight = mSolarVoltage <= 9;
+bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
 #if defined(TIMED_LIGHT_PIN)
   
   bool shouldLight = determineTimedLightState(isLowLight);

@@ -102,10 +102,12 @@
 #define ESP_STALE_TIMEOUT           (MQTT_TIMEOUT+(700*1000))
 
 #define MAX_PLANTS          7
-#define SOLAR_CHARGE_MIN_VOLTAGE 7  /**< Sun is rising (morning detected) */
-#define SOLAR_CHARGE_MAX_VOLTAGE 9  /**< Sun is shining (noon)  */
-#define SOLAR_MAX_VOLTAGE_POSSIBLE 100  /**< higher values are treated as not connected sensor  */
+#define SOLAR_CHARGE_MIN_VOLTAGE    7   /**< Sun is rising (morning detected) */
+#define SOLAR_CHARGE_MAX_VOLTAGE    9   /**< Sun is shining (noon)  */
+#define SOLAR_MAX_VOLTAGE_POSSIBLE  100 /**< higher values are treated as not connected sensor  */
 #define VOLT_MAX_BATT               4.2f
+#define VOLT_MIN_BATT               3.0f    /**< Minimum battery voltage for normal operation */
+#define LOWVOLT_SLEEP_FACTOR        3       /**< Factor for nightsleep delay, if the battery drops below minimum (@see VOLT_MIN_BATT) */
 
 #define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
 #define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
