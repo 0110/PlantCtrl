@@ -192,8 +192,17 @@ void espDeepSleep(bool afterPump = false)
   {
     if (mBatteryVoltage < VOLT_MIN_BATT) 
     {
-      log(LOG_LEVEL_INFO, String(String(mBatteryVoltage) + "V! Almost empty -> deepSleepNight times " + String(LOWVOLT_SLEEP_FACTOR)), LOG_SLEEP_LOWVOLTAGE);
-      secondsToSleep = (deepSleepNightTime.get() * LOWVOLT_SLEEP_FACTOR);
+      log(LOG_LEVEL_INFO, String(String(mBatteryVoltage) + "V! Almost empty -> deepSleepNight " + String(LOWVOLT_SLEEP_FACTOR)) + " times", LOG_SLEEP_LOWVOLTAGE);
+      /* use the largest sleeping duration */
+      if (deepSleepNightTime.get() > deepSleepTime.get()) {
+        secondsToSleep = (deepSleepNightTime.get() * LOWVOLT_SLEEP_FACTOR);
+      } else {
+        secondsToSleep = (deepSleepTime.get() * LOWVOLT_SLEEP_FACTOR);
+      }
+      /* sleep at least several minutes, so the solar panel can charge the battery */
+      if (secondsToSleep < LOWVOLT_SLEEP_MINIMUM) {
+        secondsToSleep = LOWVOLT_SLEEP_MINIMUM;
+      }
     }
     else if (mSolarVoltage < SOLAR_CHARGE_MIN_VOLTAGE)
     {
@@ -208,6 +217,10 @@ void espDeepSleep(bool afterPump = false)
   }
 
   finsihedCycleSucessfully();
+  /* sleep always at least one second */
+  if (secondsToSleep < 0) {
+    secondsToSleep = 1;
+  }
   esp_sleep_enable_timer_wakeup((secondsToSleep * 1000U * 1000U));
   if (aliveWasRead())
   {
@@ -363,6 +376,7 @@ void readPowerSwitchedSensors()
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
     for (int readCnt = 0; readCnt < WATERSENSOR_CYCLE; readCnt++)
+    
     {
       if (!tankSensor.timeoutOccurred())
       {

@@ -108,6 +108,7 @@
 #define VOLT_MAX_BATT               4.2f
 #define VOLT_MIN_BATT               3.0f    /**< Minimum battery voltage for normal operation */
 #define LOWVOLT_SLEEP_FACTOR        3       /**< Factor for nightsleep delay, if the battery drops below minimum (@see VOLT_MIN_BATT) */
+#define LOWVOLT_SLEEP_MINIMUM       1800    /**< At low voltage sleep at least for 30 minutes */
 
 #define MAX_CONFIG_SETTING_ITEMS 100 /**< Parameter, that can be configured in Homie */
 #define MAX_JSON_CONFIG_FILE_SIZE_CUSTOM 2500
