@@ -22,7 +22,7 @@ mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "1" -r
 echo "Waiting ..."
 mosquitto_sub -h $mqttHost -t "${mqttPrefix}${homieId}/#" -R -C 1
 set -e
-python ota_updater.py -l $mqttHost -t "$mqttPrefix" -i "$homieId" $firmwareFile
+python3 ota_updater.py -l $mqttHost -t "$mqttPrefix" -i "$homieId" $firmwareFile
 
 mosquitto_pub -h $mqttHost -t "${mqttPrefix}${homieId}/stay/alive/set" -m "0" -r
 exit 0
