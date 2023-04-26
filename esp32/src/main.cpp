@@ -1118,7 +1118,8 @@ bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
   bool hasWater = true; // By default activate the pump
   if (waterRawSensor.getCount() > 0)
   {
-    hasWater = ( (waterLevelMax.get() - waterRawSensor.getAverage()) > waterLevelMin.get() );
+    //surface of water is still nearer the sensor than required to cover the pumps
+    hasWater = waterRawSensor.getAverage() < waterLevelMin.get();
   }
 
   // FIXME no water warning message
