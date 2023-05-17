@@ -13,6 +13,7 @@
 /******************************************************************************
  *                                     INCLUDES
  ******************************************************************************/
+#define CONFIG_APP_ROLLBACK_ENABLE
 #include "LogDefines.h"
 #include "FileUtils.h"
 #include "TimeUtils.h"
@@ -36,6 +37,12 @@
 #include "driver/pcnt.h"
 #include "MQTTUtils.h"
 #include "esp_ota_ops.h"
+#include "Arduino.h"
+
+extern "C" bool verifyRollbackLater(){
+    return true;
+}
+
 #if defined(TIMED_LIGHT_PIN)
 #include "ulp-pwm.h"
 #endif
@@ -141,10 +148,23 @@ void finsihedCycleSucessfully()
   esp_ota_img_states_t ota_state;
   if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK)
   {
-    log(LOG_LEVEL_INFO, "Get State Partition was Successfull", LOG_BOOT_ERROR_DETECTION);
+    log(LOG_LEVEL_INFO, "Get State Partition was Successfull", LOG_BOOT_ERROR_DETECTION); 
+    
+    if(ota_state == ESP_OTA_IMG_UNDEFINED){
+      log(LOG_LEVEL_INFO, "ESP_OTA_IMG_UNDEFINED should not happen with rollback", LOG_BOOT_ERROR_DETECTION);
+    }
+    if(ota_state == ESP_OTA_IMG_NEW){
+      log(LOG_LEVEL_INFO, "ESP_OTA_IMG_NEW", LOG_BOOT_ERROR_DETECTION);
+    }
+    if(ota_state == ESP_OTA_IMG_INVALID){
+      log(LOG_LEVEL_INFO, "ESP_OTA_IMG_INVALID", LOG_BOOT_ERROR_DETECTION);
+    }
+    if(ota_state == ESP_OTA_IMG_VALID){
+      log(LOG_LEVEL_INFO, "ESP_OTA_IMG_VALID", LOG_BOOT_ERROR_DETECTION);
+    }
     if (ota_state == ESP_OTA_IMG_PENDING_VERIFY)
     {
-      log(LOG_LEVEL_INFO, "Diagnostics completed successfully! Marking as valid", LOG_BOOT_ERROR_DETECTION);
+      log(LOG_LEVEL_INFO, "ESP_OTA_IMG_PENDING_VERIFY Diagnostics completed successfully! Marking as valid", LOG_BOOT_ERROR_DETECTION);
       esp_ota_mark_app_valid_cancel_rollback();
     }
   }
