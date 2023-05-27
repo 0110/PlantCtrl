@@ -373,6 +373,7 @@ void readPowerSwitchedSensors()
   tankSensor.setAddress(0x52);
   tankSensor.setBus(&Wire);
   delay(50);
+  Serial << "Distance sensor init" << endl;
   long start = millis();
   bool distanceReady = false;
   while ((start + WATERSENSOR_TIMEOUT) > millis())
@@ -395,6 +396,7 @@ void readPowerSwitchedSensors()
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
     tankSensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
     tankSensor.setMeasurementTimingBudget(200000);
+    Serial << "Distance sensor measuring" << endl;
     for (int readCnt = 0; readCnt < WATERSENSOR_CYCLE; readCnt++)
     
     {
@@ -847,7 +849,7 @@ void safeSetup()
     mPlants[i].initSensors();
   }
   readPowerSwitchedSensors();
-
+  Serial << "Reading Homie Config..." << endl;
   Homie.setup();
 
 
