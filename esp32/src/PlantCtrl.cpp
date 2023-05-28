@@ -32,10 +32,10 @@ void Plant::init(void)
     this->mSetting->pSensorDry->setValidator([](long candidate)
                                              { return (((candidate >= 0.0) && (candidate <= 100.0)) || equalish(candidate, DEACTIVATED_PLANT) || equalish(candidate, HYDROPONIC_MODE) || equalish(candidate, TIMER_ONLY)); });
 
-    this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(8); // start at 8:00
+    this->mSetting->pPumpAllowedHourRangeStart->setDefaultValue(5); // start at 5:00 UTC or 7:00 ECST
     this->mSetting->pPumpAllowedHourRangeStart->setValidator([](long candidate)
                                                              { return ((candidate >= 0) && (candidate <= 23)); });
-    this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(20); // stop pumps at 20:00
+    this->mSetting->pPumpAllowedHourRangeEnd->setDefaultValue(18); // stop pumps at 18 UTC or 20:00 ECST
     this->mSetting->pPumpAllowedHourRangeEnd->setValidator([](long candidate)
                                                            { return ((candidate >= 0) && (candidate <= 23)); });
     this->mSetting->pPumpOnlyWhenLowLight->setDefaultValue(false);
