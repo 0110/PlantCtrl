@@ -1094,10 +1094,14 @@ void plantcontrol()
     if (waterRawSensor.getCount() > 0)
     {
       float remaining = (waterLevelMax.get() - waterRawSensor.getAverage());
+      float actualDifference = waterLevelMax.get() - waterLevelMin.get();
+      float ratio = remaining/actualDifference;
+      sensorWater.setProperty("useable").send(String(actualDifference));
       if (!isnan(remaining))
       {
         /* measuring the distance from top -> smaller value means more water: */
-        sensorWater.setProperty("remaining").send(String(100.0 - (remaining/100)));
+        sensorWater.setProperty("remaining").send(String(ratio*100));
+        
       }
       if (!isnan(waterRawSensor.getAverage()))
       {
