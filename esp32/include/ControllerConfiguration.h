@@ -80,7 +80,7 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "2.7 HW0.10b"
+#define FIRMWARE_VERSION "2.71 HW0.10b"
 
 #define TIMED_LIGHT_PIN CUSTOM1_PIN5
 #define FLOWMETER_PIN CUSTOM1_PIN1

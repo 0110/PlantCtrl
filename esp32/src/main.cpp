@@ -1142,6 +1142,10 @@ bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
   {
     //surface of water is still nearer the sensor than required to cover the pumps
     hasWater = waterRawSensor.getAverage() < waterLevelMin.get();
+    if (waterRawSensor.getAverage() > waterLevelMax.get()) {
+      log(LOG_LEVEL_ERROR, LOG_PUMP_FULLTANK_MESSAGE, LOG_PUMP_FULLTANK_CODE);
+      hasWater = true;
+    }
   }
 
   // FIXME no water warning message
