@@ -51,7 +51,7 @@ extern "C" bool verifyRollbackLater(){
  *                                     DEFINES
  ******************************************************************************/
 #define AMOUNT_SENOR_QUERYS 8
-#define MAX_TANK_DEPTH 2000
+#define MAX_TANK_DEPTH 5000
 #define REBOOT_LOOP_DETECTION_ERROR 5
 
 /******************************************************************************
@@ -85,7 +85,7 @@ int volatile selfTestPumpRun = -1;   /** pump to run  at the end of the cycle */
 bool mConfigured = false;
 long nextBlink = 0; /**< Time needed in main loop to support expected blink code */
 
-RunningMedian waterRawSensor = RunningMedian(5);
+RunningMedian waterRawSensor = RunningMedian(WATERSENSOR_CYCLE);
 float mSolarVoltage = 0.0f; /**< Voltage from solar panels */
 float mBatteryVoltage = 0.0f; /**< Voltage from lipo */
 unsigned long setupFinishedTimestamp;
@@ -1146,6 +1146,10 @@ bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
   {
     //surface of water is still nearer the sensor than required to cover the pumps
     hasWater = waterRawSensor.getAverage() < waterLevelMin.get();
+    if (waterRawSensor.getAverage() > waterLevelMax.get()) {
+      log(LOG_LEVEL_ERROR, LOG_PUMP_FULLTANK_MESSAGE, LOG_PUMP_FULLTANK_CODE);
+      hasWater = true;
+    }
   }
 
   // FIXME no water warning message

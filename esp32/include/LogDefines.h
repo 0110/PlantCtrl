@@ -33,6 +33,9 @@
 #define LOG_VERY_COLD_WATER "Water potentially frozen, ignoring pump request"
 #define LOG_VERY_COLD_WATER_CODE -7
 
+#define LOG_PUMP_FULLTANK_MESSAGE "Water Sensor distance unrealistic"
+#define LOG_PUMP_FULLTANK_CODE 3
+
 //msg is dynamic defined
 #define LOG_PUMP_INEFFECTIVE -4
 #define LOG_PUMP_STARTED_CODE 10
