@@ -808,7 +808,7 @@ void safeSetup()
   }
 
   /************************* Start Homie Framework ***************/
-  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
+  Homie_setFirmware(FIRMWARE_NAME, FIRMWARE_VERSION);
   Homie.disableLedFeedback();
   Homie_setBrand("PlantControl");
   // Set default values

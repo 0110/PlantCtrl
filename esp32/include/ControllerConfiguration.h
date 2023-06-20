@@ -80,13 +80,23 @@
 /** \addtogroup Configuration
  *  @{
  */
-#define FIRMWARE_VERSION "2.71 HW0.10b"
 
-#define TIMED_LIGHT_PIN CUSTOM1_PIN5
-#define FLOWMETER_PIN CUSTOM1_PIN1
 #ifdef FLOWMETER_PIN
     #define FLOWMETER_PULSES_PER_ML 2.2
+    #define FIRMWARE_FEATURE1   "Flow"
+#else
+    #define FIRMWARE_FEATURE1   ""
 #endif
+
+#ifdef TIMED_LIGHT_PIN
+    #define FIRMWARE_FEATURE2   "Light"
+#else
+    #define FIRMWARE_FEATURE2   ""
+#endif
+
+#define FIRMWARE_BASENAME "PlantControl"
+#define FIRMWARE_NAME FIRMWARE_BASENAME FIRMWARE_FEATURE1 FIRMWARE_FEATURE2
+#define FIRMWARE_VERSION "2.71 HW0.10b" 
 
 #define MOIST_SENSOR_MAX_FRQ               5200 // 60kHz (500Hz margin)
 #define MOIST_SENSOR_MIN_FRQ                500 // 0.5kHz (500Hz margin)
