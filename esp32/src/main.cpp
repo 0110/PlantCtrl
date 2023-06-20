@@ -704,7 +704,7 @@ void pumpActiveLoop()
   }
 
   bool mqttUpdateTick = false;
-  if (lastSendPumpUpdate + 1000 < millis())
+  if (lastSendPumpUpdate + 3000 < millis())
   {
     lastSendPumpUpdate = millis();
     mqttUpdateTick = true;
