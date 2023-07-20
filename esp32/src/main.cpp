@@ -704,7 +704,7 @@ void pumpActiveLoop()
   }
 
   bool mqttUpdateTick = false;
-  if (lastSendPumpUpdate + 1000 < millis())
+  if (lastSendPumpUpdate + 3000 < millis())
   {
     lastSendPumpUpdate = millis();
     mqttUpdateTick = true;
@@ -808,7 +808,7 @@ void safeSetup()
   }
 
   /************************* Start Homie Framework ***************/
-  Homie_setFirmware("PlantControl", FIRMWARE_VERSION);
+  Homie_setFirmware(FIRMWARE_NAME, FIRMWARE_VERSION);
   Homie.disableLedFeedback();
   Homie_setBrand("PlantControl");
   // Set default values

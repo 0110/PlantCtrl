@@ -230,8 +230,8 @@ void Plant::activatePump(void)
     ledcWrite(this->mPlantId, desiredPowerLevelPercent * PWM_BITS);
     if (this->mConnected)
     {
-        const String OFF = String("ON");
-        this->mPlant->setProperty("switch").send(OFF);
+        const String ON = String("ON");
+        this->mPlant->setProperty("switch").send(ON);
         this->mPlant->setProperty("lastPump").send(String(getCurrentTime()));
     }
 }
