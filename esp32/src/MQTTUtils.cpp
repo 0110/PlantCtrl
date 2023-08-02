@@ -33,6 +33,7 @@ void log(int level, String message, int statusCode)
     delete logTopic;
   }
   Serial << statusCode << "@" << level << " : " << message << endl;
+  Serial.flush();
 }
 
 
