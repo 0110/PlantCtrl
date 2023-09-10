@@ -43,9 +43,6 @@ extern "C" bool verifyRollbackLater(){
     return true;
 }
 
-#if defined(TIMED_LIGHT_PIN)
-#include "ulp-pwm.h"
-#endif
 
 /******************************************************************************
  *                                     DEFINES
@@ -67,9 +64,7 @@ bool otaRunning = false;
 /******************************************************************************
  *                       NON VOLATILE VARIABLES in DEEP SLEEP
  ******************************************************************************/
-#if defined(TIMED_LIGHT_PIN)
 RTC_DATA_ATTR bool timedLightLowVoltageTriggered = false; /**remember if it was shut down due to voltage level */
-#endif                                                    // TIMED_LIGHT_PIN
 
 RTC_DATA_ATTR long rtcLastWateringPlant[MAX_PLANTS] = {0};
 RTC_DATA_ATTR long consecutiveWateringPlant[MAX_PLANTS] = {0};
@@ -370,6 +365,7 @@ void readPowerSwitchedSensors()
 
   Wire.begin(SENSOR_TANK_SDA, SENSOR_TANK_SCL);
   // Source: https://www.st.com/resource/en/datasheet/vl53l0x.pdf
+  tankSensor.setTimeout(500);
   tankSensor.setAddress(0x52);
   tankSensor.setBus(&Wire);
   delay(50);
@@ -772,10 +768,6 @@ void safeSetup()
   WiFi.mode(WIFI_OFF);
   Serial.flush();
 
-// restore state before releasing pin, to prevent flickering
-#if defined(TIMED_LIGHT_PIN)
-  ulp_pwm_init();
-#endif // TIMED_LIGHT_PIN
 
   /* Intialize Plant */
   for (int i = 0; i < MAX_PLANTS; i++)
@@ -791,6 +783,7 @@ void safeSetup()
   digitalWrite(OUTPUT_ENABLE_PUMP, LOW);
 
   pinMode(OUTPUT_ENABLE_SENSOR, OUTPUT);
+  pinMode(2, OUTPUT);
 
   static_assert(HomieInternals::MAX_CONFIG_SETTING_SIZE >= MAX_CONFIG_SETTING_ITEMS, "Limits.hpp not adjusted MAX_CONFIG_SETTING_ITEMS");
   if (HomieInternals::MAX_CONFIG_SETTING_SIZE < MAX_CONFIG_SETTING_ITEMS)
@@ -828,9 +821,6 @@ void safeSetup()
   pumpIneffectiveWarning.setDefaultValue(5).setValidator([](long candidate)
                                                          { return (candidate > 0) && (candidate < (20)); });
 
-#if defined(TIMED_LIGHT_PIN)
-  timedLightPowerLevel.setDefaultValue(25).setValidator([](long candidate)
-                                                        { return (candidate > 0) && (candidate <= (255)); });
   timedLightStart.setDefaultValue(18).setValidator([](long candidate)
                                                    { return (candidate > 0) && (candidate < (25)); });
   timedLightEnd.setDefaultValue(23).setValidator([](long candidate)
@@ -838,8 +828,6 @@ void safeSetup()
   timedLightOnlyWhenDark.setDefaultValue(true);
   timedLightVoltageCutoff.setDefaultValue(3.8).setValidator([](double candidate)
                                                             { return ((candidate > 3.3 || candidate == -1) && (candidate < (50))); });
-#endif // TIMED_LIGHT_PIN
-
   Homie.setLoopFunction(homieLoop);
   Homie.onEvent(onHomieEvent);
 
@@ -962,6 +950,7 @@ void setup()
   Serial.begin(115200);
   Serial << "First init" << endl;
   Serial.flush();
+
 
 
   try
@@ -1129,16 +1118,21 @@ void plantcontrol()
   }
 
 bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
-#if defined(TIMED_LIGHT_PIN)
-  
-  bool shouldLight = determineTimedLightState(isLowLight);
-  if(shouldLight){
-    ulp_pwm_set_level(timedLightPowerLevel.get());
-  }else {
-    ulp_pwm_set_level(0);
-  }
 
-#endif // TIMED_LIGHT_PIN
+  
+bool shouldLight = determineTimedLightState(isLowLight);
+gpio_hold_dis(GPIO_NUM_2);
+if(shouldLight){
+  digitalWrite(2, HIGH);
+  Serial.println("Light sleep");
+  Serial.flush();
+  sleep(10000);
+}else {
+  digitalWrite(2, LOW);
+}
+gpio_hold_en(GPIO_NUM_2);
+
+
 
   bool isLiquid = waterTemp > 5;
   bool hasWater = true; // By default activate the pump
@@ -1190,12 +1184,22 @@ bool isLowLight = (mSolarVoltage <= SOLAR_CHARGE_MAX_VOLTAGE);
 
 /** @}*/
 
-#ifdef TIMED_LIGHT_PIN
+
 bool determineTimedLightState(bool lowLight)
 {
   bool onlyAllowedWhenDark = timedLightOnlyWhenDark.get();
   long hoursStart = timedLightStart.get();
   long hoursEnd = timedLightEnd.get();
+
+  int curHour = getCurrentHour();
+
+  bool condition1 = ((hoursStart > hoursEnd) &&
+                     (curHour >= hoursStart || curHour <= hoursEnd));
+  bool condition2 = /* Handle e.g. start = 8, end = 21 */
+
+      ((hoursStart < hoursEnd) &&
+       (curHour >= hoursStart && curHour <= hoursEnd));
+  timedLightNode.setProperty("debug").send(String(curHour) + " " + String(hoursStart) + " " + String(hoursEnd) + " " + String(condition1) + " " + String(condition2));
 
   // ntp missing
   if (getCurrentTime() < 10000)
@@ -1210,15 +1214,7 @@ bool determineTimedLightState(bool lowLight)
     return false;
   }
 
-  int curHour = getCurrentHour();
 
-  bool condition1 = ((hoursStart > hoursEnd) &&
-                     (curHour >= hoursStart || curHour <= hoursEnd));
-  bool condition2 = /* Handle e.g. start = 8, end = 21 */
-
-      ((hoursStart < hoursEnd) &&
-       (curHour >= hoursStart && curHour <= hoursEnd));
-  timedLightNode.setProperty("debug").send(String(curHour) + " " + String(hoursStart) + " " + String(hoursEnd) + " " + String(condition1) + " " + String(condition2));
   if (condition1 || condition2)
   {
     bool voltageOk = !timedLightLowVoltageTriggered && battery.getVoltage(BATTSENSOR_INDEX_BATTERY) >= timedLightVoltageCutoff.get();
@@ -1240,5 +1236,3 @@ bool determineTimedLightState(bool lowLight)
     return false;
   }
 }
-
-#endif

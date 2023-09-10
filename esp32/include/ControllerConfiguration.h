@@ -73,7 +73,6 @@
 #define CUSTOM1_PIN1        GPIO_NUM_34   /** direct gpio */
 #define CUSTOM1_PIN3        GPIO_NUM_35   /** direct gpio */
 #define CUSTOM1_PIN5        GPIO_NUM_2   /** mosfet controlled */
-#define CUSTOM1_PIN7        GPIO_NUM_12   /** mosfet controlled */
 
 /* @} */
 
@@ -88,15 +87,13 @@
     #define FIRMWARE_FEATURE1   ""
 #endif
 
-#ifdef TIMED_LIGHT_PIN
-    #define FIRMWARE_FEATURE2   "Light"
-#else
-    #define FIRMWARE_FEATURE2   ""
-#endif
+
+#define FIRMWARE_FEATURE2   "Light"
+
 
 #define FIRMWARE_BASENAME "PlantControl"
 #define FIRMWARE_NAME FIRMWARE_BASENAME FIRMWARE_FEATURE1 FIRMWARE_FEATURE2
-#define FIRMWARE_VERSION "3.01 HW0.10b" 
+#define FIRMWARE_VERSION "3.02 HW0.10b" 
 
 #define MOIST_SENSOR_MAX_FRQ               5200 // 60kHz (500Hz margin)
 #define MOIST_SENSOR_MIN_FRQ                500 // 0.5kHz (500Hz margin)
