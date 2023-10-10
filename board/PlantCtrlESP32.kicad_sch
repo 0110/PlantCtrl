@@ -2959,6 +2959,9 @@
   (junction (at 174.625 602.615) (diameter 0) (color 0 0 0 0)
     (uuid a70da482-a861-4e2f-9d2b-6183a6f0f87e)
   )
+  (junction (at 44.704 594.995) (diameter 0) (color 0 0 0 0)
+    (uuid a757038c-5365-4452-9233-cd270451996f)
+  )
   (junction (at 319.278 156.718) (diameter 0) (color 0 0 0 0)
     (uuid a87df46c-4cff-4236-9f4f-14695f384b58)
   )
@@ -5243,6 +5246,10 @@
     (stroke (width 0) (type default))
     (uuid 8cfb5ad8-ebe3-4912-a1d2-3fa609386617)
   )
+  (wire (pts (xy 44.704 594.995) (xy 45.085 594.995))
+    (stroke (width 0) (type default))
+    (uuid 8cfce763-7316-4bc8-8092-16ab2525ea14)
+  )
   (wire (pts (xy 353.568 210.058) (xy 368.808 210.058))
     (stroke (width 0) (type default))
     (uuid 8d4190d3-ca8e-44c9-98d2-76284f6b59ca)
@@ -6543,7 +6550,7 @@
     (stroke (width 0) (type default))
     (uuid ed2558dc-b9f7-4ed2-8708-866c056d9220)
   )
-  (wire (pts (xy 43.815 594.995) (xy 45.085 594.995))
+  (wire (pts (xy 43.815 594.995) (xy 44.704 594.995))
     (stroke (width 0) (type default))
     (uuid ed37b484-02c0-458a-97b8-bd84fdd0b407)
   )
@@ -7765,10 +7772,10 @@
       (effects (font (size 1.27 1.27)) (justify right) hide)
     )
   )
-  (global_label "SIGNAL_NEXT" (shape input) (at 485.648 303.784 180) (fields_autoplaced)
+  (global_label "SIGNAL" (shape input) (at 485.648 303.784 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right))
     (uuid 46aed6cd-8af5-4fe0-a85c-6441b4cbd6e6)
-    (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 471.2407 303.784 0)
+    (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 476.8649 303.784 0)
       (effects (font (size 1.27 1.27)) (justify right) hide)
     )
   )
@@ -8197,6 +8204,13 @@
     (uuid 67f670b7-b700-435f-b15a-94512d0573a7)
     (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 250.8049 156.718 0)
       (effects (font (size 1.27 1.27)) (justify right) hide)
+    )
+  )
+  (global_label "LED_ENABLE" (shape input) (at 107.696 120.142 0) (fields_autoplaced)
+    (effects (font (size 1.27 1.27)) (justify left))
+    (uuid 683b7a39-8f1a-4ec0-971c-0e6de481e6e1)
+    (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 121.3775 120.142 0)
+      (effects (font (size 1.27 1.27)) (justify left) hide)
     )
   )
   (global_label "GND" (shape input) (at 744.728 149.098 0) (fields_autoplaced)
@@ -11157,7 +11171,7 @@
     (property "Value" "1k" (at 160.655 592.455 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (at 156.337 591.185 90)
+    (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 156.337 591.185 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 158.115 591.185 0)
@@ -13483,7 +13497,7 @@
     (property "Value" "Conn_01x07" (at 531.749 309.118 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (at 528.828 303.784 0)
+    (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x07_P2.54mm_Horizontal" (at 528.828 303.784 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 528.828 303.784 0)
@@ -13860,6 +13874,31 @@
       (project "PlantCtrlESP32"
         (path "/c26e8d55-0b6e-4c4e-b7c8-b1fed973201c"
           (reference "C34") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "Connector:TestPoint") (at 44.704 594.995 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 421c599b-4cd1-4d3c-92b5-76708c5e738f)
+    (property "Reference" "TP8" (at 46.228 591.058 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "LED-Enabled" (at 46.228 593.598 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm" (at 49.784 594.995 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 49.784 594.995 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 95dce8b7-a11f-4bb6-ac67-37af20a3a6f4))
+    (instances
+      (project "PlantCtrlESP32"
+        (path "/c26e8d55-0b6e-4c4e-b7c8-b1fed973201c"
+          (reference "TP8") (unit 1)
         )
       )
     )
@@ -14569,7 +14608,7 @@
     (property "Value" "10k" (at 160.655 583.565 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (at 156.337 582.295 90)
+    (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 156.337 582.295 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 158.115 582.295 0)
@@ -15078,7 +15117,7 @@
     (property "Value" "SW_Push" (at 209.677 746.125 90)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Footprint" "" (at 202.692 744.22 0)
+    (property "Footprint" "Button_Switch_SMD:SW_SPST_CK_RS282G05A3" (at 202.692 744.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 202.692 744.22 0)
@@ -16132,8 +16171,8 @@
     (property "LCSC" "C14663" (at 133.985 582.295 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 3b3d3808-17a0-41ca-839e-50ee1c8914e7))
-    (pin "2" (uuid e45eca91-4134-471b-951d-3647a95d5864))
+    (pin "1" (uuid 67857f0b-7475-492c-83f5-3a6429fa36c0))
+    (pin "2" (uuid 67478379-1d2f-46c8-a35f-e21fd9b4ad1a))
     (instances
       (project "lig"
         (path "/03d6a00f-a8c8-4eb8-91ea-299864b30e8f"
@@ -16251,8 +16290,8 @@
     (property "Datasheet" "~" (at 465.836 474.98 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0556b26f-8380-414e-8234-5deec2bb1469))
-    (pin "2" (uuid 25121d7a-5c0e-40c3-896f-22a5a4e3049d))
+    (pin "1" (uuid 53701b9a-7280-4dcf-9411-7b9016ff98e7))
+    (pin "2" (uuid f612ed8c-9118-43c8-9565-8e70df404797))
     (instances
       (project "PlantCtrlESP32"
         (path "/c26e8d55-0b6e-4c4e-b7c8-b1fed973201c"
@@ -16433,8 +16472,8 @@
     (property "LCSC_PART_NUMBER" "C95781" (at 348.742 409.448 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid d7d2cbb2-4b24-48b0-8068-77d9a29a2885))
-    (pin "2" (uuid 24296632-3b3c-478e-97b5-5adc5e33de7a))
+    (pin "1" (uuid a05c9e0d-6ee7-47ef-8b9b-7854dd997a04))
+    (pin "2" (uuid 4d9b7b37-5d19-45e3-9df9-68fa57a0561a))
     (instances
       (project "plant-chain"
         (path "/a9a1a7f1-5fe9-44cf-9f12-9b7404b8f94d"
@@ -20207,7 +20246,7 @@
     (property "Value" "100pf" (at 153.035 583.565 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (at 150.1902 586.105 0)
+    (property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (at 150.1902 586.105 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 149.225 582.295 0)
@@ -20828,8 +20867,8 @@
     (property "LCSC_PART_NUMBER" "C95781" (at 67.945 589.915 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 32bfbbe4-6d5d-4a19-981e-4ac65b64b5b0))
-    (pin "2" (uuid 8d0c5662-5794-4402-8d76-498131f5a6ae))
+    (pin "1" (uuid 6116e140-7048-415c-9c95-af7ead580af1))
+    (pin "2" (uuid 5a3e176c-64b3-448b-8608-eacf327a4300))
     (instances
       (project "PlantCtrlESP32"
         (path "/c26e8d55-0b6e-4c4e-b7c8-b1fed973201c"
@@ -21321,8 +21360,8 @@
     (property "LCSC" "C17513" (at 47.752 717.55 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 987c8dbc-55e8-4330-81ba-ec2b0cd0c499))
-    (pin "2" (uuid fc275fe8-c084-4ef5-be57-e468a2489ce1))
+    (pin "1" (uuid 41bc7307-5dd1-43ae-a7a0-0ad64ce4234c))
+    (pin "2" (uuid 97799555-c090-4e3f-935f-20d1ab838c1f))
     (instances
       (project "lig"
         (path "/03d6a00f-a8c8-4eb8-91ea-299864b30e8f"
