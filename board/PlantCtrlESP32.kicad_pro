@@ -451,13 +451,13 @@
         "line_style": 0,
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
-        "name": "High_Current",
+        "name": "12V",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgb(255, 4, 6)",
         "track_width": 1.0,
         "via_diameter": 0.8,
         "via_drill": 0.4,
-        "wire_width": 39
+        "wire_width": 12
       },
       {
         "bus_width": 12,
@@ -468,30 +468,30 @@
         "line_style": 0,
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
-        "name": "Medium_Current",
+        "name": "3V",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
-        "schematic_color": "rgb(251, 255, 0)",
-        "track_width": 0.5,
-        "via_diameter": 0.8,
-        "via_drill": 0.4,
-        "wire_width": 20
-      },
-      {
-        "bus_width": 12,
-        "clearance": 0.2,
-        "diff_pair_gap": 0.25,
-        "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
-        "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
-        "name": "Signal",
-        "pcb_color": "rgba(0, 0, 0, 0.000)",
-        "schematic_color": "rgb(21, 255, 3)",
+        "schematic_color": "rgb(255, 153, 0)",
         "track_width": 0.2,
         "via_diameter": 0.8,
         "via_drill": 0.4,
-        "wire_width": 8
+        "wire_width": 12
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "GND",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgb(0, 0, 0)",
+        "track_width": 0.5,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 12
       }
     ],
     "meta": {
@@ -501,7 +501,7 @@
     "netclass_assignments": null,
     "netclass_patterns": [
       {
-        "netclass": "Default",
+        "netclass": "3V",
         "pattern": "3_3V"
       },
       {
@@ -529,7 +529,7 @@
         "pattern": "ESP_TX"
       },
       {
-        "netclass": "Default",
+        "netclass": "GND",
         "pattern": "GND"
       },
       {
@@ -949,11 +949,11 @@
         "pattern": "VCC_FUSED_ALWAYS"
       },
       {
-        "netclass": "High_Current",
+        "netclass": "12V",
         "pattern": "12V"
       },
       {
-        "netclass": "High_Current",
+        "netclass": "12V",
         "pattern": "/12VR"
       }
     ]
