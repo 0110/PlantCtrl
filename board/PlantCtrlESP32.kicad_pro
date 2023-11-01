@@ -64,7 +64,6 @@
         "courtyards_overlap|239080001|128865001|1c5c2a00-3616-406b-aedf-bf3a81986791|1ecf7cd6-6488-4305-b20b-72dbab800538",
         "courtyards_overlap|249080001|128865001|1ecf7cd6-6488-4305-b20b-72dbab800538|6ccc9c73-6edf-479a-97a6-a01eda77987f",
         "courtyards_overlap|268679999|80770001|22510631-57e1-46b7-916a-63be4d1f1249|ab413b79-2f68-48c4-8ed3-cedb5f870570",
-        "lib_footprint_mismatch|174430000|126070000|bf0a2e13-adf5-4f43-812e-b60e41b271a0|00000000-0000-0000-0000-000000000000",
         "silk_edge_clearance|170180000|117670000|87e2c53a-11a1-4d9d-89a9-2a5ca6e6f269|058105c1-5307-4874-9401-d1e0612824b0",
         "silk_edge_clearance|170180000|49705000|87e2c53a-11a1-4d9d-89a9-2a5ca6e6f269|2af3bc4a-e24d-48a4-898d-739774f84bd6",
         "silk_edge_clearance|170180000|67945000|87e2c53a-11a1-4d9d-89a9-2a5ca6e6f269|d1ed732d-93f0-4bca-ae40-dde82301c749",
@@ -152,7 +151,7 @@
         "min_track_width": 0.19999999999999998,
         "min_via_annular_width": 0.09999999999999999,
         "min_via_diameter": 0.39999999999999997,
-        "solder_mask_to_copper_clearance": 0.0,
+        "solder_mask_to_copper_clearance": 0.005,
         "use_height_for_length_calcs": true
       },
       "teardrop_options": [
