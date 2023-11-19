@@ -1,0 +1,12 @@
+cargo install cargo-generate
+cargo install ldproxy
+cargo install espup
+cargo install espflash
+cargo install cargo-espflash
+
+cargo generate esp-rs/esp-idf-template cargo
+export PATH="$PATH:$HOME/.cargo/bin"
+
+espup install
+rustup toolchain link esp ~/.rustup/toolchains/esp/
+cargo install ldproxy
