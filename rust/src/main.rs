@@ -2,6 +2,7 @@ use chrono::Utc;
 use embedded_hal::digital::v1_compat::OldOutputPin;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::{AdcDriver, AdcChannelDriver, attenuation};
+use esp_idf_hal::reset::ResetReason;
 use shift_register_driver::sipo::{ShiftRegister24, ShiftRegisterPin};
 use esp_idf_hal::gpio::PinDriver;
 use esp_idf_hal::prelude::Peripherals;
@@ -30,32 +31,32 @@ struct BatteryState {
     state_health_percent: u8
 }
 trait PlantCtrlBoardInteraction{
-    fn battery_state() -> BatteryState;
+    fn battery_state(&self,) -> BatteryState;
     
-    fn is_day() -> bool;
-    fn water_temperature_c() -> u16;
-    fn tank_sensor_mv() -> u16;
-    
-    fn set_low_voltage_in_cycle();
-    fn clear_low_voltage_in_cycle();
-    fn low_voltage_in_cycle(low_voltage:bool);
+    fn is_day(&self,) -> bool;
+    fn water_temperature_c(&self,) -> u16;
+    fn tank_sensor_mv(&self,) -> u16;
 
+    fn set_low_voltage_in_cycle(&self,);
+    fn clear_low_voltage_in_cycle(&self,);
+    fn low_voltage_in_cycle(&self) -> bool;
+    fn any_pump(&self, enabled:bool);
 
     //keep state during deepsleep
-    fn light(enable:bool);
+    fn light(&self,enable:bool);
 
-    fn plant_count() -> i8;
-    fn measure_moisture_b_hz(plant:i8) -> i16;
-    fn measure_moisture_a_hz(plant:i8) -> i16;
-    fn measure_moisture_p_hz(plant:i8) -> i16;
-    fn pump(plant:i8, enable:bool);
-    fn last_pump_time(plant:i8) -> chrono::DateTime<Utc>;
-    fn store_last_pump_time(plant:i8, time: chrono::DateTime<Utc>);
-    fn store_consecutive_pump_count(plant:i8, count:i16);
-    fn consecutive_pump_count(plant:i8) -> i16;
+    fn plant_count(&self,) -> i8;
+    fn measure_moisture_b_hz(&self,plant:i8) -> i16;
+    fn measure_moisture_a_hz(&self,plant:i8) -> i16;
+    fn measure_moisture_p_hz(&self,plant:i8) -> i16;
+    fn pump(&self,plant:i8, enable:bool);
+    fn last_pump_time(&self,plant:i8) -> chrono::DateTime<Utc>;
+    fn store_last_pump_time(&self,plant:i8, time: chrono::DateTime<Utc>);
+    fn store_consecutive_pump_count(&self,plant:i8, count:i16);
+    fn consecutive_pump_count(&self,plant:i8) -> i16;
 
     //keep state during deepsleep
-    fn fault(plant:i8, enable:bool);
+    fn fault(&self,plant:i8, enable:bool);
     
     fn default() -> Self;
 }
@@ -95,53 +96,85 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard {
         Self { dummy: 12 }
     }
 
-    fn plant_count() -> i8 {
+    fn battery_state(&self,) -> BatteryState {
         todo!()
     }
 
-    fn fault(plant:i8, state:bool) {
+    fn is_day(&self,) -> bool {
         todo!()
     }
 
-    fn pump(plant:i8, state:bool) {
+    fn water_temperature_c(&self,) -> u16 {
         todo!()
     }
 
-    fn battery_state() -> BatteryState {
+    fn tank_sensor_mv(&self,) -> u16 {
         todo!()
     }
 
-    fn is_day() -> bool {
+    fn set_low_voltage_in_cycle(&self,) {
+        unsafe {
+            LOW_VOLTAGE_DETECTED = true;
+        }
+    }
+
+    fn clear_low_voltage_in_cycle(&self,) {
+        unsafe {
+            LOW_VOLTAGE_DETECTED = false;
+        }
+    }
+
+    fn light(&self,enable:bool) {
         todo!()
     }
 
-    fn water_temperature_c() -> u16 {
+    fn plant_count(&self,) -> i8 {
         todo!()
     }
 
-    fn tank_sensor_mv() -> u16 {
+    fn measure_moisture_b_hz(&self,plant:i8) -> i16 {
         todo!()
     }
 
-    fn light(enable:bool) {
+    fn measure_moisture_a_hz(&self,plant:i8) -> i16 {
         todo!()
     }
 
-    fn measure_moisture_b_hz(plant:i8) -> i16 {
+    fn measure_moisture_p_hz(&self,plant:i8) -> i16 {
         todo!()
     }
 
-    fn measure_moisture_a_hz(plant:i8) -> i16 {
+    fn pump(&self,plant:i8, enable:bool) {
         todo!()
     }
 
-    fn measure_moisture_p_hz(plant:i8) -> i16 {
+    fn last_pump_time(&self,plant:i8) -> chrono::DateTime<Utc> {
         todo!()
     }
 
-    fn last_watering_time(plant:i8) -> chrono::DateTime<Utc> {
+    fn store_last_pump_time(&self,plant:i8, time: chrono::DateTime<Utc>) {
         todo!()
     }
+
+    fn store_consecutive_pump_count(&self,plant:i8, count:i16) {
+        todo!()
+    }
+
+    fn consecutive_pump_count(&self,plant:i8) -> i16 {
+        todo!()
+    }
+
+    fn fault(&self,plant:i8, enable:bool) {
+        todo!()
+    }
+
+    fn low_voltage_in_cycle(&self) -> bool {
+        unsafe {
+            return LOW_VOLTAGE_DETECTED;
+        }
+    }
+
+
 }
 
 
@@ -161,6 +194,53 @@ fn main() {
     log::info!("Hello, world!");
 
 
+    let reasons = ResetReason::get();
+    //init,reset rtc memory depending on cause
+
     let board = PlantCtrlBoard::default();
 
+    //check if we know the time current > 2020
+        //if failed assume its 1.1.1970 
+            //12:00 if solar reports day
+            //00:00 if solar repors night
+    
+    //check if we have a config file
+        // if not found or parsing error -> error very fast blink general fault
+            //if this happens after a firmeware upgrade (check image state), mark as invalid
+                //blink general fault error_reading_config_after_upgrade, reboot after
+            // open accesspoint with webserver for wlan mqtt setup
+                //blink general fault error_no_config_after_upgrade
+                    //once config is set store it and reboot
+
+    //is tank sensor enabled in config?
+        //measure tank level (without wifi due to interference)
+            //if not possible value, blink general fault error_tank_sensor_fault
+                //set general fault persistent
+                //set tank sensor state to fault
+        
+    
+    //try connect wifi and do mqtt roundtrip
+        // if no wifi, set general fault persistent
+            //if no mqtt, set general fault persistent
+
+    //measure each plant moisture
+    //check which plants need to be watered 
+        //()
+
+    //if tank sensor is enabled
+        //if tank sensor fault abort if config require is set
+        //check if water is > minimum allowed || fault
+            //if not, set all plants requiring water to persistent fault
+        // pump water for first plant update last water timestamp
+        // wait for config time per plant
+        //
+
+
+
+
 }
+
+//error codes
+//error_reading_config_after_upgrade
+//error_no_config_after_upgrade
+//error_tank_sensor_fault
