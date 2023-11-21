@@ -50,6 +50,7 @@ paste = "1.0.14"
 embedded-hal = "0.2.7"
 dummy-pin = "0.1.1"
 shift-register-driver = "0.1.1"
+one-wire-bus = "0.1.1"
 #?bq34z100 required
 
 
