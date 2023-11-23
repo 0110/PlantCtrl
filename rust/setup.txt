@@ -10,3 +10,9 @@ export PATH="$PATH:$HOME/.cargo/bin"
 espup install
 rustup toolchain link esp ~/.rustup/toolchains/esp/
 cargo install ldproxy
+
+cargo espflash save-image --chip esp32 image.bin
+
+
+esptool.py --chip ESP32-C3 elf2image --output my-app.bin target/release/my-app
+$ espflash save-image ESP32-C3 target/release/my-app my-app.bin

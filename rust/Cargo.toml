@@ -7,16 +7,34 @@ resolver = "2"
 rust-version = "1.71"
 
 [profile.release]
+# Explicitly disable LTO which the Xtensa codegen backend has issues
+lto = "thin"
 opt-level = "s"
-strip = true
-lto = "fat"
+strip = false
 codegen-units = 1
 
 [profile.dev]
+# Explicitly disable LTO which the Xtensa codegen backend has issues
+lto = "thin"
 debug = true    # Symbols are nice and they don't increase the size on Flash
 opt-level = "s"
-lto = "fat"
+strip = false
 codegen-units = 1
+
+[package.metadata.cargo_runner]
+# The string `$TARGET_FILE` will be replaced with the path from cargo.
+command = [
+    "cargo",
+    "espflash",
+    "save-image",
+    "--chip",
+    "esp32",
+    "image.bin"
+]
+
+
+[package.metadata.espflash]
+partition_table = "partitions2.csv"
 
 [features]
 default = ["std", "embassy", "esp-idf-svc/native"]
@@ -32,7 +50,6 @@ embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-
 log = { version = "0.4", default-features = false }
 esp-idf-svc = { version = "0.47.3", default-features = false }
 serde = { version = "1.0.192",  features = ["derive"] }
-minimq = "0.8.0"
 average = { version = "0.14.1" , features = ["std"] }
 esp32 = "0.27.0"
 bit_field = "0.10.2"
@@ -42,19 +59,14 @@ esp-idf-hal = "0.42.5"
 esp-idf-sys = { version = "0.33.7", features = ["binstart", "native"] }
 esp-ota = "0.2.0"
 esp_idf_build = "0.1.3"
-datetime = "0.5.2"
 build-time = "0.1.2"
 chrono = { version = "0.4.23", default-features = false , features = ["iana-time-zone"] }
-chrono-tz = "0.8.0"
-paste = "1.0.14"
+chrono-tz = {version="0.8.0", default-features = false , features = [ "filter-by-regex" ]}
 embedded-hal = "0.2.7"
-dummy-pin = "0.1.1"
 shift-register-driver = "0.1.1"
 one-wire-bus = "0.1.1"
-anyhow = "1.0.75"
+anyhow = { version = "1.0.75", features = ["std", "backtrace"] }
 #?bq34z100 required
-
-
 
 [build-dependencies]
 embuild = "0.31.3"

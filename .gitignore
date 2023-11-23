@@ -2,3 +2,7 @@
 PlantCtrlESP32-backups/
 board/production/PlantCtrlESP32_2023-11-08_00-45-35/PlantCtrlESP32.zip
 board/production/PlantCtrlESP32_2023-11-08_00-45-35/netlist.ipc
+.vscode
+.embuild/
+target
+Cargo.lock

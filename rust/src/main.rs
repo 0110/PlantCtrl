@@ -1,11 +1,22 @@
-use chrono::{Datelike, Timelike};
+use chrono::{Datelike, Timelike, NaiveDateTime};
+use build_time::build_time_utc;
 
-use crate::plant_hal::{PlantCtrlBoardInteraction, PlantHal, CreatePlantHal, PLANT_COUNT};
-
+use chrono_tz::Europe::Berlin;
+use esp_idf_hal::delay::Delay;
+use plant_hal::{PlantCtrlBoardInteraction, PlantHal, CreatePlantHal, PLANT_COUNT};
+use anyhow::{Context, Result};
+use webserver::webserver::httpd;
 pub mod plant_hal;
+mod webserver {
+    pub mod webserver;
+}
 
-fn main() {
+fn web_initial_mode() {
+    //expect running wifi access point!
+    let _httpd = httpd(true);
+}
 
+fn main() -> Result<()>{
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
     esp_idf_svc::sys::link_patches();
@@ -13,21 +24,30 @@ fn main() {
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    log::info!("Hello, world!");
+    log::info!("Startup Rust");
 
+    let utc_build_time = build_time_utc!();
+    println!("Version was build {}", utc_build_time);
     
-    let mut board = PlantHal::create();
-         
+
+    let mut board = PlantHal::create()?;     
     
-    let mut cur = board.time();
+     
+    let time = board.time();
+    let mut cur = match time {
+        Ok(cur) => cur,
+        Err(err) => {
+            log::error!("sntp error {}", err);
+            NaiveDateTime::from_timestamp_millis(0).unwrap().and_utc()
+        }
+    };
     //check if we know the time current > 2020
     if cur.year() < 2020 {
         if board.is_day() {
-            //assume 13:00 if solar reports day
-            cur = *cur.with_hour(13).get_or_insert(cur);
+            //assume TZ safe times ;)
+            cur = *cur.with_hour(15).get_or_insert(cur);
         } else {
-            //assume 01:00 if solar reports night
-            cur = *cur.with_hour(1).get_or_insert(cur);
+            cur = *cur.with_hour(3).get_or_insert(cur);
         }
     }
 
@@ -49,10 +69,26 @@ fn main() {
         //measure tank level (without wifi due to interference)
         //TODO this should be a result// detect invalid measurement value
         let tank_value = board.tank_sensor_mv();
-            //if not possible value, blink general fault error_tank_sensor_fault
+        match tank_value {
+            Ok(_) => todo!(),
+            Err(_) => {
+                //if not possible value, blink general fault error_tank_sensor_fault
                 board.general_fault(true);
                 //set general fault persistent
                 //set tank sensor state to fault
+            },
+        }
+            
+
+    //measure each plant moisture
+    let mut initial_measurements_a: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
+    let mut initial_measurements_b: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
+    let mut initial_measurements_p: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
+    for plant in 0..PLANT_COUNT {
+        initial_measurements_a[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::A)?;
+        initial_measurements_b[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::B)?;
+        initial_measurements_p[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP)?;
+    }
 
     
     //try connect wifi and do mqtt roundtrip
@@ -62,18 +98,14 @@ fn main() {
     
     match board.sntp(1000*120) {
         Ok(new_time) => cur = new_time,
-        Err(_) => todo!(),
+        Err(err) => {
+            println!("sntp error: {}", err);
+        }
     }
-    
-    //measure each plant moisture
-    let mut initial_measurements_a: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
-    let mut initial_measurements_b: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
-    let mut initial_measurements_p: [i32;PLANT_COUNT] = [0;PLANT_COUNT];
-    for plant in 0..PLANT_COUNT {
-        initial_measurements_a[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::A);
-        initial_measurements_b[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::B);
-        initial_measurements_p[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP);
-    }
+    println!("Running logic at utc {}", cur);
+    let europe_time = cur.with_timezone(&Berlin);
+    println!("Running logic at europe/berlin {}", europe_time);
+
 
 
     //if config battery mode
@@ -116,11 +148,15 @@ fn main() {
     //if no preventing lightstate, enable light
         //lightstate = active
     
-        
-        
 
+        web_initial_mode();
+        let delay = Delay::new_default();
+        loop {
+            //let freertos do shit
+            delay.delay_ms(1001);
+        }
 
-
+        return Ok(())
 
 }
 
