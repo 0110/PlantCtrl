@@ -8,18 +8,25 @@ rust-version = "1.71"
 
 [profile.release]
 # Explicitly disable LTO which the Xtensa codegen backend has issues
-lto = "thin"
+#lto = "thin"
 opt-level = "s"
 strip = false
-codegen-units = 1
+#codegen-units = 1
+debug = true 
+overflow-checks = true
+panic = "unwind"
+incremental = true
 
 [profile.dev]
 # Explicitly disable LTO which the Xtensa codegen backend has issues
-lto = "thin"
-debug = true    # Symbols are nice and they don't increase the size on Flash
+#lto = "thin"
 opt-level = "s"
 strip = false
-codegen-units = 1
+#codegen-units = 1
+debug = true 
+overflow-checks = true
+panic = "unwind"
+incremental = true
 
 [package.metadata.cargo_runner]
 # The string `$TARGET_FILE` will be replaced with the path from cargo.
