@@ -12,6 +12,7 @@ lto = "thin"
 opt-level = "s"
 strip = false
 codegen-units = 1
+debug = true  
 
 [profile.dev]
 # Explicitly disable LTO which the Xtensa codegen backend has issues
@@ -34,7 +35,7 @@ command = [
 
 
 [package.metadata.espflash]
-partition_table = "partitions2.csv"
+partition_table = "partitions.csv"
 
 [features]
 default = ["std", "embassy", "esp-idf-svc/native"]
@@ -66,6 +67,7 @@ embedded-hal = "0.2.7"
 shift-register-driver = "0.1.1"
 one-wire-bus = "0.1.1"
 anyhow = { version = "1.0.75", features = ["std", "backtrace"] }
+heapless = { version = "0.8.0", features = ["serde"] }
 #?bq34z100 required
 
 [build-dependencies]
