@@ -3,17 +3,14 @@ use build_time::build_time_utc;
 
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
+use esp_idf_svc::http::server::EspHttpServer;
 use plant_hal::{PlantCtrlBoardInteraction, PlantHal, CreatePlantHal, PLANT_COUNT};
 use anyhow::{Context, Result};
 use webserver::webserver::httpd;
 pub mod plant_hal;
+mod config;
 mod webserver {
     pub mod webserver;
-}
-
-fn web_initial_mode() {
-    //expect running wifi access point!
-    let _httpd = httpd(true);
 }
 
 fn main() -> Result<()>{
@@ -32,12 +29,13 @@ fn main() -> Result<()>{
 
     let mut board = PlantHal::create()?;     
     
+    println!("Board hal init");
      
     let time = board.time();
     let mut cur = match time {
         Ok(cur) => cur,
         Err(err) => {
-            log::error!("sntp error {}", err);
+            log::error!("time error {}", err);
             NaiveDateTime::from_timestamp_millis(0).unwrap().and_utc()
         }
     };
@@ -51,11 +49,21 @@ fn main() -> Result<()>{
         }
     }
 
-
+    println!("cur is {}", cur);
 
     //continous/interrupt?
         //check if boot button is pressed, if longer than 5s delete config and reboot into config mode
 
+
+    let config = board.get_config();
+    match config {
+        Ok(conf) => {
+
+        },
+        Err(err) => todo!(),
+    }
+
+    let proceed = config.unwrap();
     
     //check if we have a config file
         // if not found or parsing error -> error very fast blink general fault
@@ -65,12 +73,17 @@ fn main() -> Result<()>{
                 //blink general fault error_no_config_after_upgrade
                     //once config is set store it and reboot
 
+    if proceed.tank_sensor_enabled() {
+        
+    }
     //is tank sensor enabled in config?
         //measure tank level (without wifi due to interference)
         //TODO this should be a result// detect invalid measurement value
         let tank_value = board.tank_sensor_mv();
         match tank_value {
-            Ok(_) => todo!(),
+            Ok(tank_raw) => {
+                println!("Tank sensor returned {}", tank_raw);
+            },
             Err(_) => {
                 //if not possible value, blink general fault error_tank_sensor_fault
                 board.general_fault(true);
@@ -90,7 +103,13 @@ fn main() -> Result<()>{
         initial_measurements_p[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP)?;
     }
 
-    
+    match board.wifi("C3MA", Some("chaosimquadrat"), 10000) {
+        Ok(_) => println!("online mode"),
+        Err(_) => {
+
+            println!("Offline mode");
+        },
+    }
     //try connect wifi and do mqtt roundtrip
         // if no wifi, set general fault persistent
             //if no mqtt, set general fault persistent
@@ -149,13 +168,14 @@ fn main() -> Result<()>{
         //lightstate = active
     
 
-        web_initial_mode();
+        //keep webserver in scope
+        let webserver = httpd(true);
         let delay = Delay::new_default();
         loop {
             //let freertos do shit
             delay.delay_ms(1001);
         }
-
+        
         return Ok(())
 
 }
