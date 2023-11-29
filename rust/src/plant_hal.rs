@@ -1,3 +1,5 @@
+mod config;
+
 use embedded_svc::wifi::{Configuration, ClientConfiguration, AuthMethod};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
@@ -13,14 +15,14 @@ use embedded_hal::digital::v1_compat::OldOutputPin;
 use embedded_hal::digital::v2::OutputPin;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::{AdcDriver, AdcChannelDriver, attenuation};
-use esp_idf_hal::delay::Delay;
+use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::pcnt::{PcntDriver, PcntChannel, PinIndex, PcntChannelConfig, PcntControlMode, PcntCountMode};
 use esp_idf_hal::reset::ResetReason;
 use esp_idf_svc::sntp::{self, SyncStatus};
 use esp_idf_svc::systime::EspSystemTime;
 use esp_idf_sys::EspError;
 use one_wire_bus::OneWire;
-use shift_register_driver::sipo::ShiftRegister24;
+use shift_register_driver::sipo::ShiftRegister40;
 use esp_idf_hal::gpio::{PinDriver, Gpio39, Gpio4, AnyInputPin};
 use esp_idf_hal::prelude::Peripherals;
 
@@ -31,6 +33,7 @@ const PLANT_FAULT_OFFSET:usize = 1;
 const PLANT_MOIST_PUMP_OFFSET:usize = 2;
 const PLANT_MOIST_B_OFFSET:usize = 3;
 const PLANT_MOIST_A_OFFSET:usize = 4;
+
 
 
 #[link_section = ".rtc.data"]
@@ -57,6 +60,7 @@ pub struct BatteryState {
     state_health_percent: u8
 }
 
+#[derive(Debug)]
 pub enum Sensor{
     A,
     B,
@@ -92,6 +96,8 @@ pub trait PlantCtrlBoardInteraction{
 
     //keep state during deepsleep
     fn fault(&self,plant:usize, enable:bool);
+
+    fn get_config(&mut self) -> Result<Config>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -149,6 +155,8 @@ impl CreatePlantHal<'_> for PlantHal{
             Option::<AnyInputPin>::None,
         )?;
 
+        println!("Channel config start");
+
         counter_unit1.channel_config(
             PcntChannel::Channel0,
             PinIndex::Pin0,
@@ -163,11 +171,14 @@ impl CreatePlantHal<'_> for PlantHal{
             },
         )?;
 
+        println!("Setup filter");
+
         //TODO validate filter value! currently max allowed value
         counter_unit1.set_filter_value(1023)?;
         counter_unit1.filter_enable()?;
 
 
+        println!("Wifi start");
         
         let sys_loop = EspSystemEventLoop::take()?;
         let nvs = EspDefaultNvsPartition::take()?;
@@ -177,19 +188,34 @@ impl CreatePlantHal<'_> for PlantHal{
             Some(nvs)
         )?; 
 
+        let shift_register = ShiftRegister40::new(clock, latch, data);
+        let last_watering_timestamp = Mutex::new(unsafe { LAST_WATERING_TIMESTAMP });
+        let consecutive_watering_plant = Mutex::new(unsafe { CONSECUTIVE_WATERING_PLANT });
+        let low_voltage_detected = Mutex::new(unsafe { LOW_VOLTAGE_DETECTED });
+        let tank_driver = AdcDriver::new(peripherals.adc1, &Config::new())?;
+        let tank_channel: AdcChannelDriver<'_, {attenuation::DB_11}, Gpio39> = AdcChannelDriver::new(peripherals.pins.gpio39)?;
+        let solar_is_day = PinDriver::input(peripherals.pins.gpio25)?;
+        let light = PinDriver::output(peripherals.pins.gpio26)?;
+        let main_pump = PinDriver::output(peripherals.pins.gpio23)?;
+        let tank_power = PinDriver::output(peripherals.pins.gpio27)?;
+        let general_fault = PinDriver::output(peripherals.pins.gpio13)?;
+        let one_wire_bus = OneWire::new(one_wire_pin).map_err(|err| -> anyhow::Error {anyhow!("Missing attribute: {:?}", err)})?;
+
+        println!("After stuff");
+
         return Ok(PlantCtrlBoard { 
-            shift_register : ShiftRegister24::new(clock, latch, data),
-            last_watering_timestamp : Mutex::new(unsafe { LAST_WATERING_TIMESTAMP }),
-            consecutive_watering_plant : Mutex::new(unsafe { CONSECUTIVE_WATERING_PLANT }),
-            low_voltage_detected : Mutex::new(unsafe { LOW_VOLTAGE_DETECTED }),
-            tank_driver : AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?,
-            tank_channel: AdcChannelDriver::new(peripherals.pins.gpio39)?,
-            solar_is_day : PinDriver::input(peripherals.pins.gpio25)?,
-            light: PinDriver::output(peripherals.pins.gpio26)?,
-            main_pump: PinDriver::output(peripherals.pins.gpio23)?,
-            tank_power: PinDriver::output(peripherals.pins.gpio27)?,
-            general_fault: PinDriver::output(peripherals.pins.gpio13)?,
-            one_wire_bus: OneWire::new(one_wire_pin).map_err(|err| -> anyhow::Error {anyhow!("Missing attribute: {:?}", err)})?,
+            shift_register : shift_register,
+            last_watering_timestamp : last_watering_timestamp,
+            consecutive_watering_plant : consecutive_watering_plant,
+            low_voltage_detected : low_voltage_detected,
+            tank_driver : tank_driver,
+            tank_channel: tank_channel,
+            solar_is_day : solar_is_day,
+            light: light,
+            main_pump: main_pump,
+            tank_power: tank_power,
+            general_fault: general_fault,
+            one_wire_bus: one_wire_bus,
             signal_counter : counter_unit1,
             wifi_driver : wifi_driver
         });
@@ -198,7 +224,7 @@ impl CreatePlantHal<'_> for PlantHal{
 
 
 pub struct PlantCtrlBoard<'a>{
-    shift_register: ShiftRegister24<OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio21, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio22, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio19, esp_idf_hal::gpio::Output>>>,
+    shift_register: ShiftRegister40<OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio21, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio22, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio19, esp_idf_hal::gpio::Output>>>,
     consecutive_watering_plant: Mutex<[u32; PLANT_COUNT]>,
     last_watering_timestamp: Mutex<[i64; PLANT_COUNT]>,
     low_voltage_detected: Mutex<bool>,
@@ -210,7 +236,7 @@ pub struct PlantCtrlBoard<'a>{
     main_pump: PinDriver<'a, esp_idf_hal::gpio::Gpio23, esp_idf_hal::gpio::Output>,
     tank_power: PinDriver<'a, esp_idf_hal::gpio::Gpio27, esp_idf_hal::gpio::Output>,
     general_fault: PinDriver<'a, esp_idf_hal::gpio::Gpio13, esp_idf_hal::gpio::Output>,
-    wifi_driver: EspWifi<'a>,
+    pub wifi_driver: EspWifi<'a>,
     one_wire_bus: OneWire<PinDriver<'a, Gpio4, esp_idf_hal::gpio::InputOutput>>,
 }
 
@@ -268,7 +294,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     }
 
     fn pump(&self,plant:usize, enable:bool) -> Result<()> {
-        let index = plant*PINS_PER_PLANT*PLANT_PUMP_OFFSET;
+        let index = plant*PINS_PER_PLANT+PLANT_PUMP_OFFSET;
         //currently infailable error, keep for future as result anyway
         self.shift_register.decompose()[index].set_state(enable.into()).unwrap();
         Ok(())
@@ -293,7 +319,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     }
 
     fn fault(&self,plant:usize, enable:bool) {
-        let index = plant*PINS_PER_PLANT*PLANT_FAULT_OFFSET;
+        let index = plant*PINS_PER_PLANT+PLANT_FAULT_OFFSET;
         self.shift_register.decompose()[index].set_state(enable.into()).unwrap()
     }
 
@@ -336,7 +362,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
             Sensor::B => PLANT_MOIST_B_OFFSET,
             Sensor::PUMP => PLANT_MOIST_PUMP_OFFSET,
         };
-        let index = plant*PINS_PER_PLANT*offset;
+        let index = plant*PINS_PER_PLANT+offset;
         
         let delay = Delay::new_default();
         let measurement = 100;
@@ -350,7 +376,9 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         self.signal_counter.counter_pause()?;
         self.shift_register.decompose()[index].set_low().unwrap();
         let unscaled = self.signal_counter.get_counter_value()? as i32;
-        return Ok(unscaled*factor);
+        let hz = unscaled*factor;
+        println!("Measuring {:?} @ {} with {}", sensor, plant, hz);
+        return Ok(hz);
     }
 
     fn general_fault(&mut self, enable:bool) {
@@ -383,7 +411,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         let mut counter = 0_u32;
         while !self.wifi_driver.is_connected().unwrap(){
             let config = self.wifi_driver.get_configuration().unwrap();
-            println!("Waiting for station {:?}", config);
+            println!("Waiting for station connection");
             //TODO blink status?
             delay.delay_ms(250);
             counter += 250;
@@ -395,9 +423,26 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
             }
         }
         println!("Should be connected now");
+
+        while self.wifi_driver.is_up().unwrap() == false {
+            println!("Waiting for network being up");
+            delay.delay_ms(250);
+            counter += 250;
+            if counter > max_wait {
+                //ignore these errors, wifi will not be used this
+                self.wifi_driver.disconnect().unwrap_or(());
+                self.wifi_driver.stop().unwrap_or(());
+                bail!("Did not manage wifi connection within timeout");
+            }
+        }
+        //update freertos registers ;)
         let address = self.wifi_driver.sta_netif().get_ip_info().unwrap();
         println!("IP info: {:?}", address);
         return Ok(());
+    }
+
+    fn get_config(&mut self) -> Result<config::Config> {
+        todo!()
     }
 
 
