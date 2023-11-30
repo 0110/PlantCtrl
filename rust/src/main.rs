@@ -1,5 +1,4 @@
 use chrono::{Datelike, Timelike, NaiveDateTime};
-use build_time::build_time_utc;
 
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
@@ -23,8 +22,8 @@ fn main() -> Result<()>{
 
     log::info!("Startup Rust");
 
-    let utc_build_time = build_time_utc!();
-    println!("Version was build {}", utc_build_time);
+    let git_hash = env!("VERGEN_GIT_DESCRIBE");
+    println!("Version useing git has {}", git_hash);
     
 
     let mut board = PlantHal::create()?;     

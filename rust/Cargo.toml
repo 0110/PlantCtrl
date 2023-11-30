@@ -8,19 +8,25 @@ rust-version = "1.71"
 
 [profile.release]
 # Explicitly disable LTO which the Xtensa codegen backend has issues
-lto = "thin"
+#lto = "thin"
 opt-level = "s"
 strip = false
-codegen-units = 1
-debug = true  
+#codegen-units = 1
+debug = true 
+overflow-checks = true
+panic = "unwind"
+incremental = true
 
 [profile.dev]
 # Explicitly disable LTO which the Xtensa codegen backend has issues
-lto = "thin"
-debug = true    # Symbols are nice and they don't increase the size on Flash
+#lto = "thin"
 opt-level = "s"
 strip = false
-codegen-units = 1
+#codegen-units = 1
+debug = true 
+overflow-checks = true
+panic = "unwind"
+incremental = true
 
 [package.metadata.cargo_runner]
 # The string `$TARGET_FILE` will be replaced with the path from cargo.
@@ -60,15 +66,16 @@ esp-idf-hal = "0.42.5"
 esp-idf-sys = { version = "0.33.7", features = ["binstart", "native"] }
 esp-ota = "0.2.0"
 esp_idf_build = "0.1.3"
-build-time = "0.1.2"
 chrono = { version = "0.4.23", default-features = false , features = ["iana-time-zone"] }
 chrono-tz = {version="0.8.0", default-features = false , features = [ "filter-by-regex" ]}
 embedded-hal = "0.2.7"
 shift-register-driver = "0.1.1"
 one-wire-bus = "0.1.1"
 anyhow = { version = "1.0.75", features = ["std", "backtrace"] }
+schemars = "0.8.16"
 heapless = { version = "0.8.0", features = ["serde"] }
 #?bq34z100 required
 
 [build-dependencies]
 embuild = "0.31.3"
+vergen = { version = "8.2.6", features = ["build", "git", "gitcl"] }

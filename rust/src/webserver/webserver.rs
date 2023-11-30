@@ -1,6 +1,5 @@
 //offer ota and config mode
 
-use build_time::build_time_utc;
 use embedded_svc::http::Method;
 use esp_idf_svc::http::server::EspHttpServer;
 use esp_ota::OtaUpdate;
@@ -20,9 +19,9 @@ pub fn httpd(initial_config:bool) -> EspHttpServer<'static> {
             return Ok(())
         }).unwrap();
     server
-        .fn_handler("/buildtime",Method::Get,  |request| {
+        .fn_handler("/version",Method::Get,  |request| {
             let mut response = request.into_ok_response()?;
-            response.write(build_time_utc!().as_bytes())?;
+            response.write(env!("VERGEN_GIT_DESCRIBE").as_bytes())?;
             return Ok(())
         }).unwrap();
     server
