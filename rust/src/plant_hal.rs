@@ -1,12 +1,14 @@
-mod config;
+//mod config;
 
 use embedded_svc::wifi::{Configuration, ClientConfiguration, AuthMethod};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use esp_idf_svc::wifi::EspWifi;
 
+use std::fs::File;
+use std::io::Read;
 use std::sync::Mutex;
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, bail, Ok};
 use anyhow::anyhow;
 
 use chrono::{Utc, NaiveDateTime, DateTime};
@@ -25,6 +27,8 @@ use one_wire_bus::OneWire;
 use shift_register_driver::sipo::ShiftRegister40;
 use esp_idf_hal::gpio::{PinDriver, Gpio39, Gpio4, AnyInputPin};
 use esp_idf_hal::prelude::Peripherals;
+
+use crate::config;
 
 pub const PLANT_COUNT:usize = 8;
 const PINS_PER_PLANT:usize = 5;
@@ -97,7 +101,7 @@ pub trait PlantCtrlBoardInteraction{
     //keep state during deepsleep
     fn fault(&self,plant:usize, enable:bool);
 
-    fn get_config(&mut self) -> Result<Config>;
+    fn get_config(&mut self) -> Result<config::Config>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -442,7 +446,10 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     }
 
     fn get_config(&mut self) -> Result<config::Config> {
-        todo!()
+        let config_file = File::open("config.cfg")?;
+        //serde_json::from_str(&data);
+        bail!("Not implemented");
+
     }
 
 

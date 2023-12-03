@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use chrono::{Datelike, Timelike, NaiveDateTime};
 
 use chrono_tz::Europe::Berlin;
@@ -50,6 +52,9 @@ fn main() -> Result<()>{
 
     println!("cur is {}", cur);
 
+
+    
+
     //continous/interrupt?
         //check if boot button is pressed, if longer than 5s delete config and reboot into config mode
 
@@ -57,12 +62,14 @@ fn main() -> Result<()>{
     let config = board.get_config();
     match config {
         Ok(conf) => {
-
+            
         },
-        Err(err) => todo!(),
+        Err(err) => {
+            
+        },
     }
 
-    let proceed = config.unwrap();
+//    let proceed = config.unwrap();
     
     //check if we have a config file
         // if not found or parsing error -> error very fast blink general fault
@@ -72,9 +79,9 @@ fn main() -> Result<()>{
                 //blink general fault error_no_config_after_upgrade
                     //once config is set store it and reboot
 
-    if proceed.tank_sensor_enabled() {
+    //if proceed.tank_sensor_enabled() {
         
-    }
+    //}
     //is tank sensor enabled in config?
         //measure tank level (without wifi due to interference)
         //TODO this should be a result// detect invalid measurement value
