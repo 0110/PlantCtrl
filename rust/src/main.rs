@@ -124,10 +124,12 @@ fn main() -> Result<()> {
         //try connect wifi and do mqtt roundtrip
             // if no wifi, set general fault persistent
                 //if no mqtt, set general fault persistent
-                
+
+    let mut total_size = 0;
+    let mut used_size = 0;         
     unsafe {
-        let base_path = CString::new("/spiffs").unwrap();
-        let storage = CString::new("storage").unwrap();
+        let base_path = CString::new("/spiffs")?;
+        let storage = CString::new("storage")?;
 
         let conf = esp_idf_sys::esp_vfs_spiffs_conf_t {
             base_path: base_path.as_ptr(),
@@ -135,10 +137,11 @@ fn main() -> Result<()> {
             max_files: 5,
             format_if_mount_failed: true,
         };
+        esp_idf_sys::esp!(esp_idf_sys::esp_vfs_spiffs_register(&conf))?;
 
-        let mount = esp_idf_sys::esp_vfs_spiffs_register(&conf);
-        println!("Mount returned {}", mount);
+        esp_idf_sys::esp!(esp_idf_sys::esp_spiffs_info(storage.as_ptr(),&mut total_size,&mut used_size))?;
     }
+    println!("Total spiffs size is {}, used size is {}", total_size, used_size);
     println!("writing");
     let mut config_file = File::create("/spiffs/config.cfg")?;
     config_file.write_all("test stuff".as_bytes())?;
