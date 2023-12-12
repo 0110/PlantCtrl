@@ -74,6 +74,7 @@ one-wire-bus = "0.1.1"
 anyhow = { version = "1.0.75", features = ["std", "backtrace"] }
 schemars = "0.8.16"
 heapless = { version = "0.8.0", features = ["serde"] }
+serde_json = "1.0.108"
 #?bq34z100 required
 
 [build-dependencies]

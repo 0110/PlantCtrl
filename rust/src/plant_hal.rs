@@ -1,12 +1,15 @@
 //mod config;
 
-use embedded_svc::wifi::{Configuration, ClientConfiguration, AuthMethod};
+use embedded_svc::wifi::{Configuration, ClientConfiguration, AuthMethod, Wifi};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use esp_idf_svc::wifi::EspWifi;
 
+use std::ffi::CString;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, BufReader};
+use std::path::Path;
+use std::str::from_utf8;
 use std::sync::Mutex;
 use anyhow::{Context, Result, bail, Ok};
 use anyhow::anyhow;
@@ -25,10 +28,11 @@ use esp_idf_svc::systime::EspSystemTime;
 use esp_idf_sys::EspError;
 use one_wire_bus::OneWire;
 use shift_register_driver::sipo::ShiftRegister40;
-use esp_idf_hal::gpio::{PinDriver, Gpio39, Gpio4, AnyInputPin};
+use esp_idf_hal::gpio::{PinDriver, Gpio39, Gpio4, AnyInputPin, Level};
 use esp_idf_hal::prelude::Peripherals;
+use serde::{Deserialize, Serialize};
 
-use crate::config;
+use crate::config::{self, WifiConfig};
 
 pub const PLANT_COUNT:usize = 8;
 const PINS_PER_PLANT:usize = 5;
@@ -38,6 +42,9 @@ const PLANT_MOIST_PUMP_OFFSET:usize = 2;
 const PLANT_MOIST_B_OFFSET:usize = 3;
 const PLANT_MOIST_A_OFFSET:usize = 4;
 
+const SPIFFS_PARTITION_NAME: &str = "storage";
+const WIFI_CONFIG_FILE: &str = "/spiffs/wifi.cfg";
+const CONFIG_FILE: &str = "/spiffs/config.cfg";
 
 
 #[link_section = ".rtc.data"]
@@ -64,6 +71,12 @@ pub struct BatteryState {
     state_health_percent: u8
 }
 
+pub struct FileSystemSizeInfo{
+    pub total_size: usize,
+    pub used_size: usize,
+    pub free_size: usize
+}
+
 #[derive(Debug)]
 pub enum Sensor{
     A,
@@ -74,6 +87,8 @@ pub trait PlantCtrlBoardInteraction{
     fn time(&mut self) -> Result<chrono::DateTime<Utc>>;
     fn wifi(&mut self, ssid:&str, password:Option<&str>, max_wait:u32) -> Result<()>;
     fn sntp(&mut self, max_wait:u32) -> Result<chrono::DateTime<Utc>>;
+    fn mountFileSystem(&mut self) -> Result<()>;
+    fn fileSystemSize(&mut self) -> Result<FileSystemSizeInfo>;
 
     fn battery_state(&mut self) -> Result<BatteryState>;
 
@@ -101,7 +116,12 @@ pub trait PlantCtrlBoardInteraction{
     //keep state during deepsleep
     fn fault(&self,plant:usize, enable:bool);
 
+    //config
+    fn is_config_reset(&mut self) -> bool;
+    fn remove_configs(&mut self) -> Result<()>;
     fn get_config(&mut self) -> Result<config::Config>;
+    fn get_wifi(&mut self) -> Result<config::WifiConfig>;
+    fn set_wifi(&mut self, wifi: &WifiConfig) -> Result<()>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -199,6 +219,7 @@ impl CreatePlantHal<'_> for PlantHal{
         let tank_driver = AdcDriver::new(peripherals.adc1, &Config::new())?;
         let tank_channel: AdcChannelDriver<'_, {attenuation::DB_11}, Gpio39> = AdcChannelDriver::new(peripherals.pins.gpio39)?;
         let solar_is_day = PinDriver::input(peripherals.pins.gpio25)?;
+        let boot_button = PinDriver::input(peripherals.pins.gpio0)?;
         let light = PinDriver::output(peripherals.pins.gpio26)?;
         let main_pump = PinDriver::output(peripherals.pins.gpio23)?;
         let tank_power = PinDriver::output(peripherals.pins.gpio27)?;
@@ -215,6 +236,7 @@ impl CreatePlantHal<'_> for PlantHal{
             tank_driver : tank_driver,
             tank_channel: tank_channel,
             solar_is_day : solar_is_day,
+            boot_button : boot_button,
             light: light,
             main_pump: main_pump,
             tank_power: tank_power,
@@ -235,6 +257,7 @@ pub struct PlantCtrlBoard<'a>{
     tank_driver: AdcDriver<'a, esp_idf_hal::adc::ADC1>,
     tank_channel: esp_idf_hal::adc::AdcChannelDriver<'a, { attenuation::DB_11 }, Gpio39 >,
     solar_is_day: PinDriver<'a, esp_idf_hal::gpio::Gpio25, esp_idf_hal::gpio::Input>,
+    boot_button: PinDriver<'a, esp_idf_hal::gpio::Gpio0, esp_idf_hal::gpio::Input>,
     signal_counter: PcntDriver<'a>,
     light: PinDriver<'a, esp_idf_hal::gpio::Gpio26, esp_idf_hal::gpio::Output>,
     main_pump: PinDriver<'a, esp_idf_hal::gpio::Gpio23, esp_idf_hal::gpio::Output>,
@@ -445,12 +468,72 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         return Ok(());
     }
 
-    fn get_config(&mut self) -> Result<config::Config> {
-        let config_file = File::open("config.cfg")?;
-        //serde_json::from_str(&data);
-        bail!("Not implemented");
+    fn mountFileSystem(&mut self) -> Result<()> { 
+        let base_path = CString::new("/spiffs")?;
+        let storage = CString::new(SPIFFS_PARTITION_NAME)?;
+        let conf = esp_idf_sys::esp_vfs_spiffs_conf_t {
+            base_path: base_path.as_ptr(),
+            partition_label: storage.as_ptr(),
+            max_files: 2,
+            format_if_mount_failed: true,
+        };
 
+        unsafe {
+            esp_idf_sys::esp!(esp_idf_sys::esp_vfs_spiffs_register(&conf))?;
+            Ok(())
+        }
     }
 
+    fn fileSystemSize(&mut self) -> Result<FileSystemSizeInfo> {
+        let storage = CString::new(SPIFFS_PARTITION_NAME)?;
+        let mut total_size = 0;
+        let mut used_size = 0;
+        unsafe {
+            esp_idf_sys::esp!(esp_idf_sys::esp_spiffs_info(storage.as_ptr(),&mut total_size,&mut used_size))?;
+        }
+        return Ok(FileSystemSizeInfo{total_size, used_size, free_size : total_size - used_size});
+    }
+
+    fn is_config_reset(&mut self) -> bool {
+        return self.boot_button.get_level() == Level::Low;
+    }
+
+    fn remove_configs(&mut self) -> Result<()> {
+        let wifi_config = Path::new(WIFI_CONFIG_FILE);
+        if wifi_config.exists() {
+            println!("Removing wifi config");
+            std::fs::remove_file(wifi_config)?;    
+        }
+        
+        let config = Path::new(CONFIG_FILE);
+        if config.exists() {
+            println!("Removing config");
+            std::fs::remove_file(config)?;    
+        }
+        Ok(())
+    }
+
+    fn get_wifi(&mut self) -> Result<config::WifiConfig> {
+        let cfg = File::open(WIFI_CONFIG_FILE)?;
+        let config: WifiConfig = serde_json::from_reader(cfg)?;
+        return Ok(config);
+    }
+
+    fn set_wifi(&mut self, wifi: &WifiConfig ) -> Result<()> {
+        let mut cfg = File::create(WIFI_CONFIG_FILE)?;
+        serde_json::to_writer(&mut cfg, &wifi)?;
+        println!("Wrote wifi config {}", wifi);
+        return Ok(());
+    }
+
+    fn get_config(&mut self) -> Result<config::Config> {
+        let mut cfg = File::open(CONFIG_FILE)?;
+        let mut data: [u8; 512] = [0; 512];
+        let read = cfg.read(&mut data)?;
+        println!("Read file {}", from_utf8(&data[0..read])?);
+
+        
+        bail!("todo")
+    }
 
 } 
