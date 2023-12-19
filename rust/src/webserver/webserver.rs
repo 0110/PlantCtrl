@@ -30,7 +30,6 @@ pub fn httpd(initial_config:bool) -> EspHttpServer<'static> {
             response.write(include_bytes!("ota.js"))?;
             return Ok(())
         }).unwrap();
-
     server
         .fn_handler("/ota", Method::Post,  |mut request| {
             let ota = OtaUpdate::begin();
