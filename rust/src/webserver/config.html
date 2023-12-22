@@ -1,72 +1,57 @@
 <html>
 <meta>
 <script src="ota.js"></script>
-<script src="jsoneditor.js"></script>
+<script src="form.js"></script>
 </meta>
 
 <body>
-    <h2>firmeware OTA v3</h2>
-    <form id="upload_form" method="post">
-        <input type="file" name="file1" id="file1" onchange="uploadFile()"><br>
-        <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
-        <h3 id="status"></h3>
-        <h3 id="answer"></h3>
-        <p id="loaded_n_total"></p>
-    </form>
+  <h2>firmeware OTA v3</h2>
+  <form id="upload_form" method="post">
+    <input type="file" name="file1" id="file1" onchange="uploadFile()"><br>
+    <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
+    <h3 id="status"></h3>
+    <h3 id="answer"></h3>
+    <p id="loaded_n_total"></p>
+  </form>
 
-    <h2>config</h2>
-    <div id="editor_holder" data-theme="html" class="je-ready">
+  <h2>config</h2>
 
+
+  <button id="submit" onclick="createForm()">Create</button>
+  <div id="configform">
+    <h3>Tank:</h3>
+    <div>
+      <input type="checkbox" id="tank_sensor_enabled" onchange="submitForm()">
+      Enable Tank Sensor
     </div>
-    <button id="submit">Submit (console.log)</button>
-    <script>
-        // Initialize the editor with a JSON schema
-        var editor = new JSONEditor(document.getElementById('editor_holder'),{
-          schema: {
-            type: "object",
-            title: "Car",
-            properties: {
-              make: {
-                type: "string",
-                enum: [
-                  "Toyota",
-                  "BMW",
-                  "Honda",
-                  "Ford",
-                  "Chevy",
-                  "VW"
-                ]
-              },
-              model: {
-                type: "string"
-              },
-              year: {
-                type: "integer",
-                enum: [
-                  1995,1996,1997,1998,1999,
-                  2000,2001,2002,2003,2004,
-                  2005,2006,2007,2008,2009,
-                  2010,2011,2012,2013,2014
-                ],
-                default: 2008
-              },
-              safety: {
-                type: "integer",
-                format: "rating",
-                maximum: "5",
-                exclusiveMaximum: false,
-                readonly: false
-              }
-            }
-          }
-        });
-  
-        // Hook up the submit button to log to the console
-        document.getElementById('submit').addEventListener('click',function() {
-          // Get the value from the editor
-          console.log(editor.getValue());
-        });
-      </script>
+
+    <div>
+      <input type="number" min="2" max="500000" id="tank_full_ml" onchange="submitForm()">
+      Tank Size mL
+    </div>
+    <div>
+      <input type="number" min="1" max="500000" id="tank_warn_percent" onchange="submitForm()">
+      Tank Warn below mL
+    </div>
+
+    <h3>Light:</h3>
+    <div>
+      Start
+      <input type="time" id="night_lamp_time_start"  onchange="submitForm()">
+      Stop
+      <input type="time" id="night_lamp_time_end"  onchange="submitForm()">
+    </div>
+    <div>
+      <input type="checkbox" id="night_lamp_only_when_dark" onchange="submitForm()">
+      Light only when dark
+    </div>
+      
+    <h3>Plants:</h3>
+    <div id="plants"></div>
+  </div>
+  <button id="submit" onclick="submitForm()">Submit</button>
+  <br>
+  <textarea id="json" cols=50 rows=10></textarea>
 </body>
 
 </html>

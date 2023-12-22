@@ -1,6 +1,7 @@
 <html>
     <meta>
         <script src="ota.js"></script>
+        <script src="wifi.js"></script>
     </meta>
     <body>
         <div>
@@ -12,6 +13,18 @@
             <h3 id="answer"></h3>
             <p id="loaded_n_total"></p>
             </form>
+        </div>
+
+        <div>
+            <h2>WIFI</h2>
+            <input type="button" id="scan" onchange="scanWifi()" value="Scan">
+            <br>
+            <label for="ssid">SSID:</label>
+            <input type="text" id="ssid" list="cityname">
+            <datalist id="cityname">
+                <option value="Boston">
+                <option value="Cambridge">
+            </datalist>
         </div>
     </body>
 </html>

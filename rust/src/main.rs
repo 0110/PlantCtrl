@@ -1,23 +1,15 @@
-use std::{
-    ffi::CString,
-    fs::File,
-    io::{Read, Write},
-    mem,
-    str::from_utf8,
-};
+use std::{sync::{Arc, Mutex}, env};
 
 use chrono::{Datelike, NaiveDateTime, Timelike};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
-use esp_idf_svc::http::server::EspHttpServer;
-use esp_idf_sys::{esp_restart, vTaskDelay, TickType_t};
-use heapless::String;
+use esp_idf_sys::{esp_restart, vTaskDelay};
 use plant_hal::{CreatePlantHal, PlantCtrlBoard, PlantCtrlBoardInteraction, PlantHal, PLANT_COUNT};
-use webserver::webserver::httpd;
 
-use crate::config::{Config, WifiConfig};
+
+use crate::{config::{Config, WifiConfig}, webserver::webserver::httpd_initial};
 mod config;
 pub mod plant_hal;
 mod webserver {
@@ -33,14 +25,30 @@ enum OnlineMode {
     MqttRoundtrip
 }
 
-fn wait_infinity(board: &mut PlantCtrlBoard<'_>) {
+enum WaitType{
+    InitialConfig,
+    FlashError
+}
+
+fn wait_infinity(board_access: Arc<Mutex<PlantCtrlBoard<'_>>>, wait_type:WaitType)  -> !{
+    let delay = match wait_type {
+        WaitType::InitialConfig => 250_u32,
+        WaitType::FlashError => 100_u32,
+    };
+    board_access.lock().unwrap().light(true);
     loop {
         unsafe {
             //do not trigger watchdog
-            board.general_fault(true);
-            vTaskDelay(500_u32);
-            board.general_fault(false);
-            vTaskDelay(500_u32);
+            for i in 0..7 {
+                board_access.lock().unwrap().fault(i, true);    
+            }
+            board_access.lock().unwrap().general_fault(true);
+            vTaskDelay(delay);
+            board_access.lock().unwrap().general_fault(false);
+            for i in 0..7 {
+                board_access.lock().unwrap().fault(i, false);    
+            }
+            vTaskDelay(delay);
         }
     }
 }
@@ -59,7 +67,8 @@ fn main() -> Result<()> {
     println!("Version useing git has {}", git_hash);
 
     println!("Board hal init");
-    let mut board = PlantHal::create()?;
+    let board_access = PlantHal::create()?;
+    let mut board = board_access.lock().unwrap();
     println!("Mounting filesystem");
     board.mountFileSystem()?;
     let free_space = board.fileSystemSize()?;
@@ -103,7 +112,7 @@ fn main() -> Result<()> {
                 Err(err) => {
                     println!("Could not remove config files, system borked {}", err);
                     //terminate main app and freeze
-                    wait_infinity(&mut board);
+                    wait_infinity( board_access.clone(), WaitType::FlashError);
                 }
             }
         }
@@ -118,12 +127,11 @@ fn main() -> Result<()> {
         },
         Err(err) => {
             println!("Missing wifi config, entering initial config mode {}", err);
+            board.wifi_ap().unwrap();
             //config upload will trigger reboot!
-            let _webserver = httpd(true);
-            wait_infinity(&mut board);
-            //how to do this better?
-            let ssid: String<32> = String::try_from("").unwrap();
-            wifi = WifiConfig { ssid : ssid, password : None};
+            drop(board);
+            let _webserver = httpd_initial(board_access.clone());
+            wait_infinity(board_access.clone(), WaitType::InitialConfig);
         },
     };
 
@@ -195,10 +203,10 @@ fn main() -> Result<()> {
         println!("Running logic at europe/berlin {}", europe_time);
     }
 
-    if(online_mode == OnlineMode::SnTp){
+    if online_mode == OnlineMode::SnTp {
         //mqtt here
     }
-    if(online_mode == OnlineMode::Mqtt){
+    if online_mode == OnlineMode::Mqtt {
         //mqtt roundtrip here
     }
     //TODO configmode webserver logic here

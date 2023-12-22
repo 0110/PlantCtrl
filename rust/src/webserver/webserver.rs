@@ -1,23 +1,64 @@
 //offer ota and config mode
 
+use std::{vec, sync::{Mutex, Arc}};
+
 use embedded_svc::http::Method;
 use esp_idf_svc::http::server::EspHttpServer;
 use esp_ota::OtaUpdate;
 
-#[allow(unused_variables)]
-pub fn httpd(initial_config:bool) -> EspHttpServer<'static> {
+use crate::plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction};
 
-    let mut server = EspHttpServer::new(&Default::default()).unwrap();
+pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
+    let mut server = shared();
+    server.fn_handler("/",Method::Get, move |request| {
+        let mut response = request.into_ok_response()?;
+        response.write(include_bytes!("initial_config.html"))?;
+        return Ok(())
+    }).unwrap();
+
+    server.fn_handler("/wifiscan",Method::Get,  move |request| {
+        let mut response = request.into_ok_response()?;
+        let mut board = board_access.lock().unwrap();
+        match board.wifi_scan()  {
+            Err(error) => {
+                response.write(format!("Error scanning wifi: {}", error).as_bytes())?;
+            },
+            Ok(scan_result) => {
+                println!("Scan result is {:?}", scan_result);
+                response.write("{ ssids:[".as_bytes())?;
+                let mut first = true;
+                for ap in scan_result.iter(){
+                    if !first {
+                        response.write(",".as_bytes())?;
+                    }
+                    response.write(ap.ssid.as_bytes())?;
+                    first = false;
+                }
+                response.write("]".as_bytes())?;
+            },
+        }
+        return Ok(())
+    }).unwrap();
+    return server
+}
+
+pub fn httpd(board:&mut Box<PlantCtrlBoard<'static>>) -> Box<EspHttpServer<'static>> {
+    let mut server = shared();
 
     server
-        .fn_handler("/",Method::Get, move |request| {
-            let mut response = request.into_ok_response()?;
-            match initial_config {
-                true => response.write(include_bytes!("initial_config.html"))?,
-                false => response.write(include_bytes!("config.html"))?
-            };
-            return Ok(())
-        }).unwrap();
+    .fn_handler("/",Method::Get, move |request| {
+        let mut response = request.into_ok_response()?;
+        response.write(include_bytes!("config.html"))?;
+        return Ok(())
+    }).unwrap();
+
+    return server;
+
+}
+
+pub fn shared() -> Box<EspHttpServer<'static>> {
+    let mut server = Box::new(EspHttpServer::new(&Default::default()).unwrap());
+
     server
         .fn_handler("/version",Method::Get,  |request| {
             let mut response = request.into_ok_response()?;
@@ -78,9 +119,6 @@ pub fn httpd(initial_config:bool) -> EspHttpServer<'static> {
             println!("changing boot partition");
             finalizer.set_as_boot_partition().unwrap();
             finalizer.restart();
-
-        
-            //return Ok(())
         }).unwrap();
     return server;
 }
