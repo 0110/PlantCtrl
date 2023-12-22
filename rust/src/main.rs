@@ -130,7 +130,7 @@ fn main() -> Result<()> {
             board.wifi_ap().unwrap();
             //config upload will trigger reboot!
             drop(board);
-            let _webserver = httpd_initial(board_access.clone());
+            let _webserver = httpd_initial(&board_access);
             wait_infinity(board_access.clone(), WaitType::InitialConfig);
         },
     };

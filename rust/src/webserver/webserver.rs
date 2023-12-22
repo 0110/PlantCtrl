@@ -1,22 +1,36 @@
 //offer ota and config mode
 
-use std::{vec, sync::{Mutex, Arc}};
+use std::sync::{Mutex, Arc};
 
 use embedded_svc::http::Method;
 use esp_idf_svc::http::server::EspHttpServer;
 use esp_ota::OtaUpdate;
+use heapless::String;
+use serde::Serialize;
 
-use crate::plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction};
+use crate::{plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction}, config::WifiConfig};
 
-pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
+#[derive(Serialize)]
+#[derive(Debug)]
+struct SSIDList<'a> {
+    ssids: Vec<&'a String<32>>
+}
+
+pub fn httpd_initial(board_access:&Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
     server.fn_handler("/",Method::Get, move |request| {
         let mut response = request.into_ok_response()?;
         response.write(include_bytes!("initial_config.html"))?;
         return Ok(())
     }).unwrap();
-
-    server.fn_handler("/wifiscan",Method::Get,  move |request| {
+    server
+        .fn_handler("/wifi.js",Method::Get, |request| {
+            let mut response = request.into_ok_response()?;
+            response.write(include_bytes!("wifi.js"))?;
+            return Ok(())
+        }).unwrap();
+    
+    server.fn_handler("/wifiscan",Method::Post,  move |request| {
         let mut response = request.into_ok_response()?;
         let mut board = board_access.lock().unwrap();
         match board.wifi_scan()  {
@@ -24,21 +38,41 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
                 response.write(format!("Error scanning wifi: {}", error).as_bytes())?;
             },
             Ok(scan_result) => {
-                println!("Scan result is {:?}", scan_result);
-                response.write("{ ssids:[".as_bytes())?;
-                let mut first = true;
-                for ap in scan_result.iter(){
-                    if !first {
-                        response.write(",".as_bytes())?;
-                    }
-                    response.write(ap.ssid.as_bytes())?;
-                    first = false;
-                }
-                response.write("]".as_bytes())?;
+                let mut ssids: Vec<&String<32>> = Vec::new();
+                scan_result.iter().for_each(|s| 
+                    ssids.push(&s.ssid)
+                );
+                response.write( serde_json::to_string(
+                    &SSIDList{ssids}
+                )?.as_bytes())?;
             },
         }
         return Ok(())
     }).unwrap();
+
+    server.fn_handler("/wifisave",Method::Post,  move |mut request| {
+        let mut buf = [0_u8;2048];
+        let read = request.read(&mut buf);
+        if read.is_err(){
+            let error_text = read.unwrap_err().to_string();
+            request.into_status_response(500)?.write(error_text.as_bytes())?;
+            return Ok(());
+        }
+        let actual_data = &buf[0..read.unwrap()];
+        let wifi_config: Result<WifiConfig, serde_json::Error> = serde_json::from_slice(actual_data);
+        if wifi_config.is_err(){
+            let error_text = wifi_config.unwrap_err().to_string();
+            request.into_status_response(500)?.write(error_text.as_bytes())?;
+            return Ok(());
+        }
+        let mut board = board_access.lock().unwrap();
+        board.set_wifi(&wifi_config.unwrap());
+        let mut response = request.into_status_response(202)?;
+        response.write("saved".as_bytes());
+        return Ok(())
+    }).unwrap();
+
+    
     return server
 }
 

@@ -1,20 +1,19 @@
 //mod config;
 
-use embedded_hal::blocking::delay::DelayMs;
 use embedded_svc::wifi::{
-    AccessPointConfiguration, AuthMethod, ClientConfiguration, Configuration, Wifi, AccessPointInfo,
+    AccessPointConfiguration, AuthMethod, ClientConfiguration, Configuration, AccessPointInfo,
 };
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use esp_idf_svc::wifi::config::{ScanConfig, ScanType};
-use esp_idf_svc::wifi::{EspWifi, NonBlocking};
+use esp_idf_svc::wifi::EspWifi;
 use plant_ctrl2::sipo::ShiftRegister40;
 
 use anyhow::anyhow;
-use anyhow::{bail, Context, Ok, Result};
+use anyhow::{bail, Ok, Result};
 use std::ffi::CString;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::Read;
 use std::path::Path;
 use std::str::from_utf8;
 use std::sync::{Mutex, Arc};
@@ -26,7 +25,7 @@ use embedded_hal::digital::v1_compat::OldOutputPin;
 use embedded_hal::digital::v2::OutputPin;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::{attenuation, AdcChannelDriver, AdcDriver};
-use esp_idf_hal::delay::{Delay, FreeRtos};
+use esp_idf_hal::delay::Delay;
 use esp_idf_hal::gpio::{AnyInputPin, Gpio39, Gpio4, Level, PinDriver};
 use esp_idf_hal::pcnt::{
     PcntChannel, PcntChannelConfig, PcntControlMode, PcntCountMode, PcntDriver, PinIndex,
@@ -35,9 +34,8 @@ use esp_idf_hal::prelude::Peripherals;
 use esp_idf_hal::reset::ResetReason;
 use esp_idf_svc::sntp::{self, SyncStatus};
 use esp_idf_svc::systime::EspSystemTime;
-use esp_idf_sys::{vTaskDelay, EspError};
+use esp_idf_sys::EspError;
 use one_wire_bus::OneWire;
-use serde::{Deserialize, Serialize};
 
 use crate::config::{self, WifiConfig};
 
@@ -604,6 +602,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     }
 
     fn wifi_scan(&mut self) -> Result<Vec<AccessPointInfo>> {
+        //remove this parts
         for i in 1..11 {
             println!("Scanning channel {}", i);
             self.wifi_driver.start_scan(&ScanConfig{
@@ -618,6 +617,11 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
             }
         }
 
-        return bail!("dummy");
+        self.wifi_driver.start_scan(&ScanConfig{
+            scan_type : ScanType::Passive(Duration::from_secs(1)),
+            show_hidden: false,
+            ..Default::default()
+        }, true)?;
+        return Ok(self.wifi_driver.get_scan_result()?);
     }
 }

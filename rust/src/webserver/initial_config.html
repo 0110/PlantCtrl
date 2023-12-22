@@ -17,14 +17,18 @@
 
         <div>
             <h2>WIFI</h2>
-            <input type="button" id="scan" onchange="scanWifi()" value="Scan">
+            <input type="button" id="scan" onclick="scanWifi()" value="Scan">
             <br>
             <label for="ssid">SSID:</label>
-            <input type="text" id="ssid" list="cityname">
-            <datalist id="cityname">
-                <option value="Boston">
-                <option value="Cambridge">
+            <input type="text" id="ssid" list="ssidlist">
+            <datalist id="ssidlist">
+                <option value="Not scanned yet">
             </datalist>
+            <label for="ssid">Password:</label>
+            <input type="text" id="password" list="ssidlist">
+            <input type="button" id="save" onclick="saveWifi()" value="Save & Restart">
+            <div id="wifistatus"></div>
+            <br>
         </div>
     </body>
 </html>
