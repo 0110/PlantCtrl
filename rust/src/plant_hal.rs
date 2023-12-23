@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ds18b20::Ds18b20;
-use embedded_hal::digital::v1_compat::OldOutputPin;
+
 use embedded_hal::digital::v2::OutputPin;
 use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::{attenuation, AdcChannelDriver, AdcDriver};
@@ -34,7 +34,7 @@ use esp_idf_hal::prelude::Peripherals;
 use esp_idf_hal::reset::ResetReason;
 use esp_idf_svc::sntp::{self, SyncStatus};
 use esp_idf_svc::systime::EspSystemTime;
-use esp_idf_sys::EspError;
+use esp_idf_sys::{EspError, vTaskDelay};
 use one_wire_bus::OneWire;
 
 use crate::config::{self, WifiConfig};
@@ -127,6 +127,7 @@ pub trait PlantCtrlBoardInteraction {
     fn set_wifi(&mut self, wifi: &WifiConfig) -> Result<()>;
     fn wifi_ap(&mut self) -> Result<()>;
     fn wifi_scan(&mut self) -> Result<Vec<AccessPointInfo>>;
+    fn test(&mut self) -> Result<()>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -142,37 +143,6 @@ impl CreatePlantHal<'_> for PlantHal {
         let mut clock = PinDriver::output(peripherals.pins.gpio21)?;
         let mut latch = PinDriver::output(peripherals.pins.gpio22)?;
         let mut data = PinDriver::output(peripherals.pins.gpio19)?;
-
-        // loop {
-        //     unsafe {
-        //         let delay = Delay::new_default();
-
-        //         latch.set_low().unwrap();
-        //         delay.delay_ms(1);
-        //         for i in 1..2 {
-        //             data.set_high().unwrap();
-        //             delay.delay_ms(1);
-        //             clock.set_high().unwrap();
-        //             delay.delay_ms(1);
-        //             clock.set_low().unwrap();
-        //             delay.delay_ms(1);
-        //         }
-        //         latch.set_high().unwrap();
-
-        //         latch.set_low().unwrap();
-        //         delay.delay_ms(1);
-        //         for i in 1..2 {
-        //             data.set_low().unwrap();
-        //             delay.delay_ms(1);
-        //             clock.set_high().unwrap();
-        //             delay.delay_ms(1);
-        //             clock.set_low().unwrap();
-        //             delay.delay_ms(1);
-        //         }
-        //         latch.set_high().unwrap();
-        //         vTaskDelay(5);
-        //     }
-        // }
 
         let one_wire_pin = PinDriver::input_output_od(peripherals.pins.gpio4)?;
         //TODO make to none if not possible to init
@@ -259,7 +229,7 @@ impl CreatePlantHal<'_> for PlantHal {
 
 
         let rv = Arc::new(Mutex::new(PlantCtrlBoard {
-            //shift_register : shift_register,
+            shift_register : shift_register,
             last_watering_timestamp: last_watering_timestamp,
             consecutive_watering_plant: consecutive_watering_plant,
             low_voltage_detected: low_voltage_detected,
@@ -280,7 +250,7 @@ impl CreatePlantHal<'_> for PlantHal {
 }
 
 pub struct PlantCtrlBoard<'a> {
-    //shift_register: ShiftRegister40<OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio21, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio22, esp_idf_hal::gpio::Output>>, OldOutputPin<PinDriver<'a, esp_idf_hal::gpio::Gpio19, esp_idf_hal::gpio::Output>>>,
+    shift_register: ShiftRegister40<PinDriver<'a, esp_idf_hal::gpio::Gpio21, esp_idf_hal::gpio::Output>, PinDriver<'a, esp_idf_hal::gpio::Gpio22, esp_idf_hal::gpio::Output>, PinDriver<'a, esp_idf_hal::gpio::Gpio19, esp_idf_hal::gpio::Output>>,
     consecutive_watering_plant: Mutex<[u32; PLANT_COUNT]>,
     last_watering_timestamp: Mutex<[i64; PLANT_COUNT]>,
     low_voltage_detected: Mutex<bool>,
@@ -362,7 +332,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     fn pump(&self, plant: usize, enable: bool) -> Result<()> {
         let index = plant * PINS_PER_PLANT + PLANT_PUMP_OFFSET;
         //currently infailable error, keep for future as result anyway
-        //self.shift_register.decompose()[index].set_state(enable.into()).unwrap();
+        self.shift_register.decompose()[index].set_state(enable.into()).unwrap();
         Ok(())
     }
 
@@ -387,7 +357,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
 
     fn fault(&self, plant: usize, enable: bool) {
         let index = plant * PINS_PER_PLANT + PLANT_FAULT_OFFSET;
-        //self.shift_register.decompose()[index].set_state(enable.into()).unwrap()
+        self.shift_register.decompose()[index].set_state(enable.into()).unwrap()
     }
 
     fn low_voltage_in_cycle(&mut self) -> bool {
@@ -436,13 +406,13 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         let measurement = 100;
         let factor = 1000 / 100;
 
-        //self.shift_register.decompose()[index].set_high().unwrap();
+        self.shift_register.decompose()[index].set_high().unwrap();
         //give some time to stabilize
         delay.delay_ms(10);
         self.signal_counter.counter_resume()?;
         delay.delay_ms(measurement);
         self.signal_counter.counter_pause()?;
-        //self.shift_register.decompose()[index].set_low().unwrap();
+        self.shift_register.decompose()[index].set_low().unwrap();
         let unscaled = self.signal_counter.get_counter_value()? as i32;
         let hz = unscaled * factor;
         println!("Measuring {:?} @ {} with {}", sensor, plant, hz);
@@ -623,5 +593,46 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
             ..Default::default()
         }, true)?;
         return Ok(self.wifi_driver.get_scan_result()?);
+    }
+
+    fn test(&mut self) -> Result<()> {
+        self.general_fault(true);
+        unsafe { vTaskDelay(100) };
+        self.general_fault(false);
+        unsafe { vTaskDelay(100) };
+        self.any_pump(true)?;
+        unsafe { vTaskDelay(500) };
+        self.any_pump(false)?;
+        unsafe { vTaskDelay(500) };
+        self.light(true)?;
+        unsafe { vTaskDelay(500) };
+        self.light(false)?;
+        unsafe { vTaskDelay(500) };
+        for i in 0 .. 8{
+            self.fault(i, true);
+            unsafe { vTaskDelay(500) };
+            self.fault(i, false);
+            unsafe { vTaskDelay(500) };
+        }
+        for i in 0 .. 8{
+            self.pump(i, true)?;
+            unsafe { vTaskDelay(500) };
+            self.pump(i, false)?;
+            unsafe { vTaskDelay(500) };
+        }
+        for i in 0 .. 8{
+            self.measure_moisture_hz(i, Sensor::A)?;
+            unsafe { vTaskDelay(500) };
+        }
+        for i in 0 .. 8{
+            self.measure_moisture_hz(i, Sensor::B)?;
+            unsafe { vTaskDelay(500) };
+        }
+        for i in 0 .. 8{
+            self.measure_moisture_hz(i, Sensor::PUMP)?;
+            unsafe { vTaskDelay(500) };
+        }
+
+        return Ok(());
     }
 }

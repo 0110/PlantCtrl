@@ -1,0 +1,7 @@
+Default	False	2.0	3
+12V	True	2.0	3
+3V	True	2.0	3
+BAT+	True	2.0	3
+BAT-	True	2.0	3
+GND	True	2.0	3
+False	True	False

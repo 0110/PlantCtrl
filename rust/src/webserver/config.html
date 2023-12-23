@@ -1,13 +1,8 @@
 <html>
-<meta>
-<script src="ota.js"></script>
-<script src="form.js"></script>
-</meta>
-
 <body>
   <h2>firmeware OTA v3</h2>
   <form id="upload_form" method="post">
-    <input type="file" name="file1" id="file1" onchange="uploadFile()"><br>
+    <input type="file" name="file1" id="file1"><br>
     <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
     <h3 id="status"></h3>
     <h3 id="answer"></h3>
@@ -17,41 +12,42 @@
   <h2>config</h2>
 
 
-  <button id="submit" onclick="createForm()">Create</button>
+  <button id="dummy">Create</button>
   <div id="configform">
     <h3>Tank:</h3>
     <div>
-      <input type="checkbox" id="tank_sensor_enabled" onchange="submitForm()">
+      <input type="checkbox" id="tank_sensor_enabled">
       Enable Tank Sensor
     </div>
 
     <div>
-      <input type="number" min="2" max="500000" id="tank_full_ml" onchange="submitForm()">
+      <input type="number" min="2" max="500000" id="tank_full_ml">
       Tank Size mL
     </div>
     <div>
-      <input type="number" min="1" max="500000" id="tank_warn_percent" onchange="submitForm()">
+      <input type="number" min="1" max="500000" id="tank_warn_percent">
       Tank Warn below mL
     </div>
 
     <h3>Light:</h3>
     <div>
       Start
-      <input type="time" id="night_lamp_time_start"  onchange="submitForm()">
+      <input type="time" id="night_lamp_time_start">
       Stop
-      <input type="time" id="night_lamp_time_end"  onchange="submitForm()">
+      <input type="time" id="night_lamp_time_end">
     </div>
     <div>
-      <input type="checkbox" id="night_lamp_only_when_dark" onchange="submitForm()">
+      <input type="checkbox" id="night_lamp_only_when_dark">
       Light only when dark
     </div>
       
     <h3>Plants:</h3>
     <div id="plants"></div>
   </div>
-  <button id="submit" onclick="submitForm()">Submit</button>
+  <button id="submit">Submit</button>
   <br>
   <textarea id="json" cols=50 rows=10></textarea>
+  <script src="bundle.js"></script>
 </body>
 
 </html>

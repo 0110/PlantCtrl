@@ -6,3 +6,7 @@ board/production/PlantCtrlESP32_2023-11-08_00-45-35/netlist.ipc
 .embuild/
 target
 Cargo.lock
+node_modules/
+rust/src/webserver/bundle.js
+
+rust/image.bin

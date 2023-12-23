@@ -35,17 +35,17 @@ fn wait_infinity(board_access: Arc<Mutex<PlantCtrlBoard<'_>>>, wait_type:WaitTyp
         WaitType::InitialConfig => 250_u32,
         WaitType::FlashError => 100_u32,
     };
-    board_access.lock().unwrap().light(true);
+    board_access.lock().unwrap().light(true).unwrap();
     loop {
         unsafe {
             //do not trigger watchdog
-            for i in 0..7 {
+            for i in 0..8 {
                 board_access.lock().unwrap().fault(i, true);    
             }
             board_access.lock().unwrap().general_fault(true);
             vTaskDelay(delay);
             board_access.lock().unwrap().general_fault(false);
-            for i in 0..7 {
+            for i in 0..8 {
                 board_access.lock().unwrap().fault(i, false);    
             }
             vTaskDelay(delay);
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
             board.wifi_ap().unwrap();
             //config upload will trigger reboot!
             drop(board);
-            let _webserver = httpd_initial(&board_access);
+            let _webserver = httpd_initial(board_access.clone());
             wait_infinity(board_access.clone(), WaitType::InitialConfig);
         },
     };

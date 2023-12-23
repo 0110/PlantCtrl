@@ -16,23 +16,18 @@ struct SSIDList<'a> {
     ssids: Vec<&'a String<32>>
 }
 
-pub fn httpd_initial(board_access:&Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
+pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
     server.fn_handler("/",Method::Get, move |request| {
         let mut response = request.into_ok_response()?;
         response.write(include_bytes!("initial_config.html"))?;
         return Ok(())
     }).unwrap();
-    server
-        .fn_handler("/wifi.js",Method::Get, |request| {
-            let mut response = request.into_ok_response()?;
-            response.write(include_bytes!("wifi.js"))?;
-            return Ok(())
-        }).unwrap();
-    
+
+    let board_access_for_scan = board_access.clone();
     server.fn_handler("/wifiscan",Method::Post,  move |request| {
         let mut response = request.into_ok_response()?;
-        let mut board = board_access.lock().unwrap();
+        let mut board = board_access_for_scan.lock().unwrap();
         match board.wifi_scan()  {
             Err(error) => {
                 response.write(format!("Error scanning wifi: {}", error).as_bytes())?;
@@ -50,11 +45,14 @@ pub fn httpd_initial(board_access:&Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<E
         return Ok(())
     }).unwrap();
 
+    
+    let board_access_for_save = board_access.clone();
     server.fn_handler("/wifisave",Method::Post,  move |mut request| {
         let mut buf = [0_u8;2048];
         let read = request.read(&mut buf);
         if read.is_err(){
             let error_text = read.unwrap_err().to_string();
+            println!("Could not parse wificonfig {}", error_text);
             request.into_status_response(500)?.write(error_text.as_bytes())?;
             return Ok(());
         }
@@ -62,16 +60,23 @@ pub fn httpd_initial(board_access:&Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<E
         let wifi_config: Result<WifiConfig, serde_json::Error> = serde_json::from_slice(actual_data);
         if wifi_config.is_err(){
             let error_text = wifi_config.unwrap_err().to_string();
+            println!("Could not parse wificonfig {}", error_text);
             request.into_status_response(500)?.write(error_text.as_bytes())?;
             return Ok(());
         }
-        let mut board = board_access.lock().unwrap();
-        board.set_wifi(&wifi_config.unwrap());
+        let mut board = board_access_for_save.lock().unwrap();
+        board.set_wifi(&wifi_config.unwrap())?;
         let mut response = request.into_status_response(202)?;
-        response.write("saved".as_bytes());
+        response.write("saved".as_bytes())?;
         return Ok(())
     }).unwrap();
 
+    let board_access_for_test= board_access.clone();
+    server.fn_handler("/boardtest",Method::Post,  move |request| {
+        let mut board = board_access_for_test.lock().unwrap();
+        board.test();
+        return Ok(())
+    }).unwrap();
     
     return server
 }
@@ -100,9 +105,9 @@ pub fn shared() -> Box<EspHttpServer<'static>> {
             return Ok(())
         }).unwrap();
     server
-        .fn_handler("/ota.js",Method::Get, |request| {
+        .fn_handler("/bundle.js",Method::Get, |request| {
             let mut response = request.into_ok_response()?;
-            response.write(include_bytes!("ota.js"))?;
+            response.write(include_bytes!("bundle.js"))?;
             return Ok(())
         }).unwrap();
     server
