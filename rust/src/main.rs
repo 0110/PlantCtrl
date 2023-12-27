@@ -1,13 +1,12 @@
 use std::{sync::{Arc, Mutex, atomic::AtomicBool}, env};
 
 use chrono::{Datelike, NaiveDateTime, Timelike};
-
+use once_cell::sync::Lazy;
 use anyhow::Result;
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
 use esp_idf_sys::{esp_restart, vTaskDelay};
 use plant_hal::{CreatePlantHal, PlantCtrlBoard, PlantCtrlBoardInteraction, PlantHal, PLANT_COUNT};
-
 
 use crate::{config::{Config, WifiConfig}, webserver::webserver::{httpd_initial, httpd}};
 mod config;
@@ -64,8 +63,8 @@ fn wait_infinity(wait_type:WaitType, reboot_now:Arc<AtomicBool>)  -> !{
     }
 }
 
-static BOARD_ACCESS: Lazy<PlantCtrlBoard> = Lazy::new(|| {
-    PlantHal::create()?;
+pub static BOARD_ACCESS: Lazy<Mutex<PlantCtrlBoard>> = Lazy::new(|| {
+    PlantHal::create().unwrap()
 });
 
 fn main() -> Result<()> {
@@ -143,7 +142,7 @@ fn main() -> Result<()> {
             //config upload will trigger reboot!
             drop(board);
             let reboot_now = Arc::new(AtomicBool::new(false));
-            let _webserver = httpd_initial(BOARD_ACCESS.clone(), reboot_now.clone());
+            let _webserver = httpd_initial(reboot_now.clone());
             wait_infinity(WaitType::InitialConfig, reboot_now.clone());
         },
     };
@@ -224,8 +223,8 @@ fn main() -> Result<()> {
             //config upload will trigger reboot!
             drop(board);
             let reboot_now = Arc::new(AtomicBool::new(false));
-            let _webserver = httpd(BOARD_ACCESS.clone(),reboot_now.clone());
-            wait_infinity(BOARD_ACCESS.clone(), WaitType::NormalConfig, reboot_now.clone());
+            let _webserver = httpd(reboot_now.clone());
+            wait_infinity(WaitType::NormalConfig, reboot_now.clone());
         },
     }
 

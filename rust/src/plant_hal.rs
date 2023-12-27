@@ -140,7 +140,7 @@ pub trait PlantCtrlBoardInteraction {
 }
 
 pub trait CreatePlantHal<'a> {
-    fn create() -> Result<Arc<Mutex<PlantCtrlBoard<'static>>>>;
+    fn create() -> Result<Mutex<PlantCtrlBoard<'static>>>;
 }
 
 pub struct PlantHal {}
@@ -557,12 +557,10 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         if wifi_config.exists() {
             println!("Removing wifi config");
             std::fs::remove_file(wifi_config)?;
-            Ok(ClearConfigType::WifiConfig);
+            return Ok(ClearConfigType::WifiConfig);
         }
         
-        Ok((ClearConfigType::None));
-
-
+        return Ok((ClearConfigType::None));
     }
 
     fn get_wifi(&mut self) -> Result<config::WifiConfig> {

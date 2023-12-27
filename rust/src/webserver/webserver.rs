@@ -7,6 +7,7 @@ use esp_idf_svc::http::server::EspHttpServer;
 use esp_ota::OtaUpdate;
 use heapless::String;
 use serde::Serialize;
+use crate::BOARD_ACCESS;
 
 use crate::{plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction, PLANT_COUNT}, config::{WifiConfig, Config, Plant}};
 
@@ -16,7 +17,7 @@ struct SSIDList<'a> {
     ssids: Vec<&'a String<32>>
 }
 
-pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
+pub fn httpd_initial(reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
     server.fn_handler("/",Method::Get, move |request| {
         let mut response = request.into_ok_response()?;
@@ -24,10 +25,9 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_no
         return Ok(())
     }).unwrap();
 
-    let board_access_for_scan = board_access.clone();
     server.fn_handler("/wifiscan",Method::Post,  move |request| {
         let mut response = request.into_ok_response()?;
-        let mut board = board_access_for_scan.lock().unwrap();
+        let mut board = BOARD_ACCESS.lock().unwrap();
         match board.wifi_scan()  {
             Err(error) => {
                 response.write(format!("Error scanning wifi: {}", error).as_bytes())?;
@@ -46,7 +46,6 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_no
     }).unwrap();
 
     
-    let board_access_for_save = board_access.clone();
     server.fn_handler("/wifisave",Method::Post,  move |mut request| {
 
         let mut buf = [0_u8;2048];
@@ -67,7 +66,7 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_no
             request.into_status_response(500)?.write(error_text.as_bytes())?;
             return Ok(());
         }
-        let mut board = board_access_for_save.lock().unwrap();
+        let mut board = BOARD_ACCESS.lock().unwrap();
         board.set_wifi(&wifi_config.unwrap())?;
         let mut response = request.into_status_response(202)?;
         response.write("saved".as_bytes())?;
@@ -75,9 +74,8 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_no
         return Ok(())
     }).unwrap();
 
-    let board_access_for_test= board_access.clone();
     server.fn_handler("/boardtest",Method::Post,  move |request| {
-        let mut board = board_access_for_test.lock().unwrap();
+        let mut board = BOARD_ACCESS.lock().unwrap();
         board.test();
         return Ok(())
     }).unwrap();
@@ -85,7 +83,7 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_no
     return server
 }
 
-pub fn httpd(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
+pub fn httpd(reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
 
     server
@@ -95,12 +93,11 @@ pub fn httpd(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<A
         return Ok(())
     }).unwrap();
 
-    let board_access_for_get_config= board_access.clone();
     server
     .fn_handler("/get_config",Method::Get, move |request| {
         let mut response = request.into_ok_response()?;
-        let mut board = board_access_for_get_config.lock()?;
-        match (board.get_config()) {
+        let mut board = BOARD_ACCESS.lock()?;
+        match board.get_config() {
             Ok(config) => {
                 let config_json = serde_json::to_string(&config)?;
                 response.write(config_json.as_bytes())?;
@@ -113,7 +110,6 @@ pub fn httpd(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<A
         return Ok(())
     }).unwrap();
 
-    let board_access_for_set_config= board_access.clone();
     server.fn_handler("/set_config",Method::Post,  move |mut request| {
         let mut buf = [0_u8;2048];
         let read = request.read(&mut buf);
@@ -133,7 +129,7 @@ pub fn httpd(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<A
             request.into_status_response(500)?.write(error_text.as_bytes())?;
             return Ok(());
         }
-        let mut board = board_access_for_set_config.lock().unwrap();
+        let mut board = BOARD_ACCESS.lock().unwrap();
         board.set_config(&config.unwrap())?;
         let mut response = request.into_status_response(202)?;
         response.write("saved".as_bytes())?;
