@@ -1,14 +1,14 @@
 //offer ota and config mode
 
-use std::sync::{Mutex, Arc};
+use std::{sync::{Mutex, Arc, atomic::AtomicBool}, str::from_utf8};
 
-use embedded_svc::http::Method;
+use embedded_svc::http::{Method, Headers};
 use esp_idf_svc::http::server::EspHttpServer;
 use esp_ota::OtaUpdate;
 use heapless::String;
 use serde::Serialize;
 
-use crate::{plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction}, config::WifiConfig};
+use crate::{plant_hal::{PlantCtrlBoard, PlantCtrlBoardInteraction, PLANT_COUNT}, config::{WifiConfig, Config, Plant}};
 
 #[derive(Serialize)]
 #[derive(Debug)]
@@ -16,7 +16,7 @@ struct SSIDList<'a> {
     ssids: Vec<&'a String<32>>
 }
 
-pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<EspHttpServer<'static>> {
+pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
     server.fn_handler("/",Method::Get, move |request| {
         let mut response = request.into_ok_response()?;
@@ -37,9 +37,9 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
                 scan_result.iter().for_each(|s| 
                     ssids.push(&s.ssid)
                 );
-                response.write( serde_json::to_string(
-                    &SSIDList{ssids}
-                )?.as_bytes())?;
+                let ssid_json = serde_json::to_string(                    &SSIDList{ssids})?;
+                println!("Sending ssid list {}", &ssid_json);
+                response.write( &ssid_json.as_bytes())?;
             },
         }
         return Ok(())
@@ -48,6 +48,7 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
     
     let board_access_for_save = board_access.clone();
     server.fn_handler("/wifisave",Method::Post,  move |mut request| {
+
         let mut buf = [0_u8;2048];
         let read = request.read(&mut buf);
         if read.is_err(){
@@ -57,6 +58,8 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
             return Ok(());
         }
         let actual_data = &buf[0..read.unwrap()];
+        println!("raw {:?}", actual_data);
+        println!("Raw data {}", from_utf8(actual_data).unwrap());
         let wifi_config: Result<WifiConfig, serde_json::Error> = serde_json::from_slice(actual_data);
         if wifi_config.is_err(){
             let error_text = wifi_config.unwrap_err().to_string();
@@ -68,6 +71,7 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
         board.set_wifi(&wifi_config.unwrap())?;
         let mut response = request.into_status_response(202)?;
         response.write("saved".as_bytes())?;
+        reboot_now.store(true, std::sync::atomic::Ordering::Relaxed);
         return Ok(())
     }).unwrap();
 
@@ -81,7 +85,7 @@ pub fn httpd_initial(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>) -> Box<Es
     return server
 }
 
-pub fn httpd(board:&mut Box<PlantCtrlBoard<'static>>) -> Box<EspHttpServer<'static>> {
+pub fn httpd(board_access:Arc<Mutex<PlantCtrlBoard<'static>>>, reboot_now: Arc<AtomicBool>) -> Box<EspHttpServer<'static>> {
     let mut server = shared();
 
     server
@@ -91,12 +95,57 @@ pub fn httpd(board:&mut Box<PlantCtrlBoard<'static>>) -> Box<EspHttpServer<'stat
         return Ok(())
     }).unwrap();
 
+    let board_access_for_get_config= board_access.clone();
+    server
+    .fn_handler("/get_config",Method::Get, move |request| {
+        let mut response = request.into_ok_response()?;
+        let mut board = board_access_for_get_config.lock()?;
+        match (board.get_config()) {
+            Ok(config) => {
+                let config_json = serde_json::to_string(&config)?;
+                response.write(config_json.as_bytes())?;
+            },
+            Err(_) => {
+                let config_json = serde_json::to_string(&Config::default())?;
+                response.write(config_json.as_bytes())?;
+            },
+        }
+        return Ok(())
+    }).unwrap();
+
+    let board_access_for_set_config= board_access.clone();
+    server.fn_handler("/set_config",Method::Post,  move |mut request| {
+        let mut buf = [0_u8;2048];
+        let read = request.read(&mut buf);
+        if read.is_err(){
+            let error_text = read.unwrap_err().to_string();
+            println!("Could not parse wificonfig {}", error_text);
+            request.into_status_response(500)?.write(error_text.as_bytes())?;
+            return Ok(());
+        }
+        let actual_data = &buf[0..read.unwrap()];
+        println!("raw {:?}", actual_data);
+        println!("Raw data {}", from_utf8(actual_data).unwrap());
+        let config: Result<Config, serde_json::Error> = serde_json::from_slice(actual_data);
+        if config.is_err(){
+            let error_text = config.unwrap_err().to_string();
+            println!("Could not parse wificonfig {}", error_text);
+            request.into_status_response(500)?.write(error_text.as_bytes())?;
+            return Ok(());
+        }
+        let mut board = board_access_for_set_config.lock().unwrap();
+        board.set_config(&config.unwrap())?;
+        let mut response = request.into_status_response(202)?;
+        response.write("saved".as_bytes())?;
+        reboot_now.store(true, std::sync::atomic::Ordering::Relaxed);
+        return Ok(())
+    }).unwrap();
     return server;
 
 }
 
 pub fn shared() -> Box<EspHttpServer<'static>> {
-    let mut server = Box::new(EspHttpServer::new(&Default::default()).unwrap());
+    let mut server: Box<EspHttpServer<'static>> = Box::new(EspHttpServer::new(&Default::default()).unwrap());
 
     server
         .fn_handler("/version",Method::Get,  |request| {
@@ -110,6 +159,12 @@ pub fn shared() -> Box<EspHttpServer<'static>> {
             response.write(include_bytes!("bundle.js"))?;
             return Ok(())
         }).unwrap();
+    server
+    .fn_handler("/favicon.ico",Method::Get, |request| {
+        let mut response = request.into_ok_response()?;
+        response.write(include_bytes!("favicon.ico"))?;
+        return Ok(())
+    }).unwrap();
     server
         .fn_handler("/ota", Method::Post,  |mut request| {
             let ota = OtaUpdate::begin();

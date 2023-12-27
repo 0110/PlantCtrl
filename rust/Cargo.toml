@@ -75,6 +75,7 @@ anyhow = { version = "1.0.75", features = ["std", "backtrace"] }
 schemars = "0.8.16"
 heapless = { version = "0.7", features = ["serde"] }
 serde_json = "1.0.108"
+strum = { version = "0.25.0", features = ["derive"] }
 #?bq34z100 required
 
 [build-dependencies]

@@ -11,6 +11,7 @@ use plant_ctrl2::sipo::ShiftRegister40;
 
 use anyhow::anyhow;
 use anyhow::{bail, Ok, Result};
+use strum::EnumString;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
@@ -23,7 +24,6 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use ds18b20::Ds18b20;
 
 use embedded_hal::digital::v2::OutputPin;
-use esp_idf_hal::adc::config::Config;
 use esp_idf_hal::adc::{attenuation, AdcChannelDriver, AdcDriver};
 use esp_idf_hal::delay::Delay;
 use esp_idf_hal::gpio::{AnyInputPin, Gpio39, Gpio4, Level, PinDriver};
@@ -37,7 +37,7 @@ use esp_idf_svc::systime::EspSystemTime;
 use esp_idf_sys::{EspError, vTaskDelay};
 use one_wire_bus::OneWire;
 
-use crate::config::{self, WifiConfig};
+use crate::config::{self, WifiConfig, Config};
 
 pub const PLANT_COUNT: usize = 8;
 const PINS_PER_PLANT: usize = 5;
@@ -78,6 +78,14 @@ pub struct FileSystemSizeInfo {
     pub total_size: usize,
     pub used_size: usize,
     pub free_size: usize,
+}
+
+
+#[derive(strum::Display)]
+pub enum ClearConfigType {
+    WifiConfig,
+    Config,
+    None
 }
 
 #[derive(Debug)]
@@ -121,8 +129,9 @@ pub trait PlantCtrlBoardInteraction {
 
     //config
     fn is_config_reset(&mut self) -> bool;
-    fn remove_configs(&mut self) -> Result<()>;
+    fn remove_configs(&mut self) -> Result<ClearConfigType>;
     fn get_config(&mut self) -> Result<config::Config>;
+    fn set_config(&mut self, wifi: &Config) -> Result<()>;
     fn get_wifi(&mut self) -> Result<config::WifiConfig>;
     fn set_wifi(&mut self, wifi: &WifiConfig) -> Result<()>;
     fn wifi_ap(&mut self) -> Result<()>;
@@ -137,7 +146,7 @@ pub trait CreatePlantHal<'a> {
 pub struct PlantHal {}
 
 impl CreatePlantHal<'_> for PlantHal {
-    fn create() -> Result<Arc<Mutex<PlantCtrlBoard<'static>>>> {
+    fn create() -> Result<Mutex<PlantCtrlBoard<'static>>> {
         let peripherals = Peripherals::take()?;
 
         let mut clock = PinDriver::output(peripherals.pins.gpio21)?;
@@ -213,7 +222,7 @@ impl CreatePlantHal<'_> for PlantHal {
         let last_watering_timestamp = Mutex::new(unsafe { LAST_WATERING_TIMESTAMP });
         let consecutive_watering_plant = Mutex::new(unsafe { CONSECUTIVE_WATERING_PLANT });
         let low_voltage_detected = Mutex::new(unsafe { LOW_VOLTAGE_DETECTED });
-        let tank_driver = AdcDriver::new(peripherals.adc1, &Config::new())?;
+        let tank_driver = AdcDriver::new(peripherals.adc1, &esp_idf_hal::adc::config::Config::new())?;
         let tank_channel: AdcChannelDriver<'_, { attenuation::DB_11 }, Gpio39> =
             AdcChannelDriver::new(peripherals.pins.gpio39)?;
         let solar_is_day = PinDriver::input(peripherals.pins.gpio25)?;
@@ -228,7 +237,7 @@ impl CreatePlantHal<'_> for PlantHal {
         println!("After stuff");
 
 
-        let rv = Arc::new(Mutex::new(PlantCtrlBoard {
+        let rv = Mutex::new(PlantCtrlBoard {
             shift_register : shift_register,
             last_watering_timestamp: last_watering_timestamp,
             consecutive_watering_plant: consecutive_watering_plant,
@@ -244,7 +253,7 @@ impl CreatePlantHal<'_> for PlantHal {
             one_wire_bus: one_wire_bus,
             signal_counter: counter_unit1,
             wifi_driver: wifi_driver,
-        }));
+        });
         return Ok(rv);
     }
 }
@@ -534,19 +543,26 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         return self.boot_button.get_level() == Level::Low;
     }
 
-    fn remove_configs(&mut self) -> Result<()> {
-        let wifi_config = Path::new(WIFI_CONFIG_FILE);
-        if wifi_config.exists() {
-            println!("Removing wifi config");
-            std::fs::remove_file(wifi_config)?;
-        }
 
+
+    fn remove_configs(&mut self) -> Result<ClearConfigType> {
         let config = Path::new(CONFIG_FILE);
         if config.exists() {
             println!("Removing config");
             std::fs::remove_file(config)?;
+            return Ok(ClearConfigType::Config);
         }
-        Ok(())
+        
+        let wifi_config = Path::new(WIFI_CONFIG_FILE);
+        if wifi_config.exists() {
+            println!("Removing wifi config");
+            std::fs::remove_file(wifi_config)?;
+            Ok(ClearConfigType::WifiConfig);
+        }
+        
+        Ok((ClearConfigType::None));
+
+
     }
 
     fn get_wifi(&mut self) -> Result<config::WifiConfig> {
@@ -563,12 +579,16 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     }
 
     fn get_config(&mut self) -> Result<config::Config> {
-        let mut cfg = File::open(CONFIG_FILE)?;
-        let mut data: [u8; 512] = [0; 512];
-        let read = cfg.read(&mut data)?;
-        println!("Read file {}", from_utf8(&data[0..read])?);
+        let cfg = File::open(CONFIG_FILE)?;
+        let config: Config = serde_json::from_reader(cfg)?;
+        return Ok(config);
+    }
 
-        bail!("todo")
+    fn set_config(&mut self, config: &Config) -> Result<()> {
+        let mut cfg = File::create(CONFIG_FILE)?;
+        serde_json::to_writer(&mut cfg, &config)?;
+        println!("Wrote config config {:?}", config);
+        return Ok(());
     }
 
     fn wifi_scan(&mut self) -> Result<Vec<AccessPointInfo>> {

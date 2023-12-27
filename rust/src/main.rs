@@ -1,4 +1,4 @@
-use std::{sync::{Arc, Mutex}, env};
+use std::{sync::{Arc, Mutex, atomic::AtomicBool}, env};
 
 use chrono::{Datelike, NaiveDateTime, Timelike};
 
@@ -9,7 +9,7 @@ use esp_idf_sys::{esp_restart, vTaskDelay};
 use plant_hal::{CreatePlantHal, PlantCtrlBoard, PlantCtrlBoardInteraction, PlantHal, PLANT_COUNT};
 
 
-use crate::{config::{Config, WifiConfig}, webserver::webserver::httpd_initial};
+use crate::{config::{Config, WifiConfig}, webserver::webserver::{httpd_initial, httpd}};
 mod config;
 pub mod plant_hal;
 mod webserver {
@@ -27,31 +27,46 @@ enum OnlineMode {
 
 enum WaitType{
     InitialConfig,
-    FlashError
+    FlashError,
+    NormalConfig
 }
 
-fn wait_infinity(board_access: Arc<Mutex<PlantCtrlBoard<'_>>>, wait_type:WaitType)  -> !{
+fn wait_infinity(wait_type:WaitType, reboot_now:Arc<AtomicBool>)  -> !{
     let delay = match wait_type {
         WaitType::InitialConfig => 250_u32,
         WaitType::FlashError => 100_u32,
+        WaitType::NormalConfig => 500_u32
     };
-    board_access.lock().unwrap().light(true).unwrap();
+    let led_count = match wait_type {
+        WaitType::InitialConfig => 8,
+        WaitType::FlashError => 8,
+        WaitType::NormalConfig => 4
+    };
+    BOARD_ACCESS.lock().unwrap().light(true).unwrap();
     loop {
         unsafe {
             //do not trigger watchdog
             for i in 0..8 {
-                board_access.lock().unwrap().fault(i, true);    
+                BOARD_ACCESS.lock().unwrap().fault(i, i <led_count);    
             }
-            board_access.lock().unwrap().general_fault(true);
+            BOARD_ACCESS.lock().unwrap().general_fault(true);
             vTaskDelay(delay);
-            board_access.lock().unwrap().general_fault(false);
+            BOARD_ACCESS.lock().unwrap().general_fault(false);
             for i in 0..8 {
-                board_access.lock().unwrap().fault(i, false);    
+                BOARD_ACCESS.lock().unwrap().fault(i, false);    
             }
             vTaskDelay(delay);
+            if reboot_now.load(std::sync::atomic::Ordering::Relaxed) {
+                println!("Rebooting");
+                esp_restart();
+            }
         }
     }
 }
+
+static BOARD_ACCESS: Lazy<PlantCtrlBoard> = Lazy::new(|| {
+    PlantHal::create()?;
+});
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -67,8 +82,7 @@ fn main() -> Result<()> {
     println!("Version useing git has {}", git_hash);
 
     println!("Board hal init");
-    let board_access = PlantHal::create()?;
-    let mut board = board_access.lock().unwrap();
+    let mut board = BOARD_ACCESS.lock().unwrap();
     println!("Mounting filesystem");
     board.mountFileSystem()?;
     let free_space = board.fileSystemSize()?;
@@ -103,16 +117,14 @@ fn main() -> Result<()> {
         if board.is_config_reset() {
             println!("Reset config is still pressed, deleting configs and reboot");
             match board.remove_configs() {
-                Ok(_) => {
-                    println!("Removed config files, restarting");
-                    unsafe {
-                        esp_restart();
-                    }
+                Ok(case) => {
+                    println!("Succeeded in deleting config {}", case);
                 }
                 Err(err) => {
                     println!("Could not remove config files, system borked {}", err);
                     //terminate main app and freeze
-                    wait_infinity( board_access.clone(), WaitType::FlashError);
+
+                    wait_infinity(WaitType::FlashError, Arc::new(AtomicBool::new(false)));
                 }
             }
         }
@@ -130,13 +142,12 @@ fn main() -> Result<()> {
             board.wifi_ap().unwrap();
             //config upload will trigger reboot!
             drop(board);
-            let _webserver = httpd_initial(board_access.clone());
-            wait_infinity(board_access.clone(), WaitType::InitialConfig);
+            let reboot_now = Arc::new(AtomicBool::new(false));
+            let _webserver = httpd_initial(BOARD_ACCESS.clone(), reboot_now.clone());
+            wait_infinity(WaitType::InitialConfig, reboot_now.clone());
         },
     };
 
-
-    //    let proceed = config.unwrap();
 
     //check if we have a config file
     // if not found or parsing error -> error very fast blink general fault
@@ -201,6 +212,21 @@ fn main() -> Result<()> {
         println!("Running logic at utc {}", cur);
         let europe_time = cur.with_timezone(&Berlin);
         println!("Running logic at europe/berlin {}", europe_time);
+    }
+
+    let config:Config;
+    match (board.get_config()){
+        Ok(valid) => {
+            config = valid;
+        },
+        Err(err) => {
+            println!("Missing normal config, entering config mode {}", err);
+            //config upload will trigger reboot!
+            drop(board);
+            let reboot_now = Arc::new(AtomicBool::new(false));
+            let _webserver = httpd(BOARD_ACCESS.clone(),reboot_now.clone());
+            wait_infinity(BOARD_ACCESS.clone(), WaitType::NormalConfig, reboot_now.clone());
+        },
     }
 
     if online_mode == OnlineMode::SnTp {

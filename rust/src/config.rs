@@ -6,28 +6,47 @@ use crate::PLANT_COUNT;
 
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Config {
     tank_sensor_enabled: bool,
     tank_full_ml: u32,
     tank_warn_percent: u8,
 
-    plantcount: u16,
-
     night_lamp_hour_start: u8,
     night_lamp_hour_end: u8,
-    night_lamp_only_when_dark: u8,
+    night_lamp_only_when_dark: bool,
 
     plants: [Plant;PLANT_COUNT]
 }
 
-#[derive(Serialize, Deserialize)]
+impl Default for Config {
+    fn default() -> Self { 
+        Self { tank_sensor_enabled: true, 
+            tank_full_ml: 5000, 
+            tank_warn_percent: 50, 
+            night_lamp_hour_start: 21, 
+            night_lamp_hour_end: 2, 
+            night_lamp_only_when_dark: true, 
+            plants: [Plant::default();PLANT_COUNT]
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug)]
 pub struct Plant{
     target_moisture: u8,
     pump_time_s: u16,
     pump_cooldown_min: u16,
-    pump_hour_start: heapless::String<5>,
-    pump_hour_end: heapless::String<5>
+    pump_hour_start: u8,
+    pump_hour_end: u8
 }
+impl Default for Plant {
+    fn default() -> Self { 
+        Self { target_moisture: 40, pump_time_s: 60, pump_cooldown_min: 60, pump_hour_start: 8, pump_hour_end: 20 }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct WifiConfig {

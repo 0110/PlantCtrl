@@ -30,7 +30,7 @@ export function saveWifi(){
     alert("Failed to save config see console")
   }
   ajax.open("POST", "/wifisave");
-  ajax.send();
+  ajax.send(pretty);
 }
 
 export function scanWifi(){
