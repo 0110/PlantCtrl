@@ -11,22 +11,44 @@
 
   <h2>config</h2>
 
-
-  <button id="dummy">Create</button>
   <div id="configform">
+    <h3>Mqtt:</h3>
+    <div>
+      <input type="text" id="mqtt_url">
+      MQTT Url
+    </div>
+    <div>
+      <input type="text" id="base_topic">
+      Base Topic
+    </div>
+
+
     <h3>Tank:</h3>
     <div>
       <input type="checkbox" id="tank_sensor_enabled">
       Enable Tank Sensor
     </div>
-
     <div>
-      <input type="number" min="2" max="500000" id="tank_full_ml">
+      <input type="checkbox" id="tank_allow_pumping_if_sensor_error">
+      Allow Pumping if Sensor Error
+    </div>
+
+    
+    <div>
+      <input type="number" min="2" max="500000" id="tank_useable_ml">
       Tank Size mL
     </div>
     <div>
       <input type="number" min="1" max="500000" id="tank_warn_percent">
       Tank Warn below mL
+    </div>
+    <div>
+      <input type="number" min="1" max="500000" id="tank_empty_mv">
+      Tank Empty Voltage (mv)
+    </div>
+    <div>
+      <input type="number" min="1" max="500000" id="tank_full_mv">
+      Tank Full Voltage (mv)
     </div>
 
     <h3>Light:</h3>
@@ -44,9 +66,17 @@
     </div>
       
     <h3>Plants:</h3>
+
+
+    <div>
+      <input type="number" min="2" max="100" id="max_consecutive_pump_count">
+      Max consecutive pump count:
+    </div>
+    
     <div id="plants"></div>
   </div>
   <button id="submit">Submit</button>
+  <div id="submit_status"></div>
   <br>
   <textarea id="json" cols=50 rows=10></textarea>
   <script src="bundle.js"></script>

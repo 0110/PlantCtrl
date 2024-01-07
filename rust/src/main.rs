@@ -1,60 +1,97 @@
-use std::{sync::{Arc, Mutex, atomic::AtomicBool}, env};
+use std::{
+    env,
+    sync::{atomic::AtomicBool, Arc, Mutex},
+};
 
-use chrono::{Datelike, NaiveDateTime, Timelike};
-use once_cell::sync::Lazy;
 use anyhow::Result;
+use chrono::{Datelike, Duration, NaiveDateTime, Timelike};
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
-use esp_idf_sys::{esp_restart, vTaskDelay};
+use esp_idf_sys::{esp_restart, uxTaskGetStackHighWaterMark, vTaskDelay};
+use esp_ota::rollback_and_reboot;
+use log::error;
+use once_cell::sync::Lazy;
 use plant_hal::{CreatePlantHal, PlantCtrlBoard, PlantCtrlBoardInteraction, PlantHal, PLANT_COUNT};
+use serde::{Deserialize, Serialize};
 
-use crate::{config::{Config, WifiConfig}, webserver::webserver::{httpd_initial, httpd}};
+use crate::{
+    config::{Config, WifiConfig},
+    webserver::webserver::{httpd, httpd_initial},
+};
 mod config;
 pub mod plant_hal;
+
+const MOIST_SENSOR_MAX_FREQUENCY: u32 = 5200; // 60kHz (500Hz margin)
+const MOIST_SENSOR_MIN_FREQUENCY: u32 = 500; // 0.5kHz (500Hz margin)
+
+const FROM: (f32, f32) = (
+    MOIST_SENSOR_MIN_FREQUENCY as f32,
+    MOIST_SENSOR_MAX_FREQUENCY as f32,
+);
+const TO: (f32, f32) = (0_f32, 100_f32);
+
 mod webserver {
     pub mod webserver;
 }
 
-#[derive(PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 enum OnlineMode {
     Offline,
     Wifi,
     SnTp,
-    Mqtt,
-    MqttRoundtrip
 }
 
-enum WaitType{
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+enum WaitType {
     InitialConfig,
     FlashError,
-    NormalConfig
+    NormalConfig,
+    StayAlive,
 }
 
-fn wait_infinity(wait_type:WaitType, reboot_now:Arc<AtomicBool>)  -> !{
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Default)]
+struct PlantState {
+    a: u8,
+    b: u8,
+    p: u8,
+    after_p: u8,
+    dry: bool,
+    active: bool,
+    pump_error: bool,
+    not_effective: bool,
+    cooldown: bool,
+    no_water: bool,
+}
+
+fn wait_infinity(wait_type: WaitType, reboot_now: Arc<AtomicBool>) -> ! {
     let delay = match wait_type {
         WaitType::InitialConfig => 250_u32,
         WaitType::FlashError => 100_u32,
-        WaitType::NormalConfig => 500_u32
+        WaitType::NormalConfig => 500_u32,
+        WaitType::StayAlive => 1000_u32,
     };
     let led_count = match wait_type {
         WaitType::InitialConfig => 8,
         WaitType::FlashError => 8,
-        WaitType::NormalConfig => 4
+        WaitType::NormalConfig => 4,
+        WaitType::StayAlive => 2,
     };
-    BOARD_ACCESS.lock().unwrap().light(true).unwrap();
     loop {
         unsafe {
             //do not trigger watchdog
             for i in 0..8 {
-                BOARD_ACCESS.lock().unwrap().fault(i, i <led_count);    
+                BOARD_ACCESS.lock().unwrap().fault(i, i < led_count);
             }
             BOARD_ACCESS.lock().unwrap().general_fault(true);
             vTaskDelay(delay);
             BOARD_ACCESS.lock().unwrap().general_fault(false);
             for i in 0..8 {
-                BOARD_ACCESS.lock().unwrap().fault(i, false);    
+                BOARD_ACCESS.lock().unwrap().fault(i, false);
             }
             vTaskDelay(delay);
+            if wait_type == WaitType::StayAlive
+                && !STAY_ALIVE.load(std::sync::atomic::Ordering::Relaxed)
+            {}
             if reboot_now.load(std::sync::atomic::Ordering::Relaxed) {
                 println!("Rebooting");
                 esp_restart();
@@ -63,9 +100,12 @@ fn wait_infinity(wait_type:WaitType, reboot_now:Arc<AtomicBool>)  -> !{
     }
 }
 
-pub static BOARD_ACCESS: Lazy<Mutex<PlantCtrlBoard>> = Lazy::new(|| {
-    PlantHal::create().unwrap()
-});
+pub static BOARD_ACCESS: Lazy<Mutex<PlantCtrlBoard>> = Lazy::new(|| PlantHal::create().unwrap());
+pub static STAY_ALIVE: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
+
+fn map_range(from_range: (f32, f32), to_range: (f32, f32), s: f32) -> f32 {
+    to_range.0 + (s - from_range.0) * (to_range.1 - to_range.0) / (from_range.1 - from_range.0)
+}
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -75,16 +115,45 @@ fn main() -> Result<()> {
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
+    if esp_idf_sys::CONFIG_MAIN_TASK_STACK_SIZE < 20000 {
+        error!(
+            "stack too small: {} bail!",
+            esp_idf_sys::CONFIG_MAIN_TASK_STACK_SIZE
+        );
+        return Ok(());
+    }
+
     log::info!("Startup Rust");
 
     let git_hash = env!("VERGEN_GIT_DESCRIBE");
     println!("Version useing git has {}", git_hash);
 
+    let mut partition_state: embedded_svc::ota::SlotState = embedded_svc::ota::SlotState::Unknown;
+    // match esp_idf_svc::ota::EspOta::new() {
+    //     Ok(ota) => {
+    //         match ota.get_running_slot(){
+    //             Ok(slot) => {
+    //                 partition_state = slot.state;
+    //                 println!(
+    //                     "Booting from {} with state {:?}",
+    //                     slot.label, partition_state
+    //                 );
+    //             },
+    //             Err(err) => {
+    //                 println!("Error getting running slot {}", err);
+    //             },
+    //         }
+    //     },
+    //     Err(err) => {
+    //         println!("Error obtaining ota info {}", err);
+    //     },
+    // }
+
     println!("Board hal init");
-    let mut board = BOARD_ACCESS.lock().unwrap();
+    let mut board: std::sync::MutexGuard<'_, PlantCtrlBoard<'_>> = BOARD_ACCESS.lock().unwrap();
     println!("Mounting filesystem");
-    board.mountFileSystem()?;
-    let free_space = board.fileSystemSize()?;
+    board.mount_file_system()?;
+    let free_space = board.file_system_size()?;
     println!(
         "Mounted, total space {} used {} free {}",
         free_space.total_size, free_space.used_size, free_space.free_size
@@ -111,8 +180,15 @@ fn main() -> Result<()> {
     println!("cur is {}", cur);
 
     if board.is_config_reset() {
+        board.general_fault(true);
         println!("Reset config is pressed, waiting 5s");
-        Delay::new_default().delay_ms(5000);
+        for i in 0..25 {
+            board.general_fault(true);
+            Delay::new_default().delay_ms(50);
+            board.general_fault(false);
+            Delay::new_default().delay_ms(50);
+        }
+
         if board.is_config_reset() {
             println!("Reset config is still pressed, deleting configs and reboot");
             match board.remove_configs() {
@@ -126,17 +202,29 @@ fn main() -> Result<()> {
                     wait_infinity(WaitType::FlashError, Arc::new(AtomicBool::new(false)));
                 }
             }
+        } else {
+            board.general_fault(false);
         }
     }
 
     let mut online_mode = OnlineMode::Offline;
     let wifi_conf = board.get_wifi();
     let wifi: WifiConfig;
-    match wifi_conf{
+    match wifi_conf {
         Ok(conf) => {
             wifi = conf;
-        },
+        }
         Err(err) => {
+            if board.is_wifi_config_file_existant() {
+                match partition_state {
+                    embedded_svc::ota::SlotState::Invalid
+                    | embedded_svc::ota::SlotState::Unverified => {
+                        println!("Config seem to be unparsable after upgrade, reverting");
+                        rollback_and_reboot()?;
+                    }
+                    _ => {}
+                }
+            }
             println!("Missing wifi config, entering initial config mode {}", err);
             board.wifi_ap().unwrap();
             //config upload will trigger reboot!
@@ -144,47 +232,8 @@ fn main() -> Result<()> {
             let reboot_now = Arc::new(AtomicBool::new(false));
             let _webserver = httpd_initial(reboot_now.clone());
             wait_infinity(WaitType::InitialConfig, reboot_now.clone());
-        },
+        }
     };
-
-
-    //check if we have a config file
-    // if not found or parsing error -> error very fast blink general fault
-    //if this happens after a firmeware upgrade (check image state), mark as invalid
-    //blink general fault error_reading_config_after_upgrade, reboot after
-    // open accesspoint with webserver for wlan mqtt setup
-    //blink general fault error_no_config_after_upgrade
-    //once config is set store it and reboot
-
-    //if proceed.tank_sensor_enabled() {
-
-    //}
-    //is tank sensor enabled in config?
-    //measure tank level (without wifi due to interference)
-    //TODO this should be a result// detect invalid measurement value
-    let tank_value = board.tank_sensor_mv();
-    match tank_value {
-        Ok(tank_raw) => {
-            println!("Tank sensor returned {}", tank_raw);
-        }
-        Err(_) => {
-            //if not possible value, blink general fault error_tank_sensor_fault
-            board.general_fault(true);
-            //set general fault persistent
-            //set tank sensor state to fault
-        }
-    }
-
-    //measure each plant moisture
-    let mut initial_measurements_a: [i32; PLANT_COUNT] = [0; PLANT_COUNT];
-    let mut initial_measurements_b: [i32; PLANT_COUNT] = [0; PLANT_COUNT];
-    let mut initial_measurements_p: [i32; PLANT_COUNT] = [0; PLANT_COUNT];
-    for plant in 0..PLANT_COUNT {
-        initial_measurements_a[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::A)?;
-        initial_measurements_b[plant] = board.measure_moisture_hz(plant, plant_hal::Sensor::B)?;
-        initial_measurements_p[plant] =
-            board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP)?;
-    }
 
     println!("attempting to connect wifi");
     match board.wifi(&wifi.ssid, wifi.password.as_deref(), 10000) {
@@ -202,7 +251,7 @@ fn main() -> Result<()> {
             Ok(new_time) => {
                 cur = new_time;
                 online_mode = OnlineMode::SnTp;
-            },
+            }
             Err(err) => {
                 println!("sntp error: {}", err);
                 board.general_fault(true);
@@ -213,11 +262,11 @@ fn main() -> Result<()> {
         println!("Running logic at europe/berlin {}", europe_time);
     }
 
-    let config:Config;
-    match (board.get_config()){
+    let config: Config;
+    match board.get_config() {
         Ok(valid) => {
             config = valid;
-        },
+        }
         Err(err) => {
             println!("Missing normal config, entering config mode {}", err);
             //config upload will trigger reboot!
@@ -225,49 +274,150 @@ fn main() -> Result<()> {
             let reboot_now = Arc::new(AtomicBool::new(false));
             let _webserver = httpd(reboot_now.clone());
             wait_infinity(WaitType::NormalConfig, reboot_now.clone());
-        },
+        }
     }
 
+    //do mqtt before config check, as mqtt might configure
     if online_mode == OnlineMode::SnTp {
-        //mqtt here
+        match board.mqtt(&config) {
+            Ok(_) => {
+                println!("Mqtt connection ready");
+            }
+            Err(err) => {
+                println!("Could not connect mqtt due to {}", err);
+            }
+        }
     }
-    if online_mode == OnlineMode::Mqtt {
-        //mqtt roundtrip here
+
+    match board.battery_state() {
+        Ok(_state) => {}
+        Err(err) => {
+            board.general_fault(true);
+            println!("Could not read battery state, assuming low power {}", err);
+        }
     }
-    //TODO configmode webserver logic here
+
+    let mut enough_water = true;
+    if config.tank_sensor_enabled {
+        let tank_value = board.tank_sensor_mv();
+        match tank_value {
+            Ok(tank_raw) => {
+                //FIXME clear
+                let percent = map_range(
+                    (config.tank_empty_mv, config.tank_full_mv),
+                    (0_f32, 100_f32),
+                    tank_raw.into(),
+                );
+                let left_ml = ((percent / 100_f32) * config.tank_useable_ml as f32) as u32;
+                println!(
+                    "Tank sensor returned mv {} as {}% leaving {} ml useable",
+                    tank_raw, percent as u8, left_ml
+                );
+                if config.tank_warn_percent > percent as u8 {
+                    board.general_fault(true);
+                    println!(
+                        "Low water, current percent is {}, minimum warn level is {}",
+                        percent as u8, config.tank_warn_percent
+                    );
+                    //FIXME warn here
+                }
+                if config.tank_warn_percent <= 0 {
+                    enough_water = false;
+                }
+            }
+            Err(_) => {
+                board.general_fault(true);
+                if !config.tank_allow_pumping_if_sensor_error {
+                    enough_water = false;
+                }
+                //set tank sensor state to fault
+            }
+        }
+    }
+
+    let plantstate = [PlantState {
+        ..Default::default()
+    }; PLANT_COUNT];
+    for plant in 0..PLANT_COUNT {
+        let mut state = plantstate[plant];
+        //return mapf(mMoisture_raw.getMedian(), MOIST_SENSOR_MIN_FRQ, MOIST_SENSOR_MAX_FRQ, 0, 100);
+        state.a = map_range(
+            FROM,
+            TO,
+            board.measure_moisture_hz(plant, plant_hal::Sensor::A)? as f32,
+        ) as u8;
+        state.b = map_range(
+            FROM,
+            TO,
+            board.measure_moisture_hz(plant, plant_hal::Sensor::B)? as f32,
+        ) as u8;
+        state.p = map_range(
+            FROM,
+            TO,
+            board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP)? as f32,
+        ) as u8;
+        let plant_config = config.plants[plant];
+
+        //FIXME how to average analyze whatever?
+        if state.a < plant_config.target_moisture || state.b < plant_config.target_moisture {
+            state.dry = true;
+            if !enough_water {
+                state.no_water = true;
+            }
+        }
+
+        let duration = Duration::minutes((60 * plant_config.pump_cooldown_min).into());
+        if (board.last_pump_time(plant)? + duration) > cur {
+            state.cooldown = true;
+        }
+
+        if state.dry {
+            let consecutive_pump_count = board.consecutive_pump_count(plant) + 1;
+            board.store_consecutive_pump_count(plant, consecutive_pump_count);
+            if consecutive_pump_count > config.max_consecutive_pump_count.into() {
+                state.not_effective = true;
+                board.fault(plant, true);
+            }
+        } else {
+            board.store_consecutive_pump_count(plant, 0);
+        }
+
+        //TODO update mqtt state here!
+    }
+
+    if (STAY_ALIVE.load(std::sync::atomic::Ordering::Relaxed)) {
+        drop(board);
+        let reboot_now = Arc::new(AtomicBool::new(false));
+        let _webserver = httpd(reboot_now.clone());
+        wait_infinity(WaitType::StayAlive, reboot_now.clone());
+    }
+
+    'eachplant: for plant in 0..PLANT_COUNT {
+        let mut state = plantstate[plant];
+        if (state.dry && !state.cooldown) {
+            println!("Trying to pump with pump {} now", plant);
+            let plant_config = config.plants[plant];
+
+            board.any_pump(true)?;
+            board.store_last_pump_time(plant, cur);
+            board.pump(plant, true)?;
+            board.last_pump_time(plant)?;
+            state.active = true;
+            unsafe { vTaskDelay(plant_config.pump_time_s.into()) };
+            state.after_p = map_range(
+                FROM,
+                TO,
+                board.measure_moisture_hz(plant, plant_hal::Sensor::PUMP)? as f32,
+            ) as u8;
+            if state.after_p < state.p + 5 {
+                state.pump_error = true;
+                board.fault(plant, true);
+            }
+            break 'eachplant;
+        }
+    }
 
     /*
-        
-
-        //if config battery mode
-        //read battery level
-        //if not possible set general fault persistent, but do continue
-        //else
-        //assume 12v and max capacity
-
-        //if tank sensor is enabled
-        //if tank sensor fault abort if config require is set
-        //check if water is > minimum allowed || fault
-        //if not, set all plants requiring water to persistent fault
-
-        //for each plant
-        //check if moisture is < target
-        //state  += dry
-        //check if in cooldown
-        //state += cooldown
-        //check if consecutive pumps > limit
-        //state += notworking
-        //set plant fault persistent
-
-        //pump one cycle
-        // set last pump time to now
-        //during pump state += active
-        //after pump check if Pump moisture value is increased by config delta x
-        // state -= active
-        // state += cooldown
-        // if not set plant error persistent fault
-        // state += notworking
-        //set consecutive pumps+=1
 
         //check if during light time
         //lightstate += out of worktime
@@ -287,7 +437,7 @@ fn main() -> Result<()> {
         }
     */
     //deepsleep here?
-    return Ok(());
+    Ok(())
 }
 
 //error codes
