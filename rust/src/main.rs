@@ -7,7 +7,7 @@ use anyhow::Result;
 use chrono::{Datelike, Duration, NaiveDateTime, Timelike};
 use chrono_tz::Europe::Berlin;
 use esp_idf_hal::delay::Delay;
-use esp_idf_sys::{esp_restart, uxTaskGetStackHighWaterMark, vTaskDelay};
+use esp_idf_sys::{esp_restart, vTaskDelay};
 use esp_ota::rollback_and_reboot;
 use log::error;
 use once_cell::sync::Lazy;
@@ -182,7 +182,7 @@ fn main() -> Result<()> {
     if board.is_config_reset() {
         board.general_fault(true);
         println!("Reset config is pressed, waiting 5s");
-        for i in 0..25 {
+        for _i in 0..25 {
             board.general_fault(true);
             Delay::new_default().delay_ms(50);
             board.general_fault(false);
@@ -385,7 +385,7 @@ fn main() -> Result<()> {
         //TODO update mqtt state here!
     }
 
-    if (STAY_ALIVE.load(std::sync::atomic::Ordering::Relaxed)) {
+    if STAY_ALIVE.load(std::sync::atomic::Ordering::Relaxed) {
         drop(board);
         let reboot_now = Arc::new(AtomicBool::new(false));
         let _webserver = httpd(reboot_now.clone());
@@ -394,7 +394,7 @@ fn main() -> Result<()> {
 
     'eachplant: for plant in 0..PLANT_COUNT {
         let mut state = plantstate[plant];
-        if (state.dry && !state.cooldown) {
+        if state.dry && !state.cooldown {
             println!("Trying to pump with pump {} now", plant);
             let plant_config = config.plants[plant];
 

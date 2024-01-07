@@ -196,7 +196,7 @@ pub struct PlantCtrlBoard<'a> {
 
 impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
     fn battery_state(&mut self) -> Result<BatteryState> {
-        return Ok(BatteryState::default());
+        Ok(BatteryState::default())
     }
 
     fn is_day(&self) -> bool {
