@@ -14,8 +14,8 @@ pub struct Config {
     pub tank_sensor_enabled: bool,
     pub tank_useable_ml: u32,
     pub tank_warn_percent: u8,
-    pub tank_empty_mv: f32,
-    pub tank_full_mv: f32,
+    pub tank_empty_mv: u16,
+    pub tank_full_mv: u16,
 
     pub night_lamp_hour_start: u8,
     pub night_lamp_hour_end: u8,
@@ -38,8 +38,8 @@ impl Default for Config {
             plants: [Plant::default(); PLANT_COUNT],
             max_consecutive_pump_count: 15,
             tank_useable_ml: 5000,
-            tank_empty_mv: 0.1,
-            tank_full_mv: 3.3,
+            tank_empty_mv: 0100_u16,
+            tank_full_mv: 3300_u16,
         }
     }
 }
@@ -48,6 +48,7 @@ pub enum Mode {
     OFF,
     TargetMoisture,
     TimerOnly,
+    TimerAndDeadzone,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]

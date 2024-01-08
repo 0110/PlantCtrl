@@ -143,7 +143,7 @@ pub trait PlantCtrlBoardInteraction {
 
     fn measure_moisture_hz(&self, plant: usize, sensor: Sensor) -> Result<i32>;
     fn pump(&self, plant: usize, enable: bool) -> Result<()>;
-    fn last_pump_time(&self, plant: usize) -> Result<chrono::DateTime<Utc>>;
+    fn last_pump_time(&self, plant: usize) -> chrono::DateTime<Utc>;
     fn store_last_pump_time(&mut self, plant: usize, time: chrono::DateTime<Utc>);
     fn store_consecutive_pump_count(&mut self, plant: usize, count: u32);
     fn consecutive_pump_count(&mut self, plant: usize) -> u32;
@@ -163,6 +163,7 @@ pub trait PlantCtrlBoardInteraction {
     fn test(&mut self) -> Result<()>;
     fn is_wifi_config_file_existant(&mut self) -> bool;
     fn mqtt(&mut self, config: &Config) -> Result<()>;
+    fn disable_all(&mut self) -> Result<()>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -230,7 +231,7 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         if sensor_data.temperature == 85_f32 {
             bail!("Ds18b20 dummy temperature returned");
         }
-        Ok(sensor_data.temperature)
+        Ok(sensor_data.temperature/10_f32)
     }
 
     fn tank_sensor_mv(&mut self) -> Result<u16> {
@@ -265,11 +266,10 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         Ok(())
     }
 
-    fn last_pump_time(&self, plant: usize) -> Result<chrono::DateTime<Utc>> {
+    fn last_pump_time(&self, plant: usize) -> chrono::DateTime<Utc> {
         let ts = unsafe { LAST_WATERING_TIMESTAMP }[plant];
-        let timestamp = NaiveDateTime::from_timestamp_millis(ts)
-            .ok_or(anyhow!("could not convert timestamp"))?;
-        Ok(DateTime::<Utc>::from_naive_utc_and_offset(timestamp, Utc))
+        let timestamp = NaiveDateTime::from_timestamp_millis(ts).unwrap();
+        DateTime::<Utc>::from_naive_utc_and_offset(timestamp, Utc)
     }
 
     fn store_last_pump_time(&mut self, plant: usize, time: chrono::DateTime<Utc>) {
@@ -659,6 +659,15 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
             }
         }
         bail!("Mqtt did not complete roundtrip in time");
+    }
+
+    fn disable_all(&mut self) -> Result<()> {
+        for mut pin in self.shift_register.decompose() {
+            pin.set_low().unwrap();
+        }
+        self.general_fault(false);
+        self.any_pump(false)?;
+        return Ok(());
     }
 }
 
