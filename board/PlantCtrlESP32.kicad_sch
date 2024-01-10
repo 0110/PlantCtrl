@@ -15734,7 +15734,7 @@
     (property "Reference" "R30" (at 435.61 613.41 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "34k" (at 435.61 615.95 0)
+    (property "Value" "30k" (at 435.61 615.95 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 431.292 614.68 90)
