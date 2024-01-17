@@ -18,6 +18,7 @@ use crate::{
     config::{Config, WifiConfig},
     webserver::webserver::{httpd, httpd_initial},
 };
+pub mod bq34z100;
 mod config;
 pub mod plant_hal;
 
@@ -47,6 +48,14 @@ enum WaitType {
     FlashError,
     NormalConfig,
     StayAlive,
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Default)]
+struct LightState{
+    active: bool,
+    out_of_work_hour: bool,
+    battery_low: bool,
+    is_day: bool
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Default)]
@@ -134,11 +143,11 @@ fn map_range_moisture(s: f32) -> Result<u8> {
 fn in_time_range(cur: DateTime<Tz>, start:u8, end:u8) -> bool{
     let curhour = cur.hour() as u8;
     //eg 10-14
-    if(start < end){
+    if start < end {
         return curhour > start && curhour < end;
     } else {
         //eg 20-05
-        return curhour > start || curhour < end;;
+        return curhour > start || curhour < end;
     }
 }
 
@@ -188,7 +197,7 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
                     state.out_of_work_hour = true;
                 }
 
-                if(state.dry && !state.no_water && !state.cooldown && !state.out_of_work_hour){
+                if state.dry && !state.no_water && !state.cooldown && !state.out_of_work_hour {
                     state.do_water = true;
                 }
             },
@@ -210,7 +219,7 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
                 if !in_time_range(cur, plant_config.pump_hour_start, plant_config.pump_hour_end) {
                     state.out_of_work_hour = true;
                 }
-                if(!state.cooldown && !state.out_of_work_hour){
+                if !state.cooldown && !state.out_of_work_hour {
                     state.do_water = true;
                 }
             },
@@ -237,7 +246,7 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
     return None
 }
 
-fn main() -> Result<()> {
+fn safe_main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
     esp_idf_svc::sys::link_patches();
@@ -261,18 +270,18 @@ fn main() -> Result<()> {
     let mut partition_state: embedded_svc::ota::SlotState = embedded_svc::ota::SlotState::Unknown;
     match esp_idf_svc::ota::EspOta::new() {
          Ok(ota) => {
-    //         match ota.get_running_slot(){
-    //             Ok(slot) => {
+             //match ota.get_running_slot(){
+               //  Ok(slot) => {
     //                 partition_state = slot.state;
     //                 println!(
     //                     "Booting from {} with state {:?}",
     //                     slot.label, partition_state
     //                 );
-    //             },
-    //             Err(err) => {
-    //                 println!("Error getting running slot {}", err);
-    //             },
-    //         }
+                 //},
+                // Err(err) => {
+                  //   println!("Error getting running slot {}", err);
+                // },
+             //}
          },
          Err(err) => {
              println!("Error obtaining ota info {}", err);
@@ -281,7 +290,7 @@ fn main() -> Result<()> {
 
     println!("Board hal init");
     let mut board: std::sync::MutexGuard<'_, PlantCtrlBoard<'_>> = BOARD_ACCESS.lock().unwrap();
-    board.disable_all()?;
+
     println!("Mounting filesystem");
     board.mount_file_system()?;
     let free_space = board.file_system_size()?;
@@ -475,7 +484,7 @@ fn main() -> Result<()> {
             Ok(temp) => {
                 //FIXME mqtt here
                 println!("Water temp is {}", temp);
-                if(temp < 4_f32){
+                if temp < 4_f32 {
                     water_frozen = true;
                 }
                 break;
@@ -533,9 +542,23 @@ fn main() -> Result<()> {
         ,
     }
 
-    /*
-
-        //check if during light time
+    let mut light_state = LightState{ ..Default::default() };
+    light_state.is_day = board.is_day();
+    light_state.out_of_work_hour = !in_time_range(europe_time, config.night_lamp_hour_start, config.night_lamp_hour_end);    
+    if !light_state.out_of_work_hour {
+        if config.night_lamp_only_when_dark {
+            if !light_state.is_day {
+                board.light(true).unwrap();
+            }
+        }else {
+            board.light(true).unwrap();
+        }
+    } else {
+        board.light(false).unwrap();
+    }
+    println!("Lightstate is {:?}", light_state);
+    
+    //check if during light time
         //lightstate += out of worktime
         //check battery level
         //lightstate += battery empty
@@ -544,19 +567,14 @@ fn main() -> Result<()> {
         //if no preventing lightstate, enable light
         //lightstate = active
 
-        //keep webserver in scope
-        let webserver = httpd(true);
-        let delay = Delay::new_default();
-        loop {
-            //let freertos do shit
-            delay.delay_ms(1001);
-        }
-    */
     //deepsleep here?
     unsafe { esp_deep_sleep(1000*1000*10) };
-    Ok(())
 }
 
+fn main(){
+    let result = safe_main();
+    result.unwrap();
+}
 //error codes
 //error_reading_config_after_upgrade
 //error_no_config_after_upgrade

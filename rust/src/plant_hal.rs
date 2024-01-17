@@ -1,15 +1,19 @@
 //mod config;
 
+use embedded_hal::blocking::i2c::Operation;
 use embedded_svc::wifi::{
     AccessPointConfiguration, AccessPointInfo, AuthMethod, ClientConfiguration, Configuration,
 };
 
+use esp_idf_hal::i2c::{I2cConfig, I2cDriver, APBTickType};
+use esp_idf_hal::units::FromValueType;
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::mqtt::client::QoS::ExactlyOnce;
 use esp_idf_svc::mqtt::client::{EspMqttClient, MqttClientConfiguration};
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use esp_idf_svc::wifi::config::{ScanConfig, ScanType};
 use esp_idf_svc::wifi::EspWifi;
+use measurements::{Measurement, Temperature};
 use plant_ctrl2::sipo::ShiftRegister40;
 
 use anyhow::anyhow;
@@ -29,7 +33,7 @@ use ds18b20::Ds18b20;
 use embedded_hal::digital::v2::OutputPin;
 use esp_idf_hal::adc::{attenuation, AdcChannelDriver, AdcDriver};
 use esp_idf_hal::delay::Delay;
-use esp_idf_hal::gpio::{AnyInputPin, Gpio39, Gpio4, Level, PinDriver};
+use esp_idf_hal::gpio::{AnyInputPin, Gpio39, Gpio4, Level, PinDriver, Pull, InputOutput};
 use esp_idf_hal::pcnt::{
     PcntChannel, PcntChannelConfig, PcntControlMode, PcntCountMode, PcntDriver, PinIndex,
 };
@@ -42,6 +46,7 @@ use one_wire_bus::OneWire;
 
 use crate::config::{self, Config, WifiConfig};
 use crate::STAY_ALIVE;
+use crate::bq34z100::{Bq34z100g1Driver, Bq34z100g1};
 
 pub const PLANT_COUNT: usize = 8;
 const PINS_PER_PLANT: usize = 5;
@@ -163,7 +168,6 @@ pub trait PlantCtrlBoardInteraction {
     fn test(&mut self) -> Result<()>;
     fn is_wifi_config_file_existant(&mut self) -> bool;
     fn mqtt(&mut self, config: &Config) -> Result<()>;
-    fn disable_all(&mut self) -> Result<()>;
 }
 
 pub trait CreatePlantHal<'a> {
@@ -174,9 +178,9 @@ pub struct PlantHal {}
 
 pub struct PlantCtrlBoard<'a> {
     shift_register: ShiftRegister40<
-        PinDriver<'a, esp_idf_hal::gpio::Gpio21, esp_idf_hal::gpio::Output>,
-        PinDriver<'a, esp_idf_hal::gpio::Gpio22, esp_idf_hal::gpio::Output>,
-        PinDriver<'a, esp_idf_hal::gpio::Gpio19, esp_idf_hal::gpio::Output>,
+        PinDriver<'a, esp_idf_hal::gpio::Gpio21, InputOutput>,
+        PinDriver<'a, esp_idf_hal::gpio::Gpio22, InputOutput>,
+        PinDriver<'a, esp_idf_hal::gpio::Gpio19, InputOutput>,
     >,
     consecutive_watering_plant: Mutex<[u32; PLANT_COUNT]>,
     last_watering_timestamp: Mutex<[i64; PLANT_COUNT]>,
@@ -186,10 +190,10 @@ pub struct PlantCtrlBoard<'a> {
     solar_is_day: PinDriver<'a, esp_idf_hal::gpio::Gpio25, esp_idf_hal::gpio::Input>,
     boot_button: PinDriver<'a, esp_idf_hal::gpio::Gpio0, esp_idf_hal::gpio::Input>,
     signal_counter: PcntDriver<'a>,
-    light: PinDriver<'a, esp_idf_hal::gpio::Gpio26, esp_idf_hal::gpio::Output>,
-    main_pump: PinDriver<'a, esp_idf_hal::gpio::Gpio23, esp_idf_hal::gpio::Output>,
-    tank_power: PinDriver<'a, esp_idf_hal::gpio::Gpio27, esp_idf_hal::gpio::Output>,
-    general_fault: PinDriver<'a, esp_idf_hal::gpio::Gpio13, esp_idf_hal::gpio::Output>,
+    light: PinDriver<'a, esp_idf_hal::gpio::Gpio26, InputOutput>,
+    main_pump: PinDriver<'a, esp_idf_hal::gpio::Gpio23, InputOutput>,
+    tank_power: PinDriver<'a, esp_idf_hal::gpio::Gpio27, InputOutput>,
+    general_fault: PinDriver<'a, esp_idf_hal::gpio::Gpio13, InputOutput>,
     pub wifi_driver: EspWifi<'a>,
     one_wire_bus: OneWire<PinDriver<'a, Gpio4, esp_idf_hal::gpio::InputOutput>>,
     mqtt_client: Option<EspMqttClient<'a>>,
@@ -660,26 +664,54 @@ impl PlantCtrlBoardInteraction for PlantCtrlBoard<'_> {
         }
         bail!("Mqtt did not complete roundtrip in time");
     }
-
-    fn disable_all(&mut self) -> Result<()> {
-        for mut pin in self.shift_register.decompose() {
-            pin.set_low().unwrap();
-        }
-        self.general_fault(false);
-        self.any_pump(false)?;
-        return Ok(());
-    }
 }
 
 impl CreatePlantHal<'_> for PlantHal {
     fn create() -> Result<Mutex<PlantCtrlBoard<'static>>> {
         let peripherals = Peripherals::take()?;
+                
+        let i2c = peripherals.i2c1;
+        let config = I2cConfig::new()
+        .scl_enable_pullup(false)
+        .sda_enable_pullup(false)
+        .timeout(Duration::from_millis(10).into())
+        .baudrate(10_u32.kHz().into());
+        let scl = peripherals.pins.gpio16;
+        let sda = peripherals.pins.gpio17;
+        
 
-        let clock = PinDriver::output(peripherals.pins.gpio21)?;
-        let latch = PinDriver::output(peripherals.pins.gpio22)?;
-        let data = PinDriver::output(peripherals.pins.gpio19)?;
+        let driver = I2cDriver::new(i2c, sda, scl, &config).unwrap();
+        let mut battery_driver :Bq34z100g1Driver<I2cDriver> = Bq34z100g1Driver{
+            i2c :driver,
+            flash_block_data : [0;32],
+        };
 
-        let one_wire_pin = PinDriver::input_output_od(peripherals.pins.gpio4)?;
+        let fwversion = battery_driver.fw_version();
+        println!("fw version is {}", fwversion);
+       loop {
+            let bat_temp = battery_driver.internal_temperature();
+            let temp_c = Temperature::from_kelvin(bat_temp as f64/10_f64).as_celsius();
+            println!("bat int temp is is {}", temp_c);
+            unsafe{
+                vTaskDelay(1000);
+            }
+
+        }
+        
+
+        let mut clock = PinDriver::input_output(peripherals.pins.gpio21)?;
+        clock.set_pull(Pull::Floating);
+        let mut latch = PinDriver::input_output(peripherals.pins.gpio22)?;
+        latch.set_pull(Pull::Floating);
+        let mut data = PinDriver::input_output(peripherals.pins.gpio19)?;
+        data.set_pull(Pull::Floating);
+        let shift_register = ShiftRegister40::new(clock.into(), latch.into(), data.into());
+        for mut pin in shift_register.decompose() {
+            pin.set_low().unwrap();
+        }
+
+        let mut one_wire_pin = PinDriver::input_output_od(peripherals.pins.gpio4)?;
+        one_wire_pin.set_pull(Pull::Floating);
         //TODO make to none if not possible to init
 
         //init,reset rtc memory depending on cause
@@ -744,7 +776,7 @@ impl CreatePlantHal<'_> for PlantHal {
         let nvs = EspDefaultNvsPartition::take()?;
         let wifi_driver = EspWifi::new(peripherals.modem, sys_loop, Some(nvs))?;
 
-        let shift_register = ShiftRegister40::new(clock, latch, data);
+
         let last_watering_timestamp = Mutex::new(unsafe { LAST_WATERING_TIMESTAMP });
         let consecutive_watering_plant = Mutex::new(unsafe { CONSECUTIVE_WATERING_PLANT });
         let low_voltage_detected = Mutex::new(unsafe { LOW_VOLTAGE_DETECTED });
@@ -752,12 +784,22 @@ impl CreatePlantHal<'_> for PlantHal {
             AdcDriver::new(peripherals.adc1, &esp_idf_hal::adc::config::Config::new())?;
         let tank_channel: AdcChannelDriver<'_, { attenuation::DB_11 }, Gpio39> =
             AdcChannelDriver::new(peripherals.pins.gpio39)?;
-        let solar_is_day = PinDriver::input(peripherals.pins.gpio25)?;
-        let boot_button = PinDriver::input(peripherals.pins.gpio0)?;
-        let light = PinDriver::output(peripherals.pins.gpio26)?;
-        let main_pump = PinDriver::output(peripherals.pins.gpio23)?;
-        let tank_power = PinDriver::output(peripherals.pins.gpio27)?;
-        let general_fault = PinDriver::output(peripherals.pins.gpio13)?;
+
+        let mut solar_is_day = PinDriver::input(peripherals.pins.gpio25)?;
+        solar_is_day.set_pull(Pull::Floating)?;
+
+        let mut boot_button = PinDriver::input(peripherals.pins.gpio0)?;
+        boot_button.set_pull(Pull::Floating)?;
+        let mut light = PinDriver::input_output(peripherals.pins.gpio26)?;
+        light.set_pull(Pull::Floating)?;
+        let mut main_pump = PinDriver::input_output(peripherals.pins.gpio23)?;
+        main_pump.set_pull(Pull::Floating)?;
+        main_pump.set_low()?;
+        let mut tank_power = PinDriver::input_output(peripherals.pins.gpio27)?;
+        tank_power.set_pull(Pull::Floating)?;
+        let mut general_fault = PinDriver::input_output(peripherals.pins.gpio13)?;
+        general_fault.set_pull(Pull::Floating)?;
+        general_fault.set_low()?;
         let one_wire_bus = OneWire::new(one_wire_pin)
             .map_err(|err| -> anyhow::Error { anyhow!("Missing attribute: {:?}", err) })?;
 
