@@ -65,6 +65,7 @@ struct PlantState {
     p: Option<u8>,
     after_p: Option<u8>,
     do_water: bool,
+    frozen: bool,
     dry: bool,
     active: bool,
     pump_error: bool,
@@ -151,7 +152,7 @@ fn in_time_range(cur: DateTime<Tz>, start:u8, end:u8) -> bool{
     }
 }
 
-fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<Tz>, enough_water: bool, tank_sensor_error: bool, config: &Config, board: &mut std::sync::MutexGuard<'_, PlantCtrlBoard<'_>>) -> Option<usize> {
+fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<Tz>, enough_water: bool, water_frozen: bool, tank_sensor_error: bool, config: &Config, board: &mut std::sync::MutexGuard<'_, PlantCtrlBoard<'_>>) -> Option<usize> {
     for plant in 0..PLANT_COUNT {
         let state = &mut plantstate[plant];
         let plant_config = config.plants[plant];
@@ -196,9 +197,15 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
                 if !in_time_range(cur, plant_config.pump_hour_start, plant_config.pump_hour_end) {
                     state.out_of_work_hour = true;
                 }
-
-                if state.dry && !state.no_water && !state.cooldown && !state.out_of_work_hour {
-                    state.do_water = true;
+                if water_frozen {
+                    state.frozen = true;
+                }
+                if state.dry && !state.no_water && !state.cooldown && !state.out_of_work_hour{
+                    if water_frozen {
+                        state.frozen = true;
+                    } else {
+                        state.do_water = true;
+                    }
                 }
             },
             config::Mode::TimerOnly => {
@@ -207,7 +214,11 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
                 if next_pump > cur {
                     state.cooldown = true;
                 } else {
-                    state.do_water = true;
+                    if water_frozen {
+                        state.frozen = true;
+                    } else {
+                        state.do_water = true;
+                    }
                 }
             },
             config::Mode::TimerAndDeadzone => {
@@ -220,7 +231,11 @@ fn determine_next_plant(plantstate: &mut [PlantState;PLANT_COUNT],cur: DateTime<
                     state.out_of_work_hour = true;
                 }
                 if !state.cooldown && !state.out_of_work_hour {
-                    state.do_water = true;
+                    if water_frozen {
+                        state.frozen = true;
+                    } else {
+                        state.do_water = true;
+                    }
                 }
             },
         }
@@ -267,7 +282,7 @@ fn safe_main() -> Result<()> {
     let git_hash = env!("VERGEN_GIT_DESCRIBE");
     println!("Version useing git has {}", git_hash);
 
-    let mut partition_state: embedded_svc::ota::SlotState = embedded_svc::ota::SlotState::Unknown;
+    let partition_state: embedded_svc::ota::SlotState = embedded_svc::ota::SlotState::Unknown;
     match esp_idf_svc::ota::EspOta::new() {
          Ok(ota) => {
              //match ota.get_running_slot(){
@@ -498,7 +513,7 @@ fn safe_main() -> Result<()> {
     let mut plantstate = [PlantState {
         ..Default::default()
     }; PLANT_COUNT];
-    let plant_to_pump = determine_next_plant(&mut plantstate, europe_time, enough_water, tank_sensor_error, &config, &mut board);
+    let plant_to_pump = determine_next_plant(&mut plantstate, europe_time, enough_water, water_frozen, tank_sensor_error, &config, &mut board);
 
     if STAY_ALIVE.load(std::sync::atomic::Ordering::Relaxed) {
         drop(board);

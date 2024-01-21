@@ -1,5 +1,6 @@
 //mod config;
 
+use bit_field::BitField;
 use embedded_hal::blocking::i2c::Operation;
 use embedded_svc::wifi::{
     AccessPointConfiguration, AccessPointInfo, AuthMethod, ClientConfiguration, Configuration,
@@ -41,7 +42,7 @@ use esp_idf_hal::prelude::Peripherals;
 use esp_idf_hal::reset::ResetReason;
 use esp_idf_svc::sntp::{self, SyncStatus};
 use esp_idf_svc::systime::EspSystemTime;
-use esp_idf_sys::{vTaskDelay, EspError};
+use esp_idf_sys::{vTaskDelay, EspError, esp};
 use one_wire_bus::OneWire;
 
 use crate::config::{self, Config, WifiConfig};
@@ -674,30 +675,18 @@ impl CreatePlantHal<'_> for PlantHal {
         let config = I2cConfig::new()
         .scl_enable_pullup(false)
         .sda_enable_pullup(false)
-        .timeout(Duration::from_millis(10).into())
         .baudrate(10_u32.kHz().into());
         let scl = peripherals.pins.gpio16;
         let sda = peripherals.pins.gpio17;
         
 
         let driver = I2cDriver::new(i2c, sda, scl, &config).unwrap();
-        let mut battery_driver :Bq34z100g1Driver<I2cDriver> = Bq34z100g1Driver{
+        let i2c_port = driver.port();
+        let mut battery_driver :Bq34z100g1Driver<I2cDriver, Delay> = Bq34z100g1Driver{
             i2c :driver,
+            delay: Delay::new_default(),
             flash_block_data : [0;32],
-        };
-
-        let fwversion = battery_driver.fw_version();
-        println!("fw version is {}", fwversion);
-       loop {
-            let bat_temp = battery_driver.internal_temperature();
-            let temp_c = Temperature::from_kelvin(bat_temp as f64/10_f64).as_celsius();
-            println!("bat int temp is is {}", temp_c);
-            unsafe{
-                vTaskDelay(1000);
-            }
-
-        }
-        
+        };       
 
         let mut clock = PinDriver::input_output(peripherals.pins.gpio21)?;
         clock.set_pull(Pull::Floating);
@@ -804,6 +793,128 @@ impl CreatePlantHal<'_> for PlantHal {
             .map_err(|err| -> anyhow::Error { anyhow!("Missing attribute: {:?}", err) })?;
 
         println!("After stuff");
+
+        esp!(unsafe { esp_idf_sys::i2c_set_timeout(i2c_port, 1048000) }).unwrap();
+        
+        let fwversion = battery_driver.fw_version();
+        println!("fw version is {}", fwversion);
+
+        let design_capacity = battery_driver.design_capacity();
+        println!("Design Capacity {}", design_capacity);
+        if(design_capacity == 1000){
+            println!("Still stock configuring battery");
+        }
+
+        //battery_driver.update_design_capacity(5999);
+
+
+        //let mut success = battery_driver.update_design_capacity(6000);
+        //if (!success){
+        //    bail!("Error updating capacity");
+        //}
+
+        //success = battery_driver.update_q_max(6000);
+        //if (!success){
+        //    bail!("Error updating max q");
+        //}   
+                            
+        //let energy = 25600;
+        //success = battery_driver.update_design_energy(energy, 3);
+        //if (!success){
+        //    bail!("Error updating design energy");
+        //}
+        
+        //success = battery_driver.update_cell_charge_voltage_range(3650,3650,3650);
+        //if (!success){
+        //    bail!("Error updating cell charge voltage");
+        //}
+
+        //success = battery_driver.update_number_of_series_cells(4);
+        //if (!success){
+        //    bail!("Error updating number of series");
+        //}
+
+        //charge termination here
+
+
+
+        // //RESCAP CAL_EN SCALED RSVD VOLTSEL IWAKE RSNS1 RSNS0
+        // //RFACTSTEP SLEEP RMFCC NiDT NiDV QPCCLEAR GNDSEL TEMPS
+        // let mut conf: u16 = 0;
+        // //RESCAP 
+        // conf.set_bit(15, true);
+        // //CAL_EN 
+        // conf.set_bit(14, true);
+        // //SCALED 
+        // conf.set_bit(13, false);
+        // //RSVD 
+        // conf.set_bit(12, false);
+        // //VOLTSEL 
+        // conf.set_bit(11, true);
+        // //IWAKE 
+        // conf.set_bit(10, false);
+        // //RSNS1 
+        // conf.set_bit(9, false);
+        // //RSNS0
+        // conf.set_bit(8, true);
+
+        // //RFACTSTEP 
+        // conf.set_bit(7, true);
+        // //SLEEP 
+        // conf.set_bit(6, true);
+        // //RMFCC 
+        // conf.set_bit(5, true);
+        // //NiDT 
+        // conf.set_bit(4, false);
+        // //NiDV 
+        // conf.set_bit(3, false);
+        // //QPCCLEAR 
+        // conf.set_bit(2, false);
+        // //GNDSEL 
+        // conf.set_bit(1, true);
+        // //TEMPS
+        // conf.set_bit(0, false);
+
+
+
+        // let mut success = battery_driver.update_pack_configuration(conf);
+        // if (!success){
+        //     bail!("Error updating pack config");
+        // }
+
+//        let mut success = battery_driver.update_charge_termination_parameters(100, 25, 100, 40, 99, 95, 100, 96);
+//        if (!success){
+//             bail!("Error updating pack config");
+//         }
+
+//calibration here
+
+        //println!("Cc offset");
+        //battery_driver.calibrate_cc_offset();
+        //println!("board offset");
+        //battery_driver.calibrate_board_offset();
+        //println!("voltage divider");
+        //battery_driver.calibrate_voltage_divider(15000.0, 4);
+        
+       //battery_driver.calibrate_sense_resistor(1520);
+
+       loop {
+            let chem_id = battery_driver.chem_id();
+            let bat_temp = battery_driver.temperature();
+            let temp_c = Temperature::from_kelvin(bat_temp as f64/10_f64).as_celsius();          
+            let voltage = battery_driver.voltage();
+            let current = battery_driver.current();
+            let state = battery_driver.state_of_charge();
+            let charge_voltage = battery_driver.charge_voltage();
+            let charge_current = battery_driver.charge_current();
+            println!("ChemId: {} Current voltage {} and current {} with charge {}% and temp {} CVolt: {} CCur {}", chem_id, voltage, current, state, temp_c, charge_voltage, charge_current);
+
+            unsafe{
+                vTaskDelay(1000);
+            }
+
+        }
+
 
         let rv = Mutex::new(PlantCtrlBoard {
             shift_register,
