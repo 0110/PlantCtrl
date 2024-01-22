@@ -1,3 +1,5 @@
+use anyhow::bail;
+use bit_field::BitField;
 use embedded_hal::blocking::{i2c::{WriteRead, Write, Read}, delay::DelayMs};
 use esp_idf_sys::vTaskDelay;
 
@@ -26,7 +28,8 @@ fn xemics_to_double(x:u32) -> f32 {
     }
 
     // Get the exponent, it's 2^(MSbyte - 0x80)
-    f_exponent = 2.0_f32.powf(v_msbyte.wrapping_sub(128) as f32);
+    f_exponent = 2.0_f32.powf(((v_msbyte as i16) - 128) as f32);
+    println!("f_exponent {}", f_exponent);
     // Or in 0x80 to the MidHiByte
     v_mid_hi_byte = (v_mid_hi_byte | 128) as u8;
     // get value out of midhi byte
@@ -79,48 +82,44 @@ fn xemics_to_double(x:u32) -> f32 {
         //     return -fResult;
 }
 
-fn double_to_xemics(mut x:f32) -> u32 {
-    let i_byte1:i16;
-    let mut i_byte2:i16;
-    let i_byte3: i16;
-    let i_byte4: i16;
-    let i_exp: i16;
+   
+fn float_to_xemics(mut x: f32) -> u32 {
     let mut b_negative = false;
-    let mut f_mantissa: f32;
-    // Don't blow up with logs of zero
+
+    // Vermeidung von Logarithmus von Null
     if x == 0.0 {
         x = 0.00001;
-    } 
-    if x < 0.0
-    {
+    }
+
+    // Überprüfung auf negative Zahl
+    if x < 0.0 {
         b_negative = true;
         x = -x;
     }
-    // find the correct exponent
-    i_exp = (x.log2() + 1.0) as i16;// remember - log of any base is ln(x)/ln(base)
 
-    // MS byte is the exponent + 0x80
-    i_byte1 = i_exp + 128;
-   
-    // Divide input by this exponent to get mantissa
-    f_mantissa = x / (2.0_f32.powf(i_exp as f32));
-   
-    // Scale it up
-    f_mantissa = f_mantissa / (2.0_f32.powf(-24.0));
-   
-    // Split the mantissa into 3 bytes
-    i_byte2 = (f_mantissa / (2.0_f32.powf(16.0))) as i16;
-    
-    i_byte3 = ((f_mantissa - (i_byte2 as f32 * (2.0_f32.powf(16.0)))) / (2.0_f32.powf(8.0))) as i16;
-   
-    i_byte4 = (f_mantissa - (i_byte2 as f32 * (2.0_f32.powf(16.0))) - (i_byte3 as f32 * (2.0_f32.powf(8.0)))) as i16;
-   
-    // subtract the sign bit if number is positive
-    if b_negative == false
-    {
-        i_byte2 = i_byte2 & 0x7F;
-    }
-    return (i_byte1 as u8 as u32) << 24 | (i_byte2 as u8 as u32) << 16 | (i_byte3 as u8 as u32) << 8 | i_byte4 as u8 as u32;
+    // Korrekten Exponenten finden
+    let i_exp = (x.log2().floor() + 1.0) as i32;
+
+    // MS-Byte ist der Exponent + 0x80
+    let i_byte1 = (i_exp + 128) as u32;
+
+    // Eingabe durch diesen Exponenten teilen, um Mantisse zu erhalten
+    let f_mantissa = x / 2f32.powi(i_exp);
+
+    // Skalierung
+    let scaled_mantissa = f_mantissa * 2f32.powi(24);
+
+    // Aufteilung der Mantisse in 3 Bytes
+    let i_byte2 = ((scaled_mantissa / 65536.0) as u32) & 0xFF;
+    let i_byte3 = ((scaled_mantissa / 256.0) as u32) & 0xFF;
+    let i_byte4 = (scaled_mantissa as u32) & 0xFF;
+
+    // Subtraktion des Vorzeichenbits, falls die Zahl positiv ist
+    let i_byte2 = if !b_negative { i_byte2 & 0x7F } else { i_byte2 };
+
+    // Zusammenbau des Ergebnisses
+    return (i_byte1 << 24) | (i_byte2 << 16) | (i_byte3 << 8) | i_byte4
+
 
     // int iByte1, iByte2, iByte3, iByte4, iExp;
     // bool bNegative = false;
@@ -160,40 +159,30 @@ fn double_to_xemics(mut x:f32) -> u32 {
 
 }
 
-impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> where I2C: WriteRead<Error = E> + Write<Error = E> + Read<Error = E>, DELAY: DelayMs<u32> { 
-    fn read_register(&mut self, address:u8 , length:u8) -> u16 {
-        println!("Reading register block {:#04x} with length {}", address, length);
-        let data: [u8;1] = [address];
-        if length != 1 && length != 2{
-            todo!();
-        }
-        if length == 2 {
-            let mut buffer : [u8;2] = [0_u8,0_u8];
-            self.i2c.write_read(BQ34Z100_G1_ADDRESS, &data, &mut buffer).unwrap();
-            return ((buffer[1] as u16) << 8) | buffer[0] as u16;
-        } else {
-            let mut buffer : [u8;1] = [0_u8];
-            self.i2c.write_read(BQ34Z100_G1_ADDRESS, &data, &mut buffer).unwrap();
-            return buffer[0] as u16;
-        }
-        
-        // Wire.beginTransmission(BQ34Z100_G1_ADDRESS);
-        // Wire.write(address);
-        // Wire.endTransmission(false);
-        // Wire.requestFrom(BQ34Z100_G1_ADDRESS, length, true);
-        
-        // uint16_t temp = 0;
-        // for (uint8_t i = 0; i < length; i++) {
-        //     temp |= Wire.read() << (8 * i);
-        // }
-        // return temp;
+
+
+impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> where I2C: WriteRead<Error = E> + Write<Error = E> + Read<Error = E>, DELAY: DelayMs<u32> {    
+    fn read_2_register_as_u16(&mut self, address:u8) -> u16 {
+//        println!("Reading register block {:#04x} with length {}", address, 2);
+        let data: [u8; 1] = [address];
+        let mut buffer: [u8; 2] = [0; 2];
+        self.i2c.write_read(BQ34Z100_G1_ADDRESS, &data, &mut buffer).unwrap();
+        u16::from_le_bytes([buffer[0], buffer[1]])
+    }
+
+    fn read_1_register_as_u8(&mut self, address:u8) -> u8 {
+//        println!("Reading register block {:#04x} with length {}", address, 1);
+        let data: [u8; 1] = [address];
+        let mut buffer: [u8; 1] = [0; 1];
+        self.i2c.write_read(BQ34Z100_G1_ADDRESS, &data, &mut buffer).unwrap();
+        buffer[0]
     }
 
     fn read_control(&mut self,address_lsb:u8, address_msb: u8) -> u16 {
-        println!("Reading controll {} {}", address_lsb, address_msb);
+//        println!("Reading controll {} {}", address_lsb, address_msb);
         let data: [u8;3] = [0x00_u8, address_lsb, address_msb];
         self.i2c.write(BQ34Z100_G1_ADDRESS, &data).unwrap();
-        return self.read_register(0x00, 2);
+        return self.read_2_register_as_u16(0x00);
         // Wire.beginTransmission(BQ34Z100_G1_ADDRESS);
         // Wire.write(0x00);
         // Wire.write(address_lsb);
@@ -203,7 +192,7 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
     }
 
     fn internal_temperature(&mut self) -> u16  {
-        return self.read_register(0x2a, 2);
+        return self.read_2_register_as_u16(0x2a);
     }
 
     fn read_flash_block(&mut self, sub_class:u8, offset:u8) {
@@ -631,6 +620,28 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
     //     return false;
     // }
     // return true;
+    }
+
+    fn set_led_mode(&mut self, led_config:u8) {
+        self.unsealed();
+        self.read_flash_block(64, 0);
+        self.flash_block_data[4] = led_config;
+        self.write_reg(0x40 + 4, self.flash_block_data[4]);
+
+
+        let checksum = self.flash_block_checksum();
+        self.write_reg(0x60, checksum);
+    
+        self.delay.delay_ms(150);
+        self.reset();
+        self.delay.delay_ms(150);
+
+        self.unsealed();
+        self.read_flash_block(64, 0);
+
+        if (self.flash_block_data[4] != led_config){
+            println!("Failed to set led config!");
+        }
     }
 
     fn update_number_of_series_cells(&mut self, cells:u8)-> bool  {
@@ -1108,28 +1119,6 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
     }
 
     fn calibrate_sense_resistor(&mut self, applied_current:i16) {
-        // // test data from https://e2e.ti.com/support/power-management/f/196/p/551252/2020286?tisearch=e2e-quicksearch&keymatch=xemics#2020286
-        // let value_float: f32 = 0.8335;
-        // let value_xemics: u32 = 0x80555E9E;
-        // // try converting float to xemics
-        // let converted_value: u32 = double_to_xemics(value_float);
-        // println!("Converted value: {}", converted_value);
-         
-        // // try converting xemics to float
-        // let converted_float :f32 = xemics_to_double(value_xemics);
-        // println!("Converted float: {}", converted_float);
-        
-        // println!("Expected default CC Gain: {}", double_to_xemics(0.4768));
-        // println!("Expected default CC Delta: {}", double_to_xemics(567744.56));
-        for i in 1 .. 500000 {
-            let xemics = double_to_xemics(i as f32);
-            let restored = xemics_to_double(xemics);
-            if((i as f32 - restored).abs() > 0.1){
-                println!("Large diff for {}, restored as {}", i , restored);
-            }
-        }
-
-        unsafe { vTaskDelay(1001) };
         let mut current_array: [f32;50] = [0.0;50];
         for i in 0 .. 50 {
             current_array[i] = self.current() as f32;
@@ -1162,7 +1151,7 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
         cc_gain |= self.flash_block_data[3] as u32;
         
         let float_cc_gain = xemics_to_double(cc_gain);
-        let xemics_cc_gain = double_to_xemics(float_cc_gain);
+        let xemics_cc_gain = float_to_xemics(float_cc_gain);
         let float_cc_gain2 = xemics_to_double(xemics_cc_gain);
         if (float_cc_gain-float_cc_gain2).abs() > 0.01 {
             println!("Error converting old gain!!");
@@ -1170,24 +1159,17 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
 
         let mut gain_resistence: f32 = 4.768 / float_cc_gain;
         println!("Current gain R is {}  xemics is {}", gain_resistence, cc_gain);
-        if(gain_resistence == 0.0){
-            gain_resistence = 10.0;
-        }
         
         let mut temp: f32 = (current_mean * gain_resistence) / applied_current as f32;
         println!("Current is {} , applied current ist {}, new gain is {}", current_mean, applied_current, temp);
-        if(temp == 0.0){
-            println!("Failure calculating new gain, fallback gain used");
-            temp = 10.0;
-        }
 
-        let mut new_cc_gain : u32 = double_to_xemics(4.768 / temp);
+        let mut new_cc_gain : u32 = float_to_xemics(4.768 / temp);
         self.flash_block_data[0] = (new_cc_gain >> 24) as u8;
         self.flash_block_data[1] = (new_cc_gain >> 16) as u8;
         self.flash_block_data[2] = (new_cc_gain >> 8) as u8;
         self.flash_block_data[3] = (new_cc_gain & 0xff) as u8;
 
-        new_cc_gain = double_to_xemics(5677445.6 / temp);
+        new_cc_gain = float_to_xemics(5677445.6 / temp);
         self.flash_block_data[4] = (new_cc_gain >> 24) as u8;
         self.flash_block_data[5] = (new_cc_gain >> 16) as u8;
         self.flash_block_data[6] = (new_cc_gain >> 8) as u8;
@@ -1359,136 +1341,159 @@ impl <I2C,DELAY, E: std::fmt::Debug> Bq34z100g1 for Bq34z100g1Driver<I2C,DELAY> 
     }
 
     fn state_of_charge(&mut self) -> u8  {
-        return self.read_register(0x02, 1) as u8;
+        return self.read_1_register_as_u8(0x02);
     }
 
     fn state_of_charge_max_error(&mut self) -> u8  {
-        return self.read_register(0x03, 1) as u8;
+        return self.read_1_register_as_u8(0x03);
     }
 
     fn remaining_capacity(&mut self) -> u16  {
-        return self.read_register(0x04, 2);
+        return self.read_2_register_as_u16(0x04);
     }
 
     fn full_charge_capacity(&mut self) -> u16  {
-        return self.read_register(0x06, 2);
+        return self.read_2_register_as_u16(0x06);
     }
 
     fn voltage(&mut self) -> u16  {
-        return self.read_register(0x08, 2);
+        return self.read_2_register_as_u16(0x08);
     }
 
     fn average_current(&mut self) -> i16 {
-        return self.read_register(0x0a, 2) as i16;
+        return self.read_2_register_as_u16(0x0a) as i16;
     }
 
     fn temperature(&mut self) -> u16  {
-        return self.read_register(0x0c, 2);
+        return self.read_2_register_as_u16(0x0c);
     }
 
     fn flags(&mut self) -> u16  {
-        return self.read_register(0x0e, 2);
+        return self.read_2_register_as_u16(0x0e);
     }
 
     fn flags_b(&mut self) -> u16  {
-        return self.read_register(0x12, 2);
+        return self.read_2_register_as_u16(0x12);
     }
 
     fn current(&mut self) -> i16 {
-        return self.read_register(0x10, 2) as i16;
+        return self.read_2_register_as_u16(0x10) as i16;
     }
 
     fn average_time_to_empty(&mut self) -> u16 {
-        return self.read_register(0x18, 2);
+        return self.read_2_register_as_u16(0x18);
     }
 
     fn average_time_to_full(&mut self) -> u16 {
-        return self.read_register(0x1a, 2);
+        return self.read_2_register_as_u16(0x1a);
     }
 
     fn passed_charge(&mut self) -> u16 {
-        return self.read_register(0x1c, 2);
+        return self.read_2_register_as_u16(0x1c);
     }
 
     fn do_d0_time(&mut self) -> u16  {
-        return self.read_register(0x1e, 2);
+        return self.read_2_register_as_u16(0x1e);
     }
 
     fn available_energy(&mut self) -> u16  {
-        return self.read_register(0x24, 2);
+        return self.read_2_register_as_u16(0x24);
     }
 
     fn average_power(&mut self) -> u16  {
-        return self.read_register(0x26, 2);
+        return self.read_2_register_as_u16(0x26);
     }
 
     fn serial_number(&mut self) -> u16  {
-        return self.read_register(0x28, 2);
+        return self.read_2_register_as_u16(0x28);
     }
 
     fn cycle_count(&mut self) -> u16  {
-        return self.read_register(0x2c, 2);
+        return self.read_2_register_as_u16(0x2c);
     }
 
     fn state_of_health(&mut self) -> u16  {
-        return self.read_register(0x2e, 2);
+        return self.read_2_register_as_u16(0x2e);
     }
 
     fn charge_voltage(&mut self) -> u16  {
-        return self.read_register(0x30, 2);
+        return self.read_2_register_as_u16(0x30);
     }
 
     fn charge_current(&mut self) -> u16 {
-        return self.read_register(0x32, 2);
+        return self.read_2_register_as_u16(0x32);
     }
 
     fn pack_configuration(&mut self) -> u16  {
-        return self.read_register(0x3a, 2);
+        return self.read_2_register_as_u16(0x3a);
     }
 
     fn design_capacity(&mut self) -> u16  {
-        return self.read_register(0x3c, 2);
+        return self.read_2_register_as_u16(0x3c);
     }
 
     fn grid_number(&mut self) -> u8  {
-        return self.read_register(0x62, 1) as u8;
+        return self.read_1_register_as_u8(0x62);
     }
 
     fn learned_status(&mut self) -> u8  {
-        return self.read_register(0x63, 1) as u8;
+        return self.read_1_register_as_u8(0x63);
     }
 
     fn dod_at_eoc(&mut self) -> u16  {
-        return self.read_register(0x64, 2);
+        return self.read_2_register_as_u16(0x64);
     }
 
     fn  q_start(&mut self) -> u16 {
-        return self.read_register(0x66, 2);
+        return self.read_2_register_as_u16(0x66);
     }
 
     fn  true_fcc(&mut self) -> u16 {
-        return self.read_register(0x6a, 2);
+        return self.read_2_register_as_u16(0x6a);
     }
 
     fn state_time(&mut self) -> u16  {
-        return self.read_register(0x6c, 2);
+        return self.read_2_register_as_u16(0x6c);
     }
 
     fn  q_max_passed_q(&mut self) -> u16 {
-        return self.read_register(0x6e, 2);
+        return self.read_2_register_as_u16(0x6e);
     }
 
     fn  dod_0(&mut self) -> u16 {
-        return self.read_register(0x70, 2);
+        return self.read_2_register_as_u16(0x70);
     }
 
     fn  q_max_dod_0(&mut self) -> u16 {
-        return self.read_register(0x72, 2);
+        return self.read_2_register_as_u16(0x72);
     }
 
     fn  q_max_time(&mut self) -> u16 {
-        return self.read_register(0x74, 2);
+        return self.read_2_register_as_u16(0x74);
     }
+
+    fn get_flags_decoded(&mut self) -> Flags {
+        let flags = self.flags().to_le_bytes();
+
+        return Flags { 
+            fast_charge_allowed: flags[0].get_bit(0),
+            full_chage: flags[0].get_bit(1),
+            charging_not_allowed: flags[0].get_bit(2),
+            charge_inhibit: flags[0].get_bit(3), 
+            bat_low: flags[0].get_bit(4), 
+            bat_high: flags[0].get_bit(5), 
+            over_temp_discharge: flags[0].get_bit(6), 
+            over_temp_charge: flags[0].get_bit(7), 
+
+            discharge: flags[1].get_bit(0), 
+            state_of_charge_f: flags[1].get_bit(1), 
+            state_of_charge_1: flags[1].get_bit(2), 
+            cf: flags[1].get_bit(4), 
+            ocv_taken: flags[1].get_bit(7)
+         }
+    }
+
+
 
 }
 
@@ -1498,7 +1503,8 @@ pub struct Bq34z100g1Driver<I2C, Delay>{
     pub flash_block_data: [u8;32],
 }
 pub trait Bq34z100g1 {
-    fn read_register(&mut self, address:u8 , length:u8) -> u16;
+    fn read_2_register_as_u16(&mut self, address:u8) -> u16;
+    fn read_1_register_as_u8(&mut self, address:u8) -> u8;
     fn read_control(&mut self, address_lsb:u8, address_msb: u8) -> u16;
     fn read_flash_block(&mut self, sub_class:u8, offset:u8);
     fn write_reg(&mut self, address:u8, value:u8 );
@@ -1581,4 +1587,23 @@ pub trait Bq34z100g1 {
     fn  dod_0(&mut self) -> u16;
     fn  q_max_dod_0(&mut self) -> u16;
     fn  q_max_time(&mut self) -> u16;
+    fn set_led_mode(&mut self, led_config:u8);
+    fn get_flags_decoded(&mut self) -> Flags;
+}
+
+#[derive(Debug)]
+pub struct Flags{
+    fast_charge_allowed:bool,
+    full_chage:bool,
+    charging_not_allowed:bool,
+    charge_inhibit:bool,
+    bat_low: bool,
+    bat_high: bool,
+    over_temp_discharge: bool,
+    over_temp_charge: bool,
+    discharge:bool,
+    state_of_charge_f: bool,
+    state_of_charge_1: bool,
+    cf: bool,
+    ocv_taken: bool
 }

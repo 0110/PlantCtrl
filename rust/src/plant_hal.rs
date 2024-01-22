@@ -896,11 +896,26 @@ impl CreatePlantHal<'_> for PlantHal {
         //println!("voltage divider");
         //battery_driver.calibrate_voltage_divider(15000.0, 4);
         
-       //battery_driver.calibrate_sense_resistor(1520);
+       //battery_driver.calibrate_sense_resistor(1530);
+       //let mut data = 0_u8;
+       //data.set_bit(0, true); //led mode
+       //data.set_bit(1, false); // led mode
+       //data.set_bit(2, false); //led mode
+
+       //data.set_bit(3, true); //led always on
+
+       
+       //battery_driver.set_led_mode(data);
+       //battery_driver.unsealed();
+       battery_driver.it_enable();
 
        loop {
+
+            let flags = battery_driver.get_flags_decoded();
+            println!("Flags {:?}", flags);
+
             let chem_id = battery_driver.chem_id();
-            let bat_temp = battery_driver.temperature();
+            let bat_temp = battery_driver.internal_temperature();
             let temp_c = Temperature::from_kelvin(bat_temp as f64/10_f64).as_celsius();          
             let voltage = battery_driver.voltage();
             let current = battery_driver.current();
